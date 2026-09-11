@@ -1,63 +1,102 @@
-# Primary School Semi-Boarding Meal Management System
-### Meal Operation Module
+# Meal Demand & Quantity Management System
+### Primary School Semi-Boarding Meal Operation
 
-A web application designed for primary school semi-boarding meal management, streamlining daily meal execution across three key user personas: **Kitchen Staff**, **Homeroom Teachers**, and **Boarding Supervisors**.
-
----
-
-## 🌟 Overview of the "Meal Operation" Module
-
-The web application UI adopts a modern **Education & F&B SaaS aesthetic**, adhering to **Material Design 3 (MD3)** principles. It features a warm, appetite-friendly color palette (sunlit apricot/terracotta `#E05318`, fresh herb green `#16A34A`, set against clean warm neutrals `#F8FAFC`), standard 12px rounded cards, and seamless viewport switching between the **default Desktop / Tablet Dashboard** and an authentic **Mobile App (390px)** layout with a persistent bottom navigation bar.
+A web application designed for primary school semi-boarding meal management, empowering **Homeroom Teachers**, **Boarding Supervisors**, and **Kitchen Managers** to determine daily meal attendance, calculate required raw food quantities, and coordinate last-minute emergency adjustments.
 
 ---
 
-## 📱 The 5 Core Operational Screens
+## 🌟 Overview
 
-### 1. Meal Demand Dashboard
-- **Date & Meal Session Selector:** Switch between **Breakfast**, **Lunch**, and **Snack** sessions.
-- **Top Summary Metric Cards:**
-  - *Registered Students (420):* Baseline registration count snapshot.
-  - *Confirmed Attend (408):* Real-time confirmed student attendance.
-  - *Reported Absent (16):* Excused absences excluded from billing and meal prep.
-  - *Extra Guests (4):* Additional portions allocated for supervising teachers and monitors.
-- **Real-Time Cutoff Status Badge:** Real-time indicator displaying `Open for changes` with countdown vs `Locked` after the cutoff time.
-- **Expandable Class Accordion Cards:** Overview of attendance ratios for Grades 1 through 5 (e.g., Class 1A, Class 2A). Expanding each card displays individual student absence reasons and medical/dietary notices (*⚠️ Peanut allergy, lactose sensitive*).
-- **Floating Action Button (FAB) "Report Change":** Quickly submit attendance changes or extra guest requests with live summary updates.
+The application adopts a modern **Education & F&B SaaS aesthetic**, adhering to **Material Design 3 (MD3)** principles. Built with a warm, appetite-friendly color palette (sunlit terracotta `#E05318`, fresh herb green `#16A34A`, set against clean warm neutrals `#F8FAFC`), it features 12px rounded cards, soft shadows, clear iconography, and responsive layouts that default to a spacious **Desktop / Tablet Dashboard** with an instant toggle for an authentic **Mobile (390px)** frame.
 
-### 2. Expected Meal Quantity
-- **Summary Banner:** Highlights total planned headcount (412 portions), standard safety shrinkage buffer (+5%), and calculation status.
-- **Standard Scaled Recipe Table:**
-  - *Steamed Fragrant Jasmine Rice:* 160g / portion $\rightarrow$ 69.2 kg cooked.
-  - *Caramelized Braised Salmon & Pork Balls:* 95g / portion $\rightarrow$ 41.1 kg.
-  - *Kabocha Pumpkin & Minced Pork Broth:* 220ml / portion $\rightarrow$ 95.2 liters.
-  - *Stir-fried Sweet Bok Choy & Straw Mushrooms:* 85g / portion $\rightarrow$ 36.8 kg.
-  - *Fresh Cavendish Banana & Probiotic Yogurt:* 1 set / portion $\rightarrow$ 433 portions.
-- **"Recalculate" Button:** Automatically updates raw ingredient quantities upon student headcount adjustments.
-- **Calculation Status Badge:** Clearly indicates whether portions are `Auto-calculated` or `Manually adjusted` by kitchen management.
+The module solves three high-friction challenges in school meal management:
+1. **Attendance Discrepancy:** Eliminating manual paper rosters with real-time class attendance roll calls and dietary/allergen alerts.
+2. **Food Over/Under-Production:** Scaling standardized recipes dynamically from confirmed student counts with customizable safety buffers.
+3. **Emergency Disruption:** Handling post-cutoff late additions and absences via structured approval workflows and automated audit trails.
 
-### 3. Meal Preparation Kanban
-- **Overall Preparation Progress Header:** Displays real-time completion percentage (68%), preparation start timestamp (08:45 AM), and expected ready time (10:45 AM).
-- **3-Stage Kanban Board:**
-  - ⏳ *To Prepare:* Cold prep and fruit sorting (Desserts).
-  - 🔥 *In Progress:* Active cooking and simmering with internal temperature monitoring (Proteins, Vegetables).
-  - ✅ *Ready & Packaged:* Inspected and stored in hot-holding thermal cabinets (Rice, Soups).
-- **Dish Kanban Cards:** Displays portion counts, assigned chef avatar, active step, and single-click stage advancement buttons (`Start Cooking →`, `Mark Ready ✓`).
+*(Note: The repository also includes `ui/index.html` as a complementary prototype showcasing the broader 5-stage kitchen execution pipeline from prep Kanban to reconciliation).*
 
-### 4. Meal Distribution & Handover
-- **Search & Filter Bar:** Instant search by class name or teacher name, plus quick Grade filter chips (*All Grades*, *Grade 1* through *Grade 5*).
-- **Delivery Status Badges:** Color-coded stages for `Pending Dispatch` (amber), `Delivered` (blue), and `Confirmed Received` (green).
-- **Expandable Handover Receipts:**
-  - Quantity of trays delivered.
-  - Departure timestamp from kitchen.
-  - Dispatching kitchen staff & receiving homeroom teacher.
-  - Special dietary / allergen safety notes.
-- **Quick Handover Actions:** One-click `Mark as Delivered →` and `Confirm Receipt ✓` actions with instant timestamping.
+---
 
-### 5. Meal Reconciliation
-- **Accuracy Donut Chart:** Interactive SVG visualization showing 98.1% reconciliation accuracy and 1.9% surplus/variance.
-- **Comparison Table:** Comprehensive audit matrix of *Planned Quantity* vs *Actual Prepared* vs *Actual Consumed* vs *Leftover / Shortage*, with color-coded variance tags.
-- **Supervisor & Kitchen Notes Log:** Real-time log for kitchen leads and supervisors to note student appetite feedback and document leftover repurposing.
-- **"Export Report" Action:** Generate a print-ready modal summary and download daily reconciliation reports for administrative audit.
+## 📱 The 3 Connected Core Screens
+
+```
+[ Screen 1: Determine Demand ] ──► [ Screen 2: Calculate Quantities ] ──► [ Screen 3: Manage Changes ]
+  • Live Class Roll Call            • Scaled Ingredients Matrix           • Emergency Request Triage
+  • Cutoff Countdown & Lock         • Dynamic Buffer Steppers (+/-)       • Slide-up Bottom Sheet
+  • Allergen & Dietary Badges       • Transparency Formula Row            • Visual Audit Timeline
+```
+
+---
+
+### 1. Determine Meal Demand (`#screen-determine`)
+
+Enables homeroom teachers and boarding supervisors to record student attendance per classroom before the morning cutoff deadline.
+
+* **Top Metric Overview:**
+  * **Base Registered (420):** Baseline enrolled semi-boarding students.
+  * **Confirmed Attend (408):** Live confirmed student headcount.
+  * **Absent (16):** Excused absences with reasons (*Fever/Flu, Dental, Family trip*).
+  * **Extra Guests (4):** Supervising staff and meal monitors.
+* **Real-Time Cutoff Countdown:** Persistent countdown badge (e.g., `08:30 AM Cutoff • 42 min remaining`) displaying `Open for changes` (green) or `Locked` (gray).
+* **Interactive Class Accordions:** Collapsible cards for Grades 1 through 5. Expanding a class reveals the full student roster.
+* **Per-Student Attendance Controls:** Granular radio buttons per student (**Attend** / **Absent** / **Guest**). Toggling status reactively updates class attendance tallies and top-level summary metrics.
+* **Dietary & Allergen Warning Badges:** Color-coded tags attached directly to student rows (*⚠️ Peanut allergy, Lactose sensitive, Vegetarian*).
+* **"Lock Demand" Action:** A supervisor confirmation action that locks attendance changes, changes badge state to `Locked`, and hands off finalized headcounts to the kitchen.
+* **Floating Action Button (FAB):** Quick-launch button to submit attendance changes directly from Screen 1.
+
+#### Database Schema Alignment:
+| UI Component / Field | SQL Database Table | Relevant Columns |
+|---|---|---|
+| Headcount summaries & lock status | `daily_meal_demands` | `demand_date`, `meal_session_id`, `class_id`, `base_registered_count`, `confirmed_attend_count`, `absence_count`, `extra_count`, `determination_status`, `locked_at` |
+| Per-student attendance & reasons | `daily_meal_demand_details` | `student_id`, `intention` (`attend`, `absent`, `extra_guest`), `reason`, `is_within_cutoff` |
+| Session selection & cutoff time | `meal_sessions` | `code`, `registration_cutoff_time`, `is_active` |
+
+---
+
+### 2. Calculate Meal Quantities (`#screen-quantities`)
+
+Empowers kitchen managers to scale dish ingredients automatically from finalized headcounts, customize safety shrinkage buffers, and prevent food shortages or waste.
+
+* **Planned Headcount Summary Banner:** Highlights active meal session, total planned headcount (412 portions), and calculation status (`Auto-calculated`).
+* **Scaled Recipe & Raw Material Table:**
+  * Displays dishes categorized into *Main Dish*, *Staple Rice*, *Soup / Broth*, *Vegetable / Fiber*, and *Dessert / Dairy*.
+  * Standard unit portion sizing ($g$ or $ml$ per student).
+  * Net cooked requirement and gross raw material required.
+* **Inline Buffer Stepper Controls:** Direct `[-]` and `[+]` interactive stepper buttons in each table row to adjust safety buffers (0% to 20%) with instant raw weight recalculation.
+* **Transparency Scaling Formula Row:** Explains the calculation logic clearly:
+  $$\text{Total Raw} = \text{Headcount} \times \text{Portion} \times (1 + \text{Buffer}\% + \text{Waste}\%)$$
+* **"Recalculate All" Action:** Re-runs calculations from the latest confirmed attendance data and resets adjusted buffers.
+* **Sticky Total Bar:** Fixed summary bar displaying aggregate raw ingredient weight (kg) and portion counts across all menu items.
+
+#### Database Schema Alignment:
+| UI Component / Field | SQL Database Table | Relevant Columns |
+|---|---|---|
+| Scaled recipe items & quantities | `expected_meal_quantities` | `daily_meal_demand_id`, `menu_dish_id`, `planned_headcount`, `unit_portion_size`, `unit`, `buffer_percentage`, `total_quantity`, `calculation_method` |
+| Dish specifications & portion standards | `menu_dishes`, `dishes` | `dish_name`, `category`, `standard_portion_size`, `unit` |
+| Daily scheduled menu | `menus` | `menu_date`, `meal_session_id`, `status` |
+
+---
+
+### 3. Manage Demand Changes (`#screen-changes`)
+
+Handles late arrivals, emergency medical pickups, and guest portion adjustments occurring after the official cutoff deadline.
+
+* **Emergency Request Highlighting:** Requests submitted post-cutoff are distinguished by a bold red accent border and an `⚡ Emergency` badge.
+* **Role-Authorized Approval Actions:** Kitchen managers and supervisors can execute one-click `Approve` or `Reject` actions, updating status chips and synchronizing demand counts.
+* **Category Filter Chips:** Rapidly filter requests by *All*, *Pending*, *Approved*, or *Rejected*.
+* **New Change Request Modal (Slide-up Bottom Sheet):**
+  * Accessible via the top action bar or bottom Floating Action Button (FAB).
+  * Validated input fields: Target Type (*Student* / *Staff Guest*), Classroom, Student selection, Change Type (*Late Addition*, *Early Departure*, *Dietary Change*), Quantity Delta, and Justification Reason.
+* **Audit Trail & History Timeline:**
+  * Vertical chronological timeline with connected nodes and timestamps.
+  * Tracks old $\rightarrow$ new field value transitions, who submitted the request, and who authorized it.
+
+#### Database Schema Alignment:
+| UI Component / Field | SQL Database Table | Relevant Columns |
+|---|---|---|
+| Change requests & approval triage | `meal_demand_change_requests` | `daily_meal_demand_id`, `student_id`, `change_type`, `requested_quantity_delta`, `reason`, `is_emergency`, `approval_status`, `approved_by`, `approved_at` |
+| Audit trail & field modifications | `meal_demand_change_logs` | `change_request_id`, `field_changed`, `old_value`, `new_value`, `changed_by`, `changed_at`, `note` |
 
 ---
 
@@ -66,16 +105,21 @@ The web application UI adopts a modern **Education & F&B SaaS aesthetic**, adher
 ```
 Top-Down-Approach/
 ├── database/
-│   ├── PRIMARY SCHOOL SEMI-BOARDING MEAL MANAGEMENT SYSTEM.sql   # PostgreSQL schema & DDL definitions
-│   └── PRIMARY SCHOOL SEMI-BOARDING MEAL MANAGEMENT SYSTEM.png   # Entity Relationship Diagram (ERD)
+│   ├── PRIMARY SCHOOL SEMI-BOARDING MEAL MANAGEMENT SYSTEM.sql   # PostgreSQL DDL schema & constraints
+│   ├── PRIMARY SCHOOL SEMI-BOARDING MEAL MANAGEMENT SYSTEM.png   # Entity Relationship Diagram (ERD)
+│   └── DBDOCS.md                                                 # Comprehensive schema documentation
 ├── ui/
-│   ├── index.html          # Main HTML structure with 5 screens, modals, and navigation
+│   ├── demand.html         # Main application: Meal Demand & Quantity Management suite
+│   ├── index.html          # Reference prototype: 5-screen general meal operation workflow
 │   ├── css/
-│   │   ├── style.css       # Material Design 3 tokens, appetite palette, layout & viewport modes
-│   │   └── screens.css     # Dedicated styling for cards, tables, Kanban, handover, & reconciliation
+│   │   ├── style.css       # Design tokens (MD3), typography, reset, & viewport frame switcher
+│   │   ├── demand.css      # Dedicated styles for Demand screens, inline steppers, & timeline
+│   │   └── screens.css     # Styles for general operation screens (Kanban, distribution)
 │   └── js/
-│       ├── mockData.js     # Mock dataset grounded in database schema
-│       └── app.js          # Navigation, reactive formulas, role switching, & interactions
+│       ├── demandData.js   # Mock dataset mirroring daily_meal_demands & change_requests schema
+│       ├── demandApp.js    # Interactive logic: reactive roll call, formula steppers, & modals
+│       ├── mockData.js     # Reference dataset for general operation module
+│       └── app.js          # Reference script for general operation module
 ├── taste-SKILL.md          # UI/UX design guidelines and standards
 └── README.md
 ```
@@ -90,10 +134,13 @@ Start a lightweight HTTP server in the repository root:
 python -m http.server 8080 --directory ui
 ```
 
-Open your browser and navigate to:
-👉 **`http://localhost:8080`**
+Open your browser and navigate directly to the application:
+👉 **`http://localhost:8080/demand.html`**
 
-### User Experience Highlights:
-- **Default Viewport:** The application defaults to the spacious **Desktop / Tablet Dashboard**. You can switch to the **Mobile (390px)** frame using the toolbar toggle at the top of the screen.
-- **Role Switching:** Test different persona perspectives (**Kitchen Staff**, **Homeroom Teacher**, or **Boarding Supervisor**) via the role switcher button in the top app bar.
-- **Interactive Workflows:** Try reporting an absence via the FAB button, moving dishes across the preparation Kanban columns, marking classroom deliveries, and logging reconciliation notes.
+### Interactive User Experience Features:
+1. **Screen Navigation:** Use the top tab bar to switch between **Determine Demand**, **Calculate Quantities**, and **Manage Changes**.
+2. **Attendance Roll Call:** Expand class accordions (e.g. *Class 1A*, *Class 2A*) and toggle student attendance status (**Attend** / **Absent** / **Guest**) to see class counts and top cards update reactively.
+3. **Safety Buffer Adjustment:** In Screen 2, click `[-]` and `[+]` on any dish row to adjust buffer percentages and observe immediate raw quantity updates.
+4. **Submit & Triage Changes:** In Screen 3, click the `+ New Request` button to test the slide-up modal, then click `Approve` on emergency items to watch the status update and the audit log expand.
+5. **Responsive Viewport Toggle:** Use the toolbar switch at the very top of the window to toggle between the default **Desktop / Tablet Dashboard** and the compact **Mobile (390px)** frame.
+6. **Role Perspective Switcher:** Switch between **Kitchen Staff**, **Homeroom Teacher**, and **Boarding Supervisor** in the top bar to inspect contextual permission states.
