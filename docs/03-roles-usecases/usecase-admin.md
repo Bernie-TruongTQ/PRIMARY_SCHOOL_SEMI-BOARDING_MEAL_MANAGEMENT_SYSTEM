@@ -1,142 +1,98 @@
-# UC-ADM — School Administrator Use Cases
+# Use Case Specifications — School Administrator (ADM)
 
-## Use Case Diagram
+## Actor Overview
+
+- **Actor Name:** School Administrator (`ADM`)
+- **Primary Domain:** System Master Data & Boundary References
+- **Key Objectives:** Maintain foundational entities (students, classrooms, meal schedules, users, dishes, and ingredients) that enable daily operations across Modules 1, 2, and 3.
+
+---
+
+## Use Case Diagram — School Administrator
 
 ```mermaid
-graph LR
-    ADM([School Administrator])
+flowchart LR
+    ADM(["👤 School Administrator\n(ADM)"])
 
-    subgraph SYSTEM["System Configuration & Student Management"]
-        subgraph STU["Student Enrollment"]
-            UC_ADM_01["UC-ADM-01\nEnroll Student in Meal Program"]
-            UC_ADM_02["UC-ADM-02\nUpdate Student Enrollment Status"]
-            UC_ADM_03["UC-ADM-03\nRegister Student for Meal Session"]
-        end
-
-        subgraph CFG["System Configuration"]
-            UC_ADM_04["UC-ADM-04\nManage Meal Sessions"]
-            UC_ADM_05["UC-ADM-05\nManage User Accounts & Roles"]
-            UC_ADM_06["UC-ADM-06\nManage Dish Catalog"]
-        end
+    subgraph SYSTEM["Master Reference Data Administration"]
+        UC1(["UC-ADM-01\nManage Student Records & Eligibility"])
+        UC2(["UC-ADM-02\nConfigure Meal Calendar & Schedules"])
+        UC3(["UC-ADM-03\nMaintain Dish & Ingredient Master Catalog"])
+        UC4(["UC-ADM-04\nManage System Users & Role Permissions"])
     end
 
-    ADM --> UC_ADM_01
-    ADM --> UC_ADM_02
-    ADM --> UC_ADM_03
-    ADM --> UC_ADM_04
-    ADM --> UC_ADM_05
-    ADM --> UC_ADM_06
+    ADM --- UC1
+    ADM --- UC2
+    ADM --- UC3
+    ADM --- UC4
 ```
 
 ---
 
-## Use Case Specifications
+## UC-ADM-01 — Manage Student Records & Eligibility
 
-### UC-ADM-01 — Enroll Student in Meal Program
+- **Primary DB Entity:** `students`
+- **Secondary Entities:** `meal_registrations`
 
-| Field | Value |
-|-------|-------|
-| **Actor** | School Administrator |
-| **Feature** | F-STU-01 Manage Student Meal Eligibility |
-| **Precondition** | Student exists in the school system. Classes are configured. |
-| **Trigger** | Administrator enrolls a student at the start of the school year or upon transfer |
+### Preconditions
+1. Administrator is authenticated with administrative rights.
+2. Academic year and classroom designations are established.
 
-**Main Flow:**
-1. Administrator navigates to Student Management
-2. Administrator searches for and selects the student
-3. Administrator marks the student as eligible for the semi-boarding meal program
-4. System sets `students.status = 'active'`
-5. System creates the student's class association (`students.class_id`)
-6. Student becomes visible in class attendance rolls for meal sessions
-
-**Postcondition:** Student is enrolled and appears in meal attendance rosters.
+### Main Success Scenario
+1. Administrator accesses the **Student Master Directory** ([SCR-ADM-01](../04-information-architecture/screen-inventory.md)).
+2. Administrator creates or imports student profiles (`full_name`, `class_name`).
+3. Administrator updates `eligibility_status` (e.g. `eligible`, `suspended`, `withdrawn`).
+4. System persists records in `students` table.
+5. Eligible students automatically populate classroom rosters for Module 1.
 
 ---
 
-### UC-ADM-02 — Update Student Enrollment Status
+## UC-ADM-02 — Configure Meal Calendar & Daily Schedules
 
-| Field | Value |
-|-------|-------|
-| **Actor** | School Administrator |
-| **Feature** | F-STU-01 Manage Student Meal Eligibility |
-| **Trigger** | A student transfers out, withdraws, or is temporarily suspended from the meal program |
+- **Primary DB Entity:** `meal_schedules`
+- **Secondary Entities:** `dishes`
 
-**Main Flow:**
-1. Administrator selects the student
-2. Administrator changes status: `active` → `inactive` or `transferred`
-3. System removes the student from future demand calculations
-4. System preserves historical records for audit
+### Preconditions
+1. School term dates are known.
 
-**Postcondition:** Student no longer appears in future attendance rolls.
-
----
-
-### UC-ADM-03 — Register Student for Meal Session
-
-| Field | Value |
-|-------|-------|
-| **Actor** | School Administrator |
-| **Feature** | F-STU-02 Register Student for Meal Session |
-| **Precondition** | Student is enrolled (UC-ADM-01). Meal sessions are configured. |
-
-**Main Flow:**
-1. Administrator opens the student's meal registration profile
-2. Administrator selects the meal session(s) the student participates in (e.g., Lunch only; or Breakfast + Lunch)
-3. Administrator sets `effective_from` and `effective_to` date range
-4. System creates `meal_registrations` records
-5. The student's participation is now captured in the `base_registered_count` for daily demand
-
-**Postcondition:** Student is registered for one or more meal sessions with a valid date range.
+### Main Success Scenario
+1. Administrator opens the **Meal Calendar Setup Screen** ([SCR-ADM-02](../04-information-architecture/screen-inventory.md)).
+2. Administrator creates meal sessions:
+   - Sets `meal_date` (e.g., `2026-09-15`).
+   - Selects `meal_type` from `meal_type_enum` (`breakfast`, `lunch`, `snack`, `dinner`).
+   - Associates scheduled menu reference `menu_id`.
+3. System saves records into `meal_schedules`.
+4. These schedules become the anchor points for Module 1 (`meal_participations`) and Module 2 (`meal_demands`).
 
 ---
 
-### UC-ADM-04 — Manage Meal Sessions
+## UC-ADM-03 — Maintain Dish & Ingredient Master Catalog
 
-| Field | Value |
-|-------|-------|
-| **Actor** | School Administrator |
-| **Feature** | System configuration |
-| **Trigger** | Setup at start of school year or when session times change |
+- **Primary DB Entities:** `dishes`, `ingredients`
 
-**Main Flow:**
-1. Administrator opens Meal Session Configuration
-2. Administrator creates or edits a session: code (breakfast/lunch/snack), name, start_time, end_time, registration_cutoff_time
-3. System saves to `meal_sessions`
-4. All demand calculations and cutoff logic reference these session parameters
+### Preconditions
+1. Standard recipes and nutrition guidelines are approved.
 
-**Postcondition:** Meal sessions are configured with correct cutoff times.
+### Main Success Scenario
+1. Administrator accesses the **Dish & Recipe Management Panel** ([SCR-ADM-03](../04-information-architecture/screen-inventory.md)).
+2. Administrator creates or updates dish entries in `dishes` (`name`, `status`).
+3. Administrator maintains ingredient records in `ingredients` (`name`, `unit` e.g., kg, liters).
+4. Data feeds into Module 2 dish quantity calculations and Module 3 kitchen prep plans.
 
 ---
 
-### UC-ADM-05 — Manage User Accounts & Roles
+## UC-ADM-04 — Manage System Users & Role Permissions
 
-| Field | Value |
-|-------|-------|
-| **Actor** | School Administrator |
-| **Feature** | System configuration |
+- **Primary DB Entity:** `users`
 
-**Main Flow:**
-1. Administrator creates a user account for a staff member
-2. Administrator assigns a role: MGR / KIT / TCH / STO
-3. System grants the user access to their role-specific screens and actions
-4. For TCH: Administrator assigns the teacher to their class
+### Preconditions
+1. School staff rosters are verified.
 
-**Postcondition:** Staff member can log in and access only their permitted functions.
-
----
-
-### UC-ADM-06 — Manage Dish Catalog
-
-| Field | Value |
-|-------|-------|
-| **Actor** | School Administrator |
-| **Feature** | System configuration — enables F-MPN-02 |
-| **Trigger** | New dishes are introduced to the school menu rotation |
-
-**Main Flow:**
-1. Administrator opens the Dish Catalog
-2. Administrator creates a new dish record: dish_name, category (Main/Staple/Soup/Vegetable/Dessert)
-3. System saves to `dishes`
-4. Dishes become available for the Meal/Nutrition Manager to assign to menus (UC-MGR-02)
-
-**Postcondition:** Dish catalog is up to date and available for menu planning.
+### Main Success Scenario
+1. Administrator accesses **User Account & Role Management** ([SCR-ADM-04](../04-information-architecture/screen-inventory.md)).
+2. Administrator registers staff accounts with `full_name` and assigns operational roles:
+   - `teacher`: Grants access to Module 1 class participation.
+   - `manager`: Grants access to Module 2 demand determination and preparation shift planning.
+   - `kitchen`: Grants access to Module 3 kitchen cooking boards and ingredient receipts.
+   - `admin`: Full system administration.
+3. System provisions credentials and access tokens.

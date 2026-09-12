@@ -83,25 +83,35 @@ A domain is **Supporting** if it enables, reports on, or finances the chain, but
 
 ---
 
-## Scope Decision
+## Active Core Scope Selection (Mind Map → Focus Modules)
 
-**Detailed analysis (Phases 01–09) focuses exclusively on the 4 Core Business Domains.**
+From the full 7-domain decomposition, a strategic scoping decision was made to focus the detailed specification, UI/UX, and database architecture on the **three most critical operational modules** on the daily school meal execution chain:
 
-Supporting domains are:
-- Identified in the business-domains.md decomposition
-- Deferred to Phase 2 scope
-- Their key entities (e.g., `suppliers`, `purchase_orders`, `invoices`) are noted but not included in the Phase 1 database schema or use case specifications
+1. **Meal Participation Management** *(from Student Meal Management)*: Captures student attendance and daily meal participation, manages pre/post cutoff status updates, and handles supervisor confirmation.
+2. **Meal Demand & Quantity Management** *(from Meal Planning & Operation)*: Aggregates class-level participation into daily meal session demands, computes expected dish quantities, and processes post-lock demand amendments.
+3. **Meal Preparation** *(from Meal Operation & Kitchen Execution)*: Orchestrates kitchen preparation plans, tracks ingredient allocation from storage, logs cooking batches per dish, and verifies prepared quantities against expected demand with discrepancy tracking.
+
+### Deferred Domains & Reference Boundaries
+
+Other domains remain part of the long-term vision but are **Deferred to Future Phases**:
+- **Food Safety & Traceability**: Critical regulatory domain; interfaces via reference batch/inspection IDs in future iterations.
+- **Food Supply & Procurement**: Manages supplier contracts and procurement; interacts with Phase 1 via simplified `ingredients` reference.
+- **Meal Fee & Cost Management**: Financial billing; interacts via recorded participation snapshots.
+- **Full Menu Planning & Nutritional Compliance**: Represented in Phase 1 via simplified `meal_schedules` and `dishes` catalogs.
 
 ---
 
 ## Summary Table
 
-| Domain | Classification | Phase |
-|--------|---------------|-------|
-| Student Meal Management | **Core** | Phase 1 |
-| Meal Planning & Menu Management | **Core** | Phase 1 |
-| Meal Operation | **Core** | Phase 1 |
-| Food Safety & Traceability | **Core** | Phase 1 |
-| Food Supply & Inventory | Supporting | Phase 2 |
-| Meal Fee & Cost Management | Supporting | Phase 2 |
-| Reporting & Transparency | Supporting | Phase 2 |
+| Domain / Module | Classification | Implementation Status | Core Artifacts |
+|---|---|---|---|
+| **Meal Participation Management** | **Active Core** | **Phase 1 (Active)** | `meal_participations`, `meal_participation_changes` |
+| **Meal Demand & Quantity Management** | **Active Core** | **Phase 1 (Active)** | `meal_demands`, `meal_demand_dish_quantities`, `meal_demand_changes` |
+| **Meal Preparation** | **Active Core** | **Phase 1 (Active)** | `meal_preparation_plans`, `ingredient_allocations`, `meal_preparations`, `meal_preparation_dish_records`, `prepared_quantity_confirmations` |
+| Meal Planning & Catalog (Basic) | Reference Boundary | Phase 1 (Minimal) | `meal_schedules`, `dishes`, `meal_registrations` |
+| Master Student & User Reference | Reference Boundary | Phase 1 (Minimal) | `students`, `users` |
+| Food Safety & Traceability | Supporting / Regulatory | Deferred (Phase 2) | External reference |
+| Food Supply & Inventory (Master) | Supporting | Deferred (Phase 2) | Simplified `ingredients` |
+| Meal Fee & Cost Management | Supporting | Deferred (Phase 2) | External billing |
+| Reporting & Transparency | Supporting | Deferred (Phase 2) | Operational views |
+

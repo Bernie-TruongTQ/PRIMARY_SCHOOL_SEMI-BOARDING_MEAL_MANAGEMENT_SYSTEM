@@ -23,26 +23,34 @@ Level 0 — System
                     └── Level 3 — Function
 ```
 
-## Resulting Business Domains
+## Resulting Business Domains & Active Core Scope
 
-| # | Domain                          | Type           |
-| - | ------------------------------- | -------------- |
-| 1 | Student Meal Management         | **Core** |
-| 2 | Meal Planning & Menu Management | **Core** |
-| 3 | Meal Operation                  | **Core** |
-| 4 | Food Safety & Traceability      | **Core** |
-| 5 | Food Supply & Inventory         | Supporting     |
-| 6 | Meal Fee & Cost Management      | Supporting     |
-| 7 | Reporting & Transparency        | Supporting     |
+From the 7 architectural domains identified in the decomposition mind map, the primary implementation focuses on **three active core operational modules**:
+
+1. **Meal Participation Management** *(Student Meal Management)*
+2. **Meal Demand & Quantity Management** *(Meal Planning & Operation)*
+3. **Meal Preparation** *(Meal Operation)*
+
+| # | Domain / Module | Role in System | Implementation Scope |
+| - | ------------------------------- | -------------- | -------------------- |
+| 1 | **Meal Participation Management** | Student attendance & meal participation | **Active Core (Phase 1)** |
+| 2 | **Meal Demand & Quantity Management** | Aggregated demand & dish quantity calculation | **Active Core (Phase 1)** |
+| 3 | **Meal Preparation** | Kitchen planning, ingredient allocation & cooking | **Active Core (Phase 1)** |
+| 4 | Meal Planning & Reference Catalogs | Menus, meal schedules & dish catalog | Reference Boundary (Phase 1) |
+| 5 | Food Safety & Traceability | Inspection & sample logging | Deferred (Phase 2) |
+| 6 | Food Supply & Procurement | Supplier contracts & bulk procurement | Deferred (Phase 2) |
+| 7 | Meal Fee & Cost Management | Billing & parent invoicing | Deferred (Phase 2) |
+| 8 | Reporting & Transparency | Executive dashboards & parent portals | Deferred (Phase 2) |
 
 ## Artifacts in this folder
 
-| File                                                                             | Purpose                                              |
-| -------------------------------------------------------------------------------- | ---------------------------------------------------- |
-| [top-down-mindmap.png](./PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.png) | Full system mind map (visual)                        |
-| [business-domains.md](business-domains.md)                                        | All 7 domains with their Level 2 & Level 3 functions |
-| [core-supporting-classification.md](core-supporting-classification.md)            | Classification rationale and business flow test      |
+| File | Purpose |
+| ---- | ------- |
+| [top-down-mindmap.png](./PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.png) | Full system mind map (visual) |
+| [business-domains.md](business-domains.md) | All 7 domains with their Level 2 & Level 3 functions |
+| [core-supporting-classification.md](core-supporting-classification.md) | Value chain test & rationale for selecting the 3 active core modules |
 
 ## Next Step
 
 → [Phase 02 — Core Feature Breakdown](../02-core-features/README.md)
+

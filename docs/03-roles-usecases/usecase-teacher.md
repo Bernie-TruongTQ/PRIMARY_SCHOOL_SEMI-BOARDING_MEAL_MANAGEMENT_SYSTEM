@@ -1,130 +1,132 @@
-# UC-TCH — Homeroom Teacher Use Cases
+# Use Case Specifications — Homeroom Teacher / Class Supervisor (TCH)
 
-## Use Case Diagram
+## Actor Overview
+
+- **Actor Name:** Homeroom Teacher / Class Supervisor (`TCH`)
+- **Primary Domain:** Module 1: Meal Participation Management (with Emergency Bridge to Module 2)
+- **Key Objectives:** Accurately record which students take meals today, report absences or modifications with valid reasons, submit confirmed counts before the school's operational cutoff time, and request emergency adjustments post-lock.
+
+---
+
+## Use Case Diagram — Homeroom Teacher
 
 ```mermaid
-graph LR
-    TCH([Homeroom Teacher])
+flowchart LR
+    TCH(["👤 Homeroom Teacher\n(TCH)"])
 
-    subgraph SYSTEM["Student Meal Management + Meal Operation"]
-        subgraph ATT["Meal Attendance (before cutoff)"]
-            UC_TCH_01["UC-TCH-01\nRecord Student Attendance for Meal"]
-            UC_TCH_02["UC-TCH-02\nSubmit Attendance Before Cutoff"]
+    subgraph SYSTEM["Classroom Meal Operations"]
+        subgraph MOD1["Module 1: Meal Participation Management"]
+            UC1(["UC-TCH-01\nRecord Daily Student Meal Participation"])
+            UC2(["UC-TCH-02\nAmend Participation with Reason"])
+            UC3(["UC-TCH-03\nConfirm Daily Class Participation Roster"])
         end
 
-        subgraph CHG["Post-Cutoff Changes"]
-            UC_TCH_03["UC-TCH-03\nSubmit Post-Cutoff Change Request"]
-        end
-
-        subgraph HAND["Meal Handover Acknowledgement"]
-            UC_TCH_04["UC-TCH-04\nAcknowledge Meal Handover"]
+        subgraph MOD2["Module 2: Demand Integration"]
+            UC4(["UC-TCH-04\nSubmit Post-Cutoff Emergency Request"])
         end
     end
 
-    TCH --> UC_TCH_01
-    TCH --> UC_TCH_02
-    TCH --> UC_TCH_03
-    TCH --> UC_TCH_04
+    TCH --- UC1
+    TCH --- UC3
+    TCH --- UC4
 
-    UC_TCH_01 -.->|"«include»"| UC_TCH_02
+    UC2 -.->|"<<extend>>"| UC1
+    UC4 -.->|"<<extend>>"| UC3
 ```
 
 ---
 
-## Use Case Specifications
+## UC-TCH-01 — Record Daily Student Meal Participation
 
-### UC-TCH-01 — Record Student Attendance for Meal
+- **Core Feature:** `F-PAR-01`
+- **Primary DB Entity:** `meal_participations`
+- **Secondary Entities:** `students`, `meal_schedules`, `meal_registrations`
 
-| Field | Value |
-|-------|-------|
-| **Actor** | Homeroom Teacher |
-| **Feature** | F-STU-03 Record Daily Meal Participation |
-| **Precondition** | The current time is before the meal session cutoff. The teacher is logged in with their class assigned. |
-| **Trigger** | Teacher opens the daily attendance form for the current meal session |
+### Preconditions
+1. The teacher is authenticated and assigned to a specific classroom (e.g., Class 1A).
+2. A `meal_schedules` record exists for the current date and target meal session (e.g., Lunch).
+3. The current system time is prior to the daily cutoff deadline.
 
-**Main Flow:**
-1. Teacher selects today's date and meal session
-2. System loads the class roster filtered to enrolled semi-boarding students
-3. System displays each student with their default status (Attend) and any dietary/allergen badges
-4. Teacher reviews the list and marks any students as:
-   - **Absent** — must provide a reason (Sick, Family, Other)
-   - **Extra Guest** — adds a guest portion for a supervising adult
-5. System reactively updates: class headcount summary, absence count, total confirmed attendance
-6. Teacher reviews the summary totals
+### Main Success Scenario (Happy Path)
+1. Teacher navigates to the **Class Roster Meal Participation** screen ([SCR-TCH-01](../04-information-architecture/screen-inventory.md)).
+2. System displays the list of enrolled students for the teacher's class, pre-populating with their registration status (default: `pending` or `recorded` as attended).
+3. Teacher reviews the physical presence of students in the classroom.
+4. For all attending students, teacher confirms their participation (`participation_status = 'recorded'`).
+5. Teacher taps **Save Participation Draft**.
+6. System persists or updates records in `meal_participations` with `recorded_by = current_user.id`.
 
-**Postcondition:** Student attendance statuses are saved to `daily_meal_demand_details`. The class `daily_meal_demands` record reflects current counts.
-
----
-
-### UC-TCH-02 — Submit Attendance Before Cutoff
-
-| Field | Value |
-|-------|-------|
-| **Actor** | Homeroom Teacher |
-| **Feature** | F-STU-03, F-MOP-01 |
-| **Precondition** | UC-TCH-01 completed. Current time is before cutoff. |
-| **Trigger** | Teacher taps "Submit Attendance" / "Lock Demand" |
-
-**Main Flow:**
-1. System shows a confirmation summary: Confirmed Attend, Absent, Extra Guests
-2. Teacher confirms submission
-3. System transitions the class `daily_meal_demands` status to `confirmed`
-4. System shows a success state with cutoff countdown
-5. System aggregates all class submissions for the session; once all classes are submitted, the session demand is fully confirmed
-
-**Alternative Flow — After Cutoff:**
-- Teacher attempts to submit after the cutoff → System shows "Cutoff passed. Your changes will require a Change Request." → UC-TCH-03
-
-**Postcondition:** Class attendance is locked. Session-level demand aggregation is updated.
+### Alternative & Exception Flows
+- **3a. Student is unlisted / transfer student:** Teacher contacts Admin (ADM) to register the student in master data (`students`) or logs an extra guest tag.
 
 ---
 
-### UC-TCH-03 — Submit Post-Cutoff Change Request
+## UC-TCH-02 — Amend Participation Status with Reason
 
-| Field | Value |
-|-------|-------|
-| **Actor** | Homeroom Teacher |
-| **Feature** | F-MOP-02 Manage Post-Cutoff Change Requests |
-| **Precondition** | The cutoff time has passed. The teacher needs to report a change. |
-| **Trigger** | Teacher taps "+ New Change Request" after cutoff |
+- **Core Feature:** `F-PAR-02`
+- **Primary DB Entity:** `meal_participation_changes`
+- **Secondary Entities:** `meal_participations`
 
-**Main Flow:**
-1. System opens the Change Request form
-2. Teacher fills in:
-   - Target: Student or Staff Guest
-   - Class (pre-filled with teacher's class)
-   - Student name (if student target)
-   - Change type: Late Addition / Early Departure / Dietary Change
-   - Quantity delta (e.g., +1 or -1)
-   - Justification reason
-3. System detects the request is post-cutoff → flags `is_emergency = true` automatically if > 30 min past cutoff
-4. Teacher submits
-5. System creates a `meal_demand_change_requests` record with `approval_status = 'pending'`
-6. System notifies the Meal/Nutrition Manager
+### Preconditions
+1. A participation record already exists in `meal_participations` for the student.
+2. The teacher receives an update (e.g. parent calls to report sudden illness, or student arrives late).
 
-**Postcondition:** Change request is submitted and awaiting manager approval.
+### Main Success Scenario (Happy Path)
+1. Teacher opens the student's entry in the participation roster.
+2. Teacher selects the new status (e.g. `cancelled` due to absence, or `recorded` from `cancelled`).
+3. Teacher chooses the change type: `status_update`, `correction`, or `reschedule`.
+4. Teacher enters a mandatory `change_reason` (e.g., "Parent phoned at 08:15: Fever").
+5. System validates the change, updates `meal_participations.participation_status`, and appends an audit entry into `meal_participation_changes`:
+   - `meal_participation_id`
+   - `change_type`
+   - `previous_status`
+   - `new_status`
+   - `change_reason`
+   - `changed_by = current_user.id`
+   - `changed_at = now()`
+6. System displays success confirmation with audit record ID.
 
 ---
 
-### UC-TCH-04 — Acknowledge Meal Handover
+## UC-TCH-03 — Confirm Daily Class Participation Roster
 
-| Field | Value |
-|-------|-------|
-| **Actor** | Homeroom Teacher |
-| **Feature** | F-MOP-05 Confirm Meal Handover & Reconcile |
-| **Precondition** | Kitchen staff has confirmed handover for the teacher's class (UC-KIT-06) |
-| **Trigger** | Teacher receives handover notification |
+- **Core Feature:** `F-PAR-03`
+- **Primary DB Entity:** `meal_participations` (status: `confirmed`)
+- **Secondary Entities:** `meal_demands`
 
-**Main Flow:**
-1. Teacher receives push/in-app notification: "Meal for Class [X] delivered"
-2. Teacher opens the handover confirmation screen
-3. System shows: expected portions, delivered quantity, any notes from kitchen staff
-4. Teacher acknowledges receipt
-5. System records the acknowledgement with timestamp
-6. System completes the reconciliation record for the class
+### Preconditions
+1. Participation statuses have been recorded for 100% of students in the classroom.
+2. Current time is before the cutoff deadline.
 
-**Alternative Flow — Quantity Mismatch:**
-- 3a. Delivered quantity does not match expected → Teacher flags the discrepancy with a note
-- 3b. Discrepancy is recorded and escalated to the Meal/Nutrition Manager
+### Main Success Scenario (Happy Path)
+1. Teacher reviews the summary panel: Total Enrolled, Attending Count, Absent Count.
+2. Teacher clicks **Confirm & Submit Class Roster**.
+3. System prompts for confirmation: *"Lock roster for Lunch today? Total meals: 32"*.
+4. Teacher confirms.
+5. System updates all records for this class in `meal_participations`:
+   - `participation_status = 'confirmed'`
+   - `confirmed_by = current_user.id`
+   - `confirmed_at = now()`
+6. System signals readiness to the Demand Aggregation engine ([UC-MGR-01](usecase-manager.md#uc-mgr-01)).
 
-**Postcondition:** Class meal handover is fully recorded. Reconciliation is updated.
+---
+
+## UC-TCH-04 — Submit Post-Cutoff Emergency Request
+
+- **Core Feature:** `F-DMD-03`
+- **Primary DB Entity:** `meal_demand_changes`
+- **Secondary Entities:** `meal_demands`
+
+### Preconditions
+1. Class roster has already been locked/confirmed, or the daily cutoff deadline has elapsed.
+2. An unexpected event occurs (e.g., student falls ill and goes home at 10:00 AM, or late arrival from hospital visit).
+
+### Main Success Scenario
+1. Teacher attempts to edit attendance; system displays notice: *"Roster locked. Submit an Emergency Change Request"*.
+2. Teacher opens the **Post-Cutoff Emergency Request Form** ([SCR-TCH-04](../04-information-architecture/screen-inventory.md)).
+3. Teacher inputs:
+   - Delta quantity (+1 or -1 portion)
+   - Student identity and affected meal schedule
+   - Change type (`quantity_increase`, `quantity_decrease`, `dish_adjustment`, `cancellation`)
+   - Mandatory urgent reason (e.g., "Parent picked up student due to high fever at 10:15 AM")
+4. Teacher taps **Submit Urgent Request**.
+5. System creates a record in `meal_demand_changes` with status `pending`, `requested_by = current_user.id`, and notifies the Meal Manager ([UC-MGR-03](usecase-manager.md#uc-mgr-03)).

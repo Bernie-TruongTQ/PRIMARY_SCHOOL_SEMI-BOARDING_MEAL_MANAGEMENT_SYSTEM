@@ -1,71 +1,74 @@
-# Sitemap
+# Sitemap & System Navigation
 
 ## System Navigation Structure
 
-The system uses **role-based navigation**. After login, each role sees only their relevant module. The sitemap is organized by role portal, then by domain.
+The system uses **role-based navigation** tailored around the three active core operational modules:
+1. **Meal Participation Management**
+2. **Meal Demand & Quantity Management**
+3. **Meal Preparation**
 
 ---
 
 ```mermaid
 graph TD
-    LOGIN["Login / Role Select"]
+    LOGIN["🔑 Login & Role Selection"]
 
-    LOGIN --> ADM_PORTAL["🔧 Admin Portal"]
-    LOGIN --> MGR_PORTAL["📋 Manager Portal"]
-    LOGIN --> KIT_PORTAL["🍳 Kitchen Portal"]
-    LOGIN --> TCH_PORTAL["📝 Teacher Portal"]
+    LOGIN --> TCH_PORTAL["📝 Teacher Portal (Module 1)"]
+    LOGIN --> MGR_PORTAL["📋 Manager Portal (Module 2 & 3)"]
+    LOGIN --> KIT_PORTAL["🍳 Kitchen Portal (Module 3)"]
+    LOGIN --> ADM_PORTAL["🔧 Admin Portal (Master Data)"]
 
-    ADM_PORTAL --> ADM_STUDENTS["Student Management"]
-    ADM_PORTAL --> ADM_SESSIONS["Meal Session Configuration"]
-    ADM_PORTAL --> ADM_USERS["User & Role Management"]
-    ADM_PORTAL --> ADM_DISHES["Dish Catalog"]
+    %% TCH Portal
+    TCH_PORTAL --> TCH_ROSTER["Class Participation Roster"]
+    TCH_PORTAL --> TCH_AMEND["Participation Changes & Reason"]
+    TCH_PORTAL --> TCH_SUBMIT["Confirm Class Roster"]
+    TCH_PORTAL --> TCH_EMERGENCY["Post-Lock Emergency Request"]
 
-    ADM_STUDENTS --> ADM_STU_LIST["Student List"]
-    ADM_STUDENTS --> ADM_STU_ENROLL["Enroll Student"]
-    ADM_STUDENTS --> ADM_STU_REGISTER["Register Meal Session"]
+    %% MGR Portal
+    MGR_PORTAL --> MGR_DEMAND["Demand Determination (Methods & Buffer)"]
+    MGR_PORTAL --> MGR_QUANTITIES["Dish Expected Quantities"]
+    MGR_PORTAL --> MGR_CHANGES["Demand Changes Review Queue"]
+    MGR_PORTAL --> MGR_PREP_PLAN["Kitchen Shift Planning"]
+    MGR_PORTAL --> MGR_RECON["Preparation Sign-off & Discrepancies"]
 
-    MGR_PORTAL --> MGR_MENU["Menu Planning"]
-    MGR_PORTAL --> MGR_DEMAND["Daily Demand Overview"]
-    MGR_PORTAL --> MGR_QUANTITIES["Quantity Calculation"]
-    MGR_PORTAL --> MGR_CHANGES["Change Request Triage"]
+    %% KIT Portal
+    KIT_PORTAL --> KIT_BOARD["Active Prep Shift Board"]
+    KIT_PORTAL --> KIT_ALLOC["Ingredient Allocation Checklist"]
+    KIT_PORTAL --> KIT_COOK["Cooking Batch Execution"]
+    KIT_PORTAL --> KIT_VERIFY["Prepared Quantity Verification"]
 
-    MGR_MENU --> MGR_MENU_LIST["Weekly Menu List"]
-    MGR_MENU --> MGR_MENU_CREATE["Create / Edit Menu"]
-    MGR_MENU --> MGR_MENU_DISHES["Assign Dishes & Portions"]
-
-    MGR_DEMAND --> MGR_DEMAND_BOARD["Class Demand Status Board"]
-    MGR_QUANTITIES --> MGR_QTY_REVIEW["Review Calculated Quantities"]
-    MGR_CHANGES --> MGR_CHG_LIST["Change Request List"]
-    MGR_CHANGES --> MGR_CHG_DETAIL["Change Request Detail / Approve / Reject"]
-
-    KIT_PORTAL --> KIT_PREP["Meal Preparation"]
-    KIT_PORTAL --> KIT_DIST["Meal Distribution"]
-    KIT_PORTAL --> KIT_HAND["Meal Handover"]
-
-    KIT_PREP --> KIT_PREP_PLAN["Preparation Plan View"]
-    KIT_PREP --> KIT_PREP_RECORD["Record Prepared Quantity"]
-    KIT_PREP --> KIT_PREP_CONFIRM["Confirm Preparation Complete"]
-
-    KIT_DIST --> KIT_DIST_PLAN["Distribution Plan View"]
-    KIT_DIST --> KIT_DIST_RECORD["Record Distributed Quantity"]
-
-    KIT_HAND --> KIT_HAND_CONFIRM["Confirm Handover"]
-
-    TCH_PORTAL --> TCH_ATT["Attendance Roll Call"]
-    TCH_PORTAL --> TCH_CHANGES["Submit Change Request"]
-    TCH_PORTAL --> TCH_HAND["Acknowledge Handover"]
-
-    TCH_ATT --> TCH_ATT_CLASS["Class Roster (by meal session)"]
-    TCH_ATT --> TCH_ATT_SUBMIT["Submit Attendance / Lock"]
+    %% ADM Portal
+    ADM_PORTAL --> ADM_STU["Student & Class Directory"]
+    ADM_PORTAL --> ADM_SCHED["Meal Calendar & Schedules"]
+    ADM_PORTAL --> ADM_CATALOG["Dishes & Ingredients Catalog"]
+    ADM_PORTAL --> ADM_USERS["User Accounts & Roles"]
 ```
 
 ---
 
-## Role Portal Summary
+## Navigation Paths by Portal
 
-| Portal | Primary Sections | Entry Point Screen |
-|--------|-----------------|-------------------|
-| Admin | Student Mgmt, Sessions, Users, Dishes | Student List |
-| Manager | Menu Planning, Demand Board, Quantities, Changes | Demand Overview Board |
-| Kitchen | Preparation, Distribution, Handover | Preparation Plan View |
-| Teacher | Attendance, Change Requests, Handover | Class Roster (today) |
+### 1. Teacher Portal (TCH) — Focus: Module 1 (Meal Participation)
+- `/teacher/roster`: Main view listing all students in teacher's assigned classroom with toggle participation states.
+- `/teacher/roster/:studentId/amend`: Dialog/sheet to update status (`status_update`, `correction`, `reschedule`) and log `change_reason`.
+- `/teacher/roster/confirm`: Review summary and lock attendance before cutoff.
+- `/teacher/request-change`: Post-lock emergency delta request form submitted to Manager.
+
+### 2. Manager Portal (MGR) — Focus: Module 2 & Module 3 Oversight
+- `/manager/demand`: Class attendance submission tracker; selector for calculation method (`participation_based`, `manual_forecast`, `historical_average`), buffer % configuration, and final headcount confirmation.
+- `/manager/demand/dish-quantities`: Calculation table showing expected raw cooking quantities per dish based on portion recipes.
+- `/manager/demand/changes`: Queue of pending post-lock change requests with Approve/Reject actions and audit logs.
+- `/manager/prep-plans`: Shift authoring interface to publish daily cooking targets to the kitchen.
+- `/manager/prep-summary`: Real-time yield report comparing planned vs actual prepared quantities with discrepancy sign-off.
+
+### 3. Kitchen Portal (KIT) — Focus: Module 3 (Meal Preparation)
+- `/kitchen/shift`: High-visibility kitchen kiosk dashboard displaying active preparation plans and dish deadlines.
+- `/kitchen/ingredients`: Checklist for checking in and adjusting raw pantry ingredients allocated from storage.
+- `/kitchen/cooking`: Batch logging screen where chefs start/complete batches and record actual prepared yields.
+- `/kitchen/verification`: Final verification screen for checking cooked weights/portions against targets and recording discrepancy reasons.
+
+### 4. Admin Portal (ADM) — Focus: Reference Master Data
+- `/admin/students`: Manage student profiles, classes, and meal program eligibility.
+- `/admin/schedules`: Setup daily meal sessions (breakfast, lunch, snack, dinner) and calendar dates.
+- `/admin/catalog`: Master registry of dishes and standard ingredient units.
+- `/admin/users`: User provisioning and role assignment (`teacher`, `manager`, `kitchen`, `admin`).

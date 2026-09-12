@@ -1,238 +1,160 @@
 # Task Flows
 
-All task flows are written in Mermaid flowchart syntax. Each flow is traceable to at least one Use Case Specification from [Phase 03](../03-roles-usecases/).
+All task flows are modeled using Mermaid flowchart syntax. Each flow traces directly from Use Case Specifications ([Phase 03](../03-roles-usecases/)) through user interactions down to database state transitions in [Phase 06](../06-database/README.md).
 
 ---
 
-## TF-01 — Student Meal Attendance Flow
+## TF-01 — Student Meal Participation & Amendment Flow
 
-**Source:** UC-TCH-01, UC-TCH-02
-**Actor:** Homeroom Teacher
+- **Use Cases:** `UC-TCH-01`, `UC-TCH-02`, `UC-TCH-03`
+- **Actor:** Homeroom Teacher (`TCH`)
+- **Database Entities:** `meal_participations`, `meal_participation_changes`
 
 ```mermaid
 flowchart TD
-    A([Teacher Opens App]) --> B[Select Today's Date & Meal Session]
-    B --> C[Load Class Roster]
-    C --> D{Cutoff Passed?}
+    Start([Teacher Opens SCR-TCH-01]) --> SelectSession[Select Scheduled Meal Session]
+    SelectSession --> LoadRoster[Load Student Roster]
+    LoadRoster --> CheckCutoff{Cutoff Passed?}
 
-    D -->|No — Editable| E[Display Student List with Status: Attend / Absent / Guest]
-    E --> F[Teacher Marks Each Student]
-    F --> G{All Students Marked?}
-    G -->|No| F
-    G -->|Yes| H[Review Summary: Attend Count / Absent Count / Guest Count]
-    H --> I[Tap Submit Attendance]
-    I --> J{Current Time < Cutoff?}
-    J -->|Yes| K[System locks class demand — status: confirmed]
-    K --> L[Display Success — Cutoff Countdown Shown]
-    J -->|No| M[System shows: Cutoff Passed — Redirect to Change Request]
-    M --> TF_02([→ TF-02 Post-Cutoff Change Request])
+    CheckCutoff -->|No — Editable| ReviewStudents[Review Classroom Students]
+    ReviewStudents --> SetStatus[Set Status: recorded / cancelled]
+    SetStatus --> HasChangeReason{Status Changed from Baseline?}
+    
+    HasChangeReason -->|Yes| OpenAmendModal[SCR-TCH-02: Select Change Type & Reason]
+    OpenAmendModal --> SaveChangeLog[Insert into meal_participation_changes]
+    SaveChangeLog --> UpdatePart[Update meal_participations]
+    HasChangeReason -->|No| UpdatePart
+    
+    UpdatePart --> CheckComplete{All Students Marked?}
+    CheckComplete -->|No| ReviewStudents
+    CheckComplete -->|Yes| OpenConfirm[SCR-TCH-03: Review Total Headcount]
+    OpenConfirm --> LockRoster[Submit & Confirm Roster]
+    LockRoster --> PersistConfirmed[Set meal_participations.participation_status = confirmed]
+    PersistConfirmed --> EndTF1([End: Roster Locked for Demand Aggregation])
 
-    D -->|Yes — Locked| N[Display Read-only Attendance Summary]
-    N --> O{Need to Change?}
-    O -->|Yes| TF_02
-    O -->|No| P([End])
+    CheckCutoff -->|Yes — Locked| ReadOnlyView[Display Read-Only Roster]
+    ReadOnlyView --> NeedsChange{Emergency Change Needed?}
+    NeedsChange -->|Yes| RouteTF3([→ TF-03: Post-Lock Demand Adjustment])
+    NeedsChange -->|No| EndTF1
 ```
 
 ---
 
-## TF-02 — Post-Cutoff Change Request Flow
+## TF-02 — Meal Demand Determination & Dish Quantity Calculation Flow
 
-**Source:** UC-TCH-03, UC-MGR-07, UC-MGR-08
-**Actors:** Homeroom Teacher (initiates), Meal/Nutrition Manager (approves/rejects)
+- **Use Cases:** `UC-MGR-01`, `UC-MGR-02`
+- **Actor:** Meal / Nutrition Manager (`MGR`)
+- **Database Entities:** `meal_demands`, `meal_demand_dish_quantities`
 
 ```mermaid
 flowchart TD
-    A([Teacher — Post-Cutoff Change Needed]) --> B[Open Change Request Form]
-    B --> C[Fill in: Target, Class, Student, Change Type, Quantity Delta, Reason]
-    C --> D{Is > 30 min past cutoff?}
-    D -->|Yes| E[System flags is_emergency = true]
-    D -->|No| F[Standard request]
-    E --> G[Submit Request]
-    F --> G
-    G --> H[System creates meal_demand_change_requests — status: pending]
-    H --> I[Notify Meal/Nutrition Manager]
-
-    I --> J([Manager Opens Triage Screen])
-    J --> K[Review Request: Requester, Change Type, Delta, Reason, Emergency Flag]
-    K --> L{Decision?}
-
-    L -->|Approve| M[System updates approved_by, approved_at]
-    M --> N[System updates daily_meal_demands confirmed count]
-    N --> O[System logs in meal_demand_change_logs]
-    O --> P[Notify Teacher — Approved]
-
-    L -->|Reject| Q[Manager enters rejection reason]
-    Q --> R[System updates approval_status = rejected]
-    R --> S[System logs in meal_demand_change_logs]
-    S --> T[Notify Teacher — Rejected + Reason]
-
-    P --> END([End])
-    T --> END
+    Start([Manager Opens SCR-MGR-01]) --> MonitorProgress[View Classroom Submission Progress]
+    MonitorProgress --> SelectMethod[Select Method: participation_based / manual_forecast / historical_average]
+    SelectMethod --> CalcHeadcount[Calculate Base Headcount]
+    CalcHeadcount --> SetBuffer[Adjust Buffer Percentage e.g. 5%]
+    SetBuffer --> CalcFinalDemand["Compute Final Demand = Headcount × (1 + Buffer%)"]
+    CalcFinalDemand --> SaveDemand["Save meal_demands (status: draft → calculated)"]
+    SaveDemand --> ConfirmDemand[Manager Clicks Confirm Demand]
+    ConfirmDemand --> LockDemand["meal_demands.demand_status = confirmed"]
+    
+    LockDemand --> OpenQuantities[SCR-MGR-02: Open Dish Quantity Calculation]
+    OpenQuantities --> CalcDishes["Compute per Dish: Final Demand × Standard Portion"]
+    CalcDishes --> ReviewDishQty[Review Expected Raw Quantities]
+    ReviewDishQty --> HasOverride{Manual Rounding / Adjustment?}
+    HasOverride -->|Yes| ApplyOverride[Input Overridden Quantity & Note]
+    ApplyOverride --> SaveDishQty[Persist meal_demand_dish_quantities]
+    HasOverride -->|No| SaveDishQty
+    SaveDishQty --> ReadyForPrep([Ready for Kitchen Preparation Shift])
 ```
 
 ---
 
-## TF-03 — Meal Planning & Menu Publishing Flow
+## TF-03 — Post-Lock Demand Adjustment Flow
 
-**Source:** UC-MGR-01, UC-MGR-02, UC-MGR-03
-**Actor:** Meal / Nutrition Manager
+- **Use Cases:** `UC-TCH-04`, `UC-MGR-03`
+- **Actors:** Homeroom Teacher (`TCH`), Meal / Nutrition Manager (`MGR`)
+- **Database Entities:** `meal_demand_changes`, `meal_demands`, `meal_demand_dish_quantities`
 
 ```mermaid
 flowchart TD
-    A([Manager opens Menu Planning]) --> B[Select Target Week]
-    B --> C[Create Menu Record for each Date + Session]
-    C --> D[Status: draft]
-    D --> E[Assign Dishes from Dish Catalog]
-    E --> F[Set Standard Portion Size per Dish]
-    F --> G{All Sessions Planned?}
-    G -->|No| E
-    G -->|Yes| H[Review Complete Menu]
-    H --> I{Approve?}
-    I -->|No — needs revision| E
-    I -->|Yes| J[Transition: draft → approved]
-    J --> K[Confirm Publish?]
-    K -->|Yes| L[Transition: approved → published]
-    L --> M[Menu available for Demand Calculation]
-    K -->|No — hold for now| N([Menu stays in approved state])
+    Start([Teacher Opens SCR-TCH-04]) --> EnterDelta[Specify Quantity Delta & Change Type]
+    EnterDelta --> EnterReason[Enter Mandatory Urgent Reason]
+    EnterReason --> SubmitReq[Submit Request]
+    SubmitReq --> LogPending["Insert meal_demand_changes (status: pending)"]
+    LogPending --> NotifyMGR[Notify Meal Manager]
+    
+    NotifyMGR --> OpenQueue([Manager Opens SCR-MGR-03])
+    OpenQueue --> ReviewImpact[Review Kitchen Capacity & Cooking Status]
+    ReviewImpact --> Decision{Manager Decision?}
+    
+    Decision -->|Approve| UpdateDemand["Adjust meal_demands.final_demand_count"]
+    UpdateDemand --> RecalcDishes[Recalculate meal_demand_dish_quantities]
+    RecalcDishes --> SetRevised["meal_demands.demand_status = revised"]
+    SetRevised --> CloseApprove["meal_demand_changes.reviewed_by = user, reviewed_at = now()"]
+    CloseApprove --> AlertKitchen[Alert Kitchen of Revised Cooking Target]
+    
+    Decision -->|Reject| CloseReject["Record Rejection Reason in meal_demand_changes"]
+    CloseReject --> NotifyTeacher[Notify Teacher of Rejection]
+    AlertKitchen --> EndTF3([End])
+    NotifyTeacher --> EndTF3
 ```
 
 ---
 
-## TF-04 — Meal Demand Quantity Calculation Flow
+## TF-04 — Kitchen Preparation Planning & Ingredient Allocation Flow
 
-**Source:** UC-MGR-04, UC-MGR-05
-**Actor:** System (auto) + Meal / Nutrition Manager (review/override)
+- **Use Cases:** `UC-MGR-04`, `UC-KIT-01`, `UC-KIT-02`
+- **Actors:** Meal Manager (`MGR`), Kitchen Staff (`KIT`)
+- **Database Entities:** `meal_preparation_plans`, `meal_preparation_plan_dishes`, `ingredient_allocations`
 
 ```mermaid
 flowchart TD
-    A([All Classes Submit Attendance]) --> B{All Classes Confirmed?}
-    B -->|No| C[Cutoff Countdown Running...]
-    C --> D{Cutoff Reached?}
-    D -->|Yes| E[System force-locks remaining unconfirmed classes]
-    D -->|No| C
-    B -->|Yes| E
-    E --> F[System aggregates session-level headcount: confirmed_attend + extra_count]
-    F --> G[System runs: Total Raw = Headcount × Portion × 1 + Buffer%]
-    G --> H[Save to expected_meal_quantities — calculation_method: auto]
-    H --> I[Notify Manager: Quantities Ready for Review]
-
-    I --> J([Manager Reviews Quantities])
-    J --> K{Any dish needs buffer override?}
-    K -->|Yes| L[Manager adjusts buffer % using stepper]
-    L --> M[System recalculates Total Raw in real time]
-    M --> N[Save — calculation_method: manual, calculated_by: MGR]
-    N --> K
-    K -->|No — all approved| O[Quantities finalized — Kitchen can proceed]
+    Start([Manager Opens SCR-MGR-04]) --> LoadDemand[Fetch Confirmed Meal Demand & Dish Quantities]
+    LoadDemand --> SetShiftDetails[Set Preparation Shift Date, Station & Deadlines]
+    SetShiftDetails --> PublishPlan["Publish meal_preparation_plans (plan_status: planned)"]
+    PublishPlan --> CreatePlanDishes[Insert line items into meal_preparation_plan_dishes]
+    
+    CreatePlanDishes --> KitOpensBoard([Kitchen Staff Opens SCR-KIT-01 Kiosk])
+    KitOpensBoard --> StartShift["Tap Start Shift (plan_status: in_progress)"]
+    StartShift --> OpenAlloc[SCR-KIT-02: Open Ingredient Checklist]
+    OpenAlloc --> InspectItems[Physically Inspect Ingredients Received from Pantry]
+    InspectItems --> ConfirmAlloc["Update ingredient_allocations (status: allocated)"]
+    ConfirmAlloc --> DiscrepancyCheck{Ingredient Shortage or Spoilage?}
+    DiscrepancyCheck -->|Yes| LogAdjust["Set status: adjusted / returned with note"]
+    DiscrepancyCheck -->|No| ReadyToCook([Ingredients Staged at Cooking Stations])
+    LogAdjust --> ReadyToCook
 ```
 
 ---
 
-## TF-05 — Meal Preparation Flow
+## TF-05 — Cooking Batch Execution & Quantity Confirmation Flow
 
-**Source:** UC-KIT-01, UC-KIT-02, UC-KIT-03
-**Actor:** Kitchen Staff
-
-```mermaid
-flowchart TD
-    A([Kitchen Staff Opens Preparation Screen]) --> B[Select Current Date & Session]
-    B --> C[System loads Preparation Plan: dishes + expected quantities]
-    C --> D[For each Dish:]
-    D --> E[View: Dish Name, Category, Expected Quantity, Unit, Buffer %]
-    E --> F[Enter Actual Prepared Quantity]
-    F --> G{Quantity valid?}
-    G -->|No — zero or negative| H[Show validation error]
-    H --> F
-    G -->|Within tolerance| I[Save — dish status: in_progress]
-    G -->|Exceeds 150% of expected| J[Show: Quantity Higher Than Expected — Confirm?]
-    J -->|Confirm| K[Save with discrepancy_flag = true]
-    K --> I
-    I --> L{All Dishes Recorded?}
-    L -->|No| D
-    L -->|Yes| M[Review Preparation Summary]
-    M --> N{Confirm Complete?}
-    N -->|Yes| O[System sets preparation status: completed]
-    O --> P[Notify Manager — Preparation Done]
-    N -->|No — some dishes missing| Q[Show Incomplete Dishes Warning]
-    Q --> R{Proceed Anyway?}
-    R -->|Yes| O
-    R -->|No| D
-```
-
----
-
-## TF-06 — Meal Distribution Flow
-
-**Source:** UC-KIT-04, UC-KIT-05
-**Actor:** Kitchen Staff
+- **Use Cases:** `UC-KIT-03`, `UC-KIT-04`, `UC-MGR-05`
+- **Actors:** Kitchen Staff / Chef (`KIT`), Meal Manager (`MGR`)
+- **Database Entities:** `meal_preparations`, `meal_preparation_dish_records`, `prepared_quantity_confirmations`
 
 ```mermaid
 flowchart TD
-    A([Preparation Confirmed Complete]) --> B[Open Distribution Plan]
-    B --> C[View Classes + Expected Portions per Class per Dish]
-    C --> D[Select a Class]
-    D --> E[Enter Actual Quantity Distributed]
-    E --> F{Quantity = Expected?}
-    F -->|Yes| G[Save — class status: distributed]
-    F -->|Under-distributed| H[Record Reason for Shortfall]
-    H --> I[Save with underdistributed flag]
-    I --> G
-    F -->|Over-distributed| J[Show Warning: Over expected — Confirm?]
-    J --> G
-    G --> K{All Classes Served?}
-    K -->|No| D
-    K -->|Yes| L[Distribution Complete — Proceed to Handover]
-    L --> TF_07([→ TF-07 Meal Handover Flow])
-```
-
----
-
-## TF-07 — Meal Handover & Reconciliation Flow
-
-**Source:** UC-KIT-06, UC-TCH-04
-**Actors:** Kitchen Staff (initiates), Homeroom Teacher (acknowledges)
-
-```mermaid
-flowchart TD
-    A([Distribution Recorded for Class]) --> B[Kitchen Staff selects class for Handover]
-    B --> C[Review Handover Summary: Expected vs. Prepared vs. Distributed]
-    C --> D[Confirm Handover with Timestamp]
-    D --> E[System records Handover Event]
-    E --> F[Notify Homeroom Teacher: Meal Delivered]
-
-    F --> G([Teacher Opens Handover Notification])
-    G --> H[Review: Expected vs. Delivered Quantity]
-    H --> I{Quantities Match?}
-    I -->|Yes| J[Teacher acknowledges — Handover complete]
-    J --> K[System records Acknowledgement]
-    K --> L[System runs Reconciliation: Planned vs. Prepared vs. Distributed vs. Handed Over]
-    L --> M{Discrepancies Found?}
-    M -->|No| N([Reconciliation OK — End])
-    M -->|Yes| O[Discrepancy Record Created — Notified to Manager]
-    O --> N
-
-    I -->|No — Mismatch| P[Teacher flags discrepancy + note]
-    P --> O
-```
-
----
-
-## TF-08 — Post-Cutoff Change Request (Emergency Shortcut)
-
-> *Simplified view for the prototype's Screen 3 — Manage Demand Changes.*
-> *Same flow as TF-02 but annotated for the prototype's UI interactions.*
-
-```mermaid
-flowchart TD
-    A([Teacher or Staff: Emergency Change Needed]) --> B[Tap + New Request button]
-    B --> C[Slide-up Bottom Sheet opens]
-    C --> D[Fill in: Target, Class, Student, Change Type, Delta, Reason]
-    D --> E[Submit]
-    E --> F{Is post-cutoff > 30 min?}
-    F -->|Yes| G[Badge: Emergency ⚡ — is_emergency = true]
-    F -->|No| H[Standard pending request]
-    G --> I[Appears at top of Change Request Triage]
-    H --> I
-    I --> J[Manager reviews — Approve / Reject]
-    J --> K[Status chip updates in real-time]
-    K --> L[Audit timeline entry created]
+    Start([Chef Opens SCR-KIT-03]) --> SelectDish[Select Scheduled Dish to Cook]
+    SelectDish --> StartBatch["Tap Start Batch (meal_preparations.prep_status = in_progress)"]
+    StartBatch --> CookFood[Physical Cooking & Food Processing]
+    CookFood --> CompleteBatch[Weigh / Count Finished Cooked Output]
+    CompleteBatch --> LogDishRecord["Insert meal_preparation_dish_records (actual_prepared_quantity)"]
+    LogDishRecord --> AllDishesDone{All Shift Dishes Cooked?}
+    AllDishesDone -->|No| SelectDish
+    AllDishesDone -->|Yes| FinishPrep["Update meal_preparations.prep_status = completed"]
+    
+    FinishPrep --> OpenVerify([Open SCR-KIT-04: Prepared Quantity Verification])
+    OpenVerify --> CompareTarget["Compare Planned Quantity vs Actual Prepared Quantity"]
+    CompareTarget --> CheckTolerance{Within Tolerance Range?}
+    
+    CheckTolerance -->|Yes| MarkMatched["Set confirmation_status = matched"]
+    CheckTolerance -->|No| MarkDiscrepancy["Set confirmation_status = discrepancy"]
+    MarkDiscrepancy --> InputReason[Enter Mandatory Discrepancy Reason]
+    InputReason --> SaveConfirmation[Insert into prepared_quantity_confirmations]
+    MarkMatched --> SaveConfirmation
+    
+    SaveConfirmation --> MgrSummary([Manager Reviews SCR-MGR-05])
+    MgrSummary --> SignOff["Manager Signs Off & Archives Plan (plan_status = completed)"]
+    SignOff --> EndTF5([End: Daily Cooking Verified])
 ```

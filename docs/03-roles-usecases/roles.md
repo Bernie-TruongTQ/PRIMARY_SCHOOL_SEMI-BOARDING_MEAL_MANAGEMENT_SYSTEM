@@ -2,96 +2,94 @@
 
 ## Role Derivation Source
 
-All roles are derived directly from the Selected Core Features in [Phase 02](../02-core-features/core-feature-breakdown.md). A role exists because one or more core features require a specific human actor.
+All roles are derived directly from the human operations required by the **three active core modules** ([Phase 02](../02-core-features/core-feature-breakdown.md)):
+1. **Meal Participation Management**
+2. **Meal Demand & Quantity Management**
+3. **Meal Preparation**
 
 ---
 
-## ADM — School Administrator
+## 1. TCH — Homeroom Teacher / Class Supervisor
 
-**Derives from:** Cross-cutting configuration and user management needs across all core domains.
+**Derives from:** `F-PAR-01`, `F-PAR-02`, `F-PAR-03` (Module 1).
 
 **Description:**
-The School Administrator is the system owner at the school level. They configure master data (class lists, student enrollment, meal sessions, dish catalog), manage user accounts and role assignments, and handle school-year transitions.
+The Homeroom Teacher is at the student frontline. They observe daily classroom attendance, receive absence notices from parents, and record each student's meal participation in the classroom.
 
-**Responsibilities:**
-- Configure school master data (classes, grade levels, school year)
-- Enroll students into the meal program (F-STU-01)
-- Manage system users and role assignments
-- Configure meal session parameters (cutoff times, session codes)
-- Manage the dish and ingredient catalog
+**Key Responsibilities:**
+- Record daily student attendance and meal participation per meal session (`F-PAR-01`).
+- Update participation status (e.g. absent, late arrival) with explicit reasons before the cutoff time (`F-PAR-02`).
+- Confirm and lock the class-level participation roster (`F-PAR-03`).
+- Submit urgent post-lock participation change requests if emergencies occur.
 
-**Interaction Style:** Infrequent, high-consequence actions. Mostly configuration at the start of school year or semester.
+**System Permissions & Database Touchpoints:**
+- Insert/Update `meal_participations` (as `recorded_by`, `confirmed_by`).
+- Insert `meal_participation_changes` (as `changed_by`).
 
 ---
 
-## MGR — Meal / Nutrition Manager
+## 2. MGR — Meal / Nutrition Manager
 
-**Derives from:** F-MPN-01, F-MPN-02, F-MPN-03, F-MPN-04, F-MOP-01 (lock approval), F-MOP-02 (change request approval).
+**Derives from:** `F-DMD-01`, `F-DMD-02`, `F-DMD-03`, `F-PRP-01`, `F-PRP-04` (Modules 2 & 3).
 
 **Description:**
-The Meal/Nutrition Manager is the central operational role. They design and publish weekly menus, oversee quantity calculation, approve post-cutoff change requests, and monitor daily preparation status.
+The Meal/Nutrition Manager oversees nutritional compliance, demand planning, and operational coordination between school classrooms and the central kitchen.
 
-**Responsibilities:**
-- Design, approve, and publish weekly menus (F-MPN-01, F-MPN-02, F-MPN-03)
-- Trigger and review meal demand quantity calculations (F-MPN-04)
-- Monitor daily demand determination across all classes
-- Review and approve/reject post-cutoff emergency change requests (F-MOP-02)
-- Oversee preparation, distribution, and handover completion
-- Generate and review daily reconciliation
+**Key Responsibilities:**
+- Aggregate confirmed class attendance into session-level demand (`F-DMD-01`).
+- Compute dish portion quantities and apply safety buffers (`F-DMD-02`).
+- Review, approve, or reject post-lock demand modification requests (`F-DMD-03`).
+- Create and schedule the kitchen meal preparation plan (`F-PRP-01`).
+- Supervise discrepancies between planned demand and actual cooked yields (`F-PRP-04`).
 
-**Interaction Style:** Daily operational role with both planning (weekly) and reactive (daily) interactions.
+**System Permissions & Database Touchpoints:**
+- Insert/Update `meal_demands` (as `determined_by`, `confirmed_by`).
+- Insert/Update `meal_demand_dish_quantities`.
+- Review `meal_demand_changes` (as `reviewed_by`).
+- Create `meal_preparation_plans` (as `planned_by`).
 
 ---
 
-## KIT — Kitchen Staff
+## 3. KIT — Kitchen Staff / Head Chef
 
-**Derives from:** F-MOP-03 (Meal Preparation), F-MOP-04 (Meal Distribution), F-MOP-05 (Meal Handover & Reconciliation).
+**Derives from:** `F-PRP-01`, `F-PRP-02`, `F-PRP-03`, `F-PRP-04` (Module 3).
 
 **Description:**
-Kitchen Staff execute the physical meal preparation and distribution. They view their preparation plan (quantities per dish), record actual quantities prepared, distribute meals per class, and confirm handover.
+Kitchen Staff and the Head Chef execute physical meal preparation. They consume raw ingredients, run cooking batches, and report completed dishes.
 
-**Responsibilities:**
-- View daily meal preparation plan
-- Record actual quantities prepared per dish (F-MOP-03)
-- View distribution plan per class
-- Record actual quantities distributed per class (F-MOP-04)
-- Confirm meal handover to class supervisor (F-MOP-05)
-- Report discrepancies between planned and actual
+**Key Responsibilities:**
+- View the active daily meal preparation plan and target dishes (`F-PRP-01`).
+- Accept and manage ingredient allocations from pantry storage (`F-PRP-02`).
+- Start and complete cooking batches, logging actual produced quantities per dish (`F-PRP-03`).
+- Perform physical quantity verification and record reasons for any cooking discrepancies (`F-PRP-04`).
 
-**Interaction Style:** High-frequency daily interactions during meal preparation and distribution windows. Needs mobile-friendly, fast-input UI.
+**System Permissions & Database Touchpoints:**
+- Update `ingredient_allocations` (allocation status: `allocated`, `adjusted`, `returned`).
+- Insert/Update `meal_preparations` (as `prepared_by`) and `meal_preparation_dish_records`.
+- Sign off `prepared_quantity_confirmations` (as `confirmed_by`).
 
 ---
 
-## TCH — Homeroom Teacher
+## 4. ADM — School Administrator
 
-**Derives from:** F-STU-03 (Record Daily Meal Participation), F-MOP-01 (participant in demand determination), F-MOP-05 (receives meal handover).
+**Derives from:** System configuration and reference master data governance.
 
 **Description:**
-The Homeroom Teacher is responsible for their class's attendance record before the cutoff. They record which students will attend, mark absences, and confirm the meal handover from kitchen staff.
+The School Administrator maintains foundational master data and user accounts across the institution.
 
-**Responsibilities:**
-- Record daily student meal participation for their class (F-STU-03)
-- Submit attendance data before the cutoff deadline (contributes to F-MOP-01)
-- Submit post-cutoff change requests if needed (triggers F-MOP-02)
-- Acknowledge meal handover receipt for their class (F-MOP-05)
-
-**Interaction Style:** Single daily interaction window (before cutoff) plus an occasional second interaction (handover confirmation). Must be fast and mobile-friendly.
+**Key Responsibilities:**
+- Maintain student records, classroom assignments, and meal eligibility (`students`).
+- Configure academic calendars and daily meal session schedules (`meal_schedules`).
+- Manage user authentication, roles, and access rights (`users`).
+- Maintain baseline dish catalogs and standard recipes (`dishes`, `ingredients`).
 
 ---
 
-## STO — Storekeeper
+## Summary Matrix: Roles vs. Modules
 
-**Derives from:** F-SAF-01 (Food Batch Registration), F-SAF-02 (Receiving Inspection). *Scoped to Phase 1.5.*
-
-**Description:**
-The Storekeeper manages the physical receipt of food deliveries. They inspect incoming ingredient batches, record batch metadata (supplier, quantity, expiry), and flag batches that fail inspection.
-
-**Responsibilities:**
-- Register incoming food batches (F-SAF-01)
-- Record receiving inspection results per batch (F-SAF-01)
-- Pass/fail batches and note rejection reasons
-- Link batches to ingredients and meal plans
-
-**Interaction Style:** Triggered by physical deliveries; 2–3 interactions per day during receiving windows.
-
-> **Phase 1 Note:** The Storekeeper role is defined here for completeness but their use cases (UC-STO) are implemented in Phase 1.5. The database schema includes placeholders for `food_batches` and `receiving_inspections`.
+| Role | Module 1: Participation | Module 2: Demand & Quantity | Module 3: Preparation | Master Data |
+|---|---|---|---|---|
+| **TCH (Teacher)** | **Primary Actor** (Log & Change) | Consumer / Change Requester | — | Read Class List |
+| **MGR (Manager)** | Supervisor (Review Roster) | **Primary Actor** (Calculate & Approve) | Planner & Approver | Configures Buffers |
+| **KIT (Kitchen)** | — | Consumer (Receives Targets) | **Primary Actor** (Cook & Verify) | Read Recipes/Stock |
+| **ADM (Admin)** | Master Data Setup | Parameter Setup | Station Setup | **Primary Owner** |

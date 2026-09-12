@@ -1,142 +1,120 @@
 # Core Feature Breakdown
 
-## Domain 1 — Student Meal Management
-
-### Capability: Meal Eligibility
-
-| Feature ID | Feature Name | Phase | Priority |
-|-----------|--------------|-------|----------|
-| **F-STU-01** | Manage Student Meal Eligibility | Phase 1 | P1 |
-| F-STU-01b | Suspend / Cancel Enrollment | Phase 2 | P2 |
-
-**F-STU-01 — Manage Student Meal Eligibility**
-> Administrators can register a student as a semi-boarding meal program participant. Enrollment records which meal sessions the student is registered for (breakfast, lunch, afternoon snack) and the effective date range. This record becomes the baseline for daily demand calculation.
+This document defines the detailed feature breakdown for the **three active core operational modules** of the Primary School Semi-Boarding Meal Management System, derived directly from the Top-Down Mind Map and fully aligned with the Database Architecture ([Phase 06](../06-database/README.md)).
 
 ---
 
-### Capability: Meal Registration
+## Module 1 — Meal Participation Management
 
-| Feature ID | Feature Name | Phase | Priority |
-|-----------|--------------|-------|----------|
-| **F-STU-02** | Register Student for Meal Session | Phase 1 | P1 |
-| F-STU-02b | Manage Registration Periods | Phase 2 | P2 |
+Captures daily student attendance, meal registration status, updates, and supervisor verification.
 
-**F-STU-02 — Register Student for Meal Session**
-> Links a specific student to a specific meal session (e.g., Lunch) for a date range. The `meal_registrations` table stores `effective_from` / `effective_to`. This drives the `base_registered_count` snapshot used in daily demand.
+### Capabilities & Features
 
----
+| Feature ID | Feature Name | Priority | Associated DB Entities |
+|---|---|---|---|
+| **F-PAR-01** | Record Daily Student Meal Participation | P1 (MVP) | `meal_participations`, `students`, `meal_schedules` |
+| **F-PAR-02** | Track Participation Changes & Amendments | P1 (MVP) | `meal_participation_changes` |
+| **F-PAR-03** | Verify & Confirm Participation Roster | P1 (MVP) | `meal_participations` (status: `confirmed`) |
+| F-PAR-04 | Bulk Import & Recurring Absence Sync | P2 (Backlog) | `meal_participations` |
 
-### Capability: Meal Participation
+### Feature Descriptions
 
-| Feature ID | Feature Name | Phase | Priority |
-|-----------|--------------|-------|----------|
-| **F-STU-03** | Record Daily Meal Participation | Phase 1 | P1 |
+#### **F-PAR-01 — Record Daily Student Meal Participation**
+> Homeroom teachers or class supervisors record each student's meal participation for scheduled meal sessions (Breakfast, Lunch, Snack, Dinner). 
+> - Status values: `pending`, `recorded`, `confirmed`, `cancelled`.
+> - Records student ID, meal schedule ID, initial status, and the user who logged the attendance.
 
-**F-STU-03 — Record Daily Meal Participation**
-> Homeroom teachers record each student's daily participation status: Attend, Absent, or Extra Guest. Reasons are required for absences. Changes before the cutoff update demand counts in real-time. Changes after the cutoff create a Change Request (handled by F-MOP-02).
+#### **F-PAR-02 — Track Participation Changes & Amendments**
+> When a student's participation status changes (e.g. sick leave reported, late arrival, extra guest), the system captures the modification with full audit trails.
+> - Change types: `status_update`, `correction`, `reschedule`.
+> - Logs `previous_status`, `new_status`, `change_reason`, timestamp, and the user who performed the change.
 
----
-
-## Domain 2 — Meal Planning & Menu Management
-
-### Capability: Menu Design
-
-| Feature ID | Feature Name | Phase | Priority |
-|-----------|--------------|-------|----------|
-| **F-MPN-01** | Design Weekly Menu | Phase 1 | P1 |
-| **F-MPN-02** | Assign Dishes & Standard Portions | Phase 1 | P1 |
-| **F-MPN-03** | Approve & Publish Menu | Phase 1 | P1 |
-| F-MPN-03b | Nutritional Compliance Check | Phase 2 | P2 |
-| F-MPN-03c | Allergen Conflict Flagging | Phase 2 | P2 |
-
-**F-MPN-01 — Design Weekly Menu**
-> The Meal/Nutrition Manager creates a weekly menu by assigning a date and meal session to a `menus` record. The menu begins in `draft` status.
-
-**F-MPN-02 — Assign Dishes & Standard Portions**
-> The manager assigns specific dishes (from the `dishes` catalog) to the menu, specifying the standard portion size per student (e.g., 150g rice, 200ml soup). These values populate `menu_dishes` and become the unit for quantity calculation.
-
-**F-MPN-03 — Approve & Publish Menu**
-> The manager reviews and transitions the menu from `draft` → `approved` → `published`. Only published menus can be used in demand calculation.
+#### **F-PAR-03 — Verify & Confirm Participation Roster**
+> Supervisors or lead teachers review and lock the class participation list prior to the operational cutoff time.
+> - Updates participation status to `confirmed` with `confirmed_by` user reference.
+> - Freezes normal edits and triggers demand aggregation for Module 2.
 
 ---
 
-### Capability: Demand Calculation
+## Module 2 — Meal Demand & Quantity Management
 
-| Feature ID | Feature Name | Phase | Priority |
-|-----------|--------------|-------|----------|
-| **F-MPN-04** | Calculate Meal Demand Quantities | Phase 1 | P1 |
+Aggregates class-level participation into meal session headcounts, computes required dish quantities, and processes post-lock amendments.
 
-**F-MPN-04 — Calculate Meal Demand Quantities**
-> Once demand is locked (F-MOP-01), the system (or Meal Manager) triggers the calculation:
->
-> `Total Raw = Planned Headcount × Unit Portion Size × (1 + Buffer%)`
->
-> Results are stored in `expected_meal_quantities`. Managers can override the buffer percentage per dish. The system logs whether the calculation was `auto` or `manual`.
+### Capabilities & Features
 
----
+| Feature ID | Feature Name | Priority | Associated DB Entities |
+|---|---|---|---|
+| **F-DMD-01** | Determine Aggregated Meal Demand | P1 (MVP) | `meal_demands`, `meal_schedules` |
+| **F-DMD-02** | Calculate Expected Dish Quantities | P1 (MVP) | `meal_demand_dish_quantities`, `dishes` |
+| **F-DMD-03** | Process Post-Lock Demand Adjustments | P1 (MVP) | `meal_demand_changes`, `meal_demands` |
+| F-DMD-04 | Historical Demand Trend Forecasting | P2 (Backlog) | `meal_demands` (`historical_average`) |
 
-## Domain 3 — Meal Operation
+### Feature Descriptions
 
-### Capability: Meal Demand Determination
+#### **F-DMD-01 — Determine Aggregated Meal Demand**
+> The Meal/Nutrition Manager aggregates confirmed student participation counts for a given meal schedule into total demand headcounts.
+> - Determination methods: `participation_based`, `manual_forecast`, `historical_average`.
+> - Lifecycle statuses: `draft` → `calculated` → `confirmed` → `revised`.
+> - Tracks headcount figures (`total_headcount`, `buffer_percentage`, `final_demand_count`).
 
-| Feature ID | Feature Name | Phase | Priority |
-|-----------|--------------|-------|----------|
-| **F-MOP-01** | Determine Meal Demand (with Cutoff Lock) | Phase 1 | P1 |
-| **F-MOP-02** | Manage Post-Cutoff Change Requests | Phase 1 | P1 |
+#### **F-DMD-02 — Calculate Expected Dish Quantities**
+> Translates the final approved headcount into planned quantities for each dish on the scheduled menu.
+> - Formula: $\text{Planned Quantity} = \text{Final Headcount} \times \text{Standard Portion Size} \times (1 + \text{Buffer\%})$
+> - Stores `expected_quantity`, portion unit (e.g. grams, bowls, pieces), and any manual nutritionist adjustments in `meal_demand_dish_quantities`.
 
-**F-MOP-01 — Determine Meal Demand (with Cutoff Lock)**
-> The system aggregates per-class attendance into a session-level `daily_meal_demands` record. Before the cutoff, teachers can freely update participation. At cutoff time, the demand is automatically locked (`determination_status = 'locked'`). Locked headcounts trigger quantity calculation (F-MPN-04).
-
-**F-MOP-02 — Manage Post-Cutoff Change Requests**
-> After the cutoff, changes are submitted as `meal_demand_change_requests` with a reason and quantity delta. Emergency requests (submitted more than 30 minutes post-cutoff) are flagged. The Meal/Nutrition Manager approves or rejects each request. All decisions are logged in `meal_demand_change_logs`.
-
----
-
-### Capability: Meal Preparation
-
-| Feature ID | Feature Name | Phase | Priority |
-|-----------|--------------|-------|----------|
-| **F-MOP-03** | Record Meal Preparation | Phase 1 | P1 |
-
-**F-MOP-03 — Record Meal Preparation**
-> Kitchen staff view the preparation plan (expected quantities per dish), record the actual quantity prepared, and confirm preparation is complete. Discrepancies between expected and actual trigger a flag for reconciliation.
+#### **F-DMD-03 — Process Post-Lock Demand Adjustments**
+> After demand is locked/confirmed, any subsequent emergency changes (e.g., unexpected classroom absence, sudden school event) are submitted as formal change requests.
+> - Change types: `quantity_increase`, `quantity_decrease`, `dish_adjustment`, `cancellation`.
+> - Tracks `previous_quantity`, `new_quantity`, `reason`, `requested_by`, and `reviewed_by`. Approved changes transition demand status to `revised`.
 
 ---
 
-### Capability: Meal Distribution
+## Module 3 — Meal Preparation
 
-| Feature ID | Feature Name | Phase | Priority |
-|-----------|--------------|-------|----------|
-| **F-MOP-04** | Record Meal Distribution | Phase 1 | P1 |
+Translates meal demand into kitchen execution plans, tracks ingredient allocation, monitors cooking batches, and reconciles finished dishes against targets.
 
-**F-MOP-04 — Record Meal Distribution**
-> Kitchen staff record the actual quantity distributed per class. Distribution is done against the confirmed demand headcount. Any under-distribution is flagged for immediate exception handling.
+### Capabilities & Features
+
+| Feature ID | Feature Name | Priority | Associated DB Entities |
+|---|---|---|---|
+| **F-PRP-01** | Create & Schedule Meal Preparation Plan | P1 (MVP) | `meal_preparation_plans`, `meal_preparation_plan_dishes` |
+| **F-PRP-02** | Allocate Ingredients from Storage | P1 (MVP) | `ingredient_allocations`, `ingredients` |
+| **F-PRP-03** | Record Kitchen Cooking Batches | P1 (MVP) | `meal_preparations`, `meal_preparation_dish_records` |
+| **F-PRP-04** | Verify Prepared Quantities & Discrepancies | P1 (MVP) | `prepared_quantity_confirmations` |
+| F-PRP-05 | Kitchen Temperature & Safety Sample Logging | P2 (Backlog) | `meal_preparations` (Food Safety link) |
+
+### Feature Descriptions
+
+#### **F-PRP-01 — Create & Schedule Meal Preparation Plan**
+> Kitchen managers convert approved meal demands into a structured kitchen shift plan.
+> - Plan status lifecycle: `planned` → `in_progress` → `completed` → `cancelled`.
+> - Links to `meal_demands` and breaks down required cooking targets across each dish in `meal_preparation_plan_dishes`.
+
+#### **F-PRP-02 — Allocate Ingredients from Storage**
+> Reserves and issues necessary raw ingredients from the pantry/storage to kitchen stations for each preparation plan.
+> - Tracks `ingredient_id`, `allocated_quantity`, and `allocation_status` (`allocated`, `adjusted`, `returned`).
+> - Ensures the kitchen team has exact verified stock before cooking starts.
+
+#### **F-PRP-03 — Record Kitchen Cooking Batches**
+> Kitchen staff record cooking start and finish times, batch numbers, and actual yield produced per dish.
+> - Tracks batch execution status: `in_progress` → `completed`.
+> - Yields granular dish output in `meal_preparation_dish_records` (`actual_prepared_quantity`).
+
+#### **F-PRP-04 — Verify Prepared Quantities & Discrepancies**
+> Kitchen lead or meal inspector conducts quality and quantity checks on the cooked food against the planned demand.
+> - Confirmation status: `matched` vs. `discrepancy`.
+> - Mandatory `discrepancy_reason` if yield falls below or exceeds acceptable tolerance thresholds.
+> - Formal sign-off stored in `prepared_quantity_confirmations` (`confirmed_quantity`, `confirmed_by`, `confirmed_at`).
 
 ---
 
-### Capability: Meal Handover & Reconciliation
+## Reference & Deferred Capabilities Summary
 
-| Feature ID | Feature Name | Phase | Priority |
-|-----------|--------------|-------|----------|
-| **F-MOP-05** | Confirm Meal Handover & Reconcile | Phase 1 | P1 |
-| F-MOP-05b | Generate Handover Receipt | Phase 2 | P2 |
-
-**F-MOP-05 — Confirm Meal Handover & Reconcile**
-> Kitchen staff confirm that the meal batch has been handed over to the class supervisor. The system compares: Expected (from demand) vs. Prepared vs. Distributed vs. Handed over. Discrepancies are recorded and surfaced in the daily summary.
-
----
-
-## Phase 2 Backlog Features
-
-| Feature ID | Feature Name | Domain |
-|-----------|--------------|--------|
-| F-SAF-01 | Register Food Batch & Receiving Inspection | Food Safety & Traceability |
-| F-SAF-02 | Trace Food Source (Batch → Ingredient → Dish → Meal) | Food Safety & Traceability |
-| F-SAF-03 | Log and Escalate Food Safety Incident | Food Safety & Traceability |
-| F-SUP-01 | Manage Suppliers | Food Supply & Inventory |
-| F-SUP-02 | Generate & Track Purchase Orders | Food Supply & Inventory |
-| F-INV-01 | Manage Ingredient Stock Levels | Food Supply & Inventory |
-| F-FEE-01 | Configure Meal Fee Rates | Meal Fee & Cost Management |
-| F-FEE-02 | Generate Monthly Invoices | Meal Fee & Cost Management |
-| F-RPT-01 | Daily Operations Dashboard | Reporting & Transparency |
-| F-RPT-02 | Parent Meal Transparency Portal | Reporting & Transparency |
+| Boundary Domain | Handled By | Scope Status in Phase 1 |
+|---|---|---|
+| Student Master & Class Roster | `students` table | Reference only (read-only for daily ops) |
+| Academic Calendar & Session Setup | `meal_schedules` table | Reference only |
+| Dish & Recipe Catalog | `dishes` table | Reference only |
+| Ingredient Master Catalog | `ingredients` table | Reference only |
+| Food Safety Inspections | External / Future module | Phase 2 Backlog |
+| Monthly Invoicing & Fee Collection | External / Future module | Phase 2 Backlog |

@@ -1,140 +1,167 @@
 # Traceability Chain
 
-This document proves that **every artifact in this repository was derived from the one above it**. Nothing was built ad-hoc. Every screen has a use case. Every use case has a feature. Every feature has a domain. Every entity has a feature.
+This document proves that **every artifact in this repository was derived top-down from the layer above it**. Nothing was built ad-hoc. Every database table has a screen. Every screen has a task flow. Every task flow has a use case. Every use case has an actor and core feature. Every core feature derives from an active operational module.
 
 ---
 
 ## How to Read This
 
-Each row traces one complete path from the business domain to the database entity:
+Each row traces one complete path from the business module down to the database entity:
 
-**Core Domain → Core Capability → Core Feature → Actor → Use Case → Task Flow → Screen → DB Entity**
+$$\text{Core Module} \longrightarrow \text{Capability} \longrightarrow \text{Core Feature} \longrightarrow \text{Actor} \longrightarrow \text{Use Case} \longrightarrow \text{Task Flow} \longrightarrow \text{Screen ID} \longrightarrow \text{DB Entity}$$
 
 ---
 
 ## Full Traceability Matrix
 
-| Core Domain | Core Capability | Core Feature | Actor | Use Case | Task Flow | Screen | DB Entity |
-|-------------|----------------|--------------|-------|----------|-----------|--------|-----------|
-| Student Meal Management | Meal Eligibility | F-STU-01 | ADM | UC-ADM-01 Enroll Student | — | SCR-ADM-02 Enroll Student Form | `students`, `classes` |
-| Student Meal Management | Meal Eligibility | F-STU-01 | ADM | UC-ADM-02 Update Enrollment Status | — | SCR-ADM-03 Update Enrollment | `students` |
-| Student Meal Management | Meal Registration | F-STU-02 | ADM | UC-ADM-03 Register for Meal Session | — | SCR-ADM-04 Register Meal Session | `meal_registrations`, `meal_sessions` |
-| Student Meal Management | Meal Participation | F-STU-03 | TCH | UC-TCH-01 Record Attendance | TF-01 | SCR-TCH-01 Class Roster | `daily_meal_demand_details` |
-| Student Meal Management | Meal Participation | F-STU-03 | TCH | UC-TCH-02 Submit Before Cutoff | TF-01 | SCR-TCH-02 Submit Attendance | `daily_meal_demands` |
-| Meal Planning & Menu Management | Menu Design | F-MPN-01 | MGR | UC-MGR-01 Create Weekly Menu | TF-03 | SCR-MGR-02 Create/Edit Menu | `menus` |
-| Meal Planning & Menu Management | Menu Design | F-MPN-02 | MGR | UC-MGR-02 Assign Dishes | TF-03 | SCR-MGR-03 Assign Dishes & Portions | `menu_dishes`, `dishes` |
-| Meal Planning & Menu Management | Menu Design | F-MPN-03 | MGR | UC-MGR-03 Approve & Publish | TF-03 | SCR-MGR-04 Approve & Publish Menu | `menus` (status) |
-| Meal Planning & Menu Management | Demand Calculation | F-MPN-04 | MGR | UC-MGR-04 Review Quantities | TF-04 | SCR-MGR-06 Review Quantities | `expected_meal_quantities` |
-| Meal Planning & Menu Management | Demand Calculation | F-MPN-04 | MGR | UC-MGR-05 Override Buffer % | TF-04 | SCR-MGR-06 Review Quantities (inline) | `expected_meal_quantities` |
-| Meal Operation | Meal Demand Determination | F-MOP-01 | MGR | UC-MGR-06 Monitor Demand Status | TF-04 | SCR-MGR-05 Demand Status Board | `daily_meal_demands` |
-| Meal Operation | Meal Demand Determination | F-MOP-02 | TCH | UC-TCH-03 Submit Change Request | TF-02 | SCR-TCH-03 Submit Change Request | `meal_demand_change_requests` |
-| Meal Operation | Meal Demand Determination | F-MOP-02 | MGR | UC-MGR-07 Approve Change Request | TF-02 | SCR-MGR-07 Change Request List | `meal_demand_change_requests`, `meal_demand_change_logs` |
-| Meal Operation | Meal Demand Determination | F-MOP-02 | MGR | UC-MGR-08 Reject Change Request | TF-02 | SCR-MGR-08 Change Request Detail | `meal_demand_change_requests`, `meal_demand_change_logs` |
-| Meal Operation | Meal Preparation | F-MOP-03 | KIT | UC-KIT-01 View Prep Plan | TF-05 | SCR-KIT-01 Preparation Plan View | `expected_meal_quantities`, `menu_dishes` |
-| Meal Operation | Meal Preparation | F-MOP-03 | KIT | UC-KIT-02 Record Prepared Qty | TF-05 | SCR-KIT-02 Record Prepared Quantity | *(Phase 1.5: meal_preparations)* |
-| Meal Operation | Meal Preparation | F-MOP-03 | KIT | UC-KIT-03 Confirm Prep Complete | TF-05 | SCR-KIT-03 Confirm Preparation | *(Phase 1.5: meal_preparations)* |
-| Meal Operation | Meal Distribution | F-MOP-04 | KIT | UC-KIT-04 View Distribution Plan | TF-06 | SCR-KIT-04 Distribution Plan View | `daily_meal_demands` |
-| Meal Operation | Meal Distribution | F-MOP-04 | KIT | UC-KIT-05 Record Distributed Qty | TF-06 | SCR-KIT-05 Record Distributed Qty | *(Phase 1.5: meal_distributions)* |
-| Meal Operation | Meal Handover | F-MOP-05 | KIT | UC-KIT-06 Confirm Handover | TF-07 | SCR-KIT-06 Confirm Handover | *(Phase 1.5: meal_handovers)* |
-| Meal Operation | Meal Handover | F-MOP-05 | TCH | UC-TCH-04 Acknowledge Handover | TF-07 | SCR-TCH-04 Acknowledge Handover | *(Phase 1.5: meal_handovers)* |
+| Active Core Module | Capability | Feature ID | Actor | Use Case | Task Flow | Screen ID | Primary DB Entity |
+|---|---|---|:---:|---|:---:|---|---|
+| **Module 1: Meal Participation** | Daily Attendance | **F-PAR-01** | TCH | UC-TCH-01 Record Daily Student Participation | TF-01 | SCR-TCH-01 Class Roster Participation | `meal_participations` |
+| **Module 1: Meal Participation** | Status Changes | **F-PAR-02** | TCH | UC-TCH-02 Amend Participation with Reason | TF-01 | SCR-TCH-02 Participation Amendment Modal | `meal_participation_changes` |
+| **Module 1: Meal Participation** | Roster Lock | **F-PAR-03** | TCH | UC-TCH-03 Confirm Daily Class Roster | TF-01 | SCR-TCH-03 Class Roster Confirmation | `meal_participations` (status: `confirmed`) |
+| **Module 2: Demand & Quantity** | Demand Determination | **F-DMD-01** | MGR | UC-MGR-01 Aggregate & Determine Meal Demand | TF-02 | SCR-MGR-01 Demand Determination Board | `meal_demands` |
+| **Module 2: Demand & Quantity** | Dish Quantities | **F-DMD-02** | MGR | UC-MGR-02 Calculate & Adjust Dish Quantities | TF-02 | SCR-MGR-02 Dish Quantity Calculation View | `meal_demand_dish_quantities` |
+| **Module 2: Demand & Quantity** | Post-Lock Change | **F-DMD-03** | TCH | UC-TCH-04 Submit Post-Cutoff Emergency Request | TF-03 | SCR-TCH-04 Post-Cutoff Emergency Form | `meal_demand_changes` |
+| **Module 2: Demand & Quantity** | Change Triage | **F-DMD-03** | MGR | UC-MGR-03 Review & Approve Demand Changes | TF-03 | SCR-MGR-03 Demand Changes Review Queue | `meal_demand_changes`, `meal_demands` |
+| **Module 3: Meal Preparation** | Shift Planning | **F-PRP-01** | MGR | UC-MGR-04 Create Kitchen Preparation Plan | TF-04 | SCR-MGR-04 Kitchen Preparation Planning | `meal_preparation_plans`, `meal_preparation_plan_dishes` |
+| **Module 3: Meal Preparation** | Shift Board | **F-PRP-01** | KIT | UC-KIT-01 View Active Kitchen Prep Plan | TF-04 | SCR-KIT-01 Kitchen Prep Shift Board | `meal_preparation_plans` |
+| **Module 3: Meal Preparation** | Ingredient Staging | **F-PRP-02** | KIT | UC-KIT-02 Receive & Adjust Ingredient Allocation | TF-04 | SCR-KIT-02 Ingredient Allocation Checklist | `ingredient_allocations` |
+| **Module 3: Meal Preparation** | Cooking Batches | **F-PRP-03** | KIT | UC-KIT-03 Record Cooking Batch Execution | TF-05 | SCR-KIT-03 Cooking Batch Execution | `meal_preparations`, `meal_preparation_dish_records` |
+| **Module 3: Meal Preparation** | Yield Verification | **F-PRP-04** | KIT | UC-KIT-04 Confirm Prepared Quantity & Discrepancy | TF-05 | SCR-KIT-04 Prepared Quantity Verification | `prepared_quantity_confirmations` |
+| **Module 3: Meal Preparation** | Daily Sign-off | **F-PRP-04** | MGR | UC-MGR-05 Review Discrepancy & Sign-off | TF-05 | SCR-MGR-05 Daily Prep Summary & Audit | `prepared_quantity_confirmations` |
+| **Master Reference Data** | Student Directory | Master | ADM | UC-ADM-01 Manage Student Records & Eligibility | — | SCR-ADM-01 Student & Class Directory | `students`, `meal_registrations` |
+| **Master Reference Data** | Session Schedules | Master | ADM | UC-ADM-02 Configure Meal Schedules | — | SCR-ADM-02 Meal Calendar & Schedule Setup | `meal_schedules` |
+| **Master Reference Data** | Recipe Master | Master | ADM | UC-ADM-03 Maintain Dish & Ingredient Catalog | — | SCR-ADM-03 Dish & Ingredient Catalog | `dishes`, `ingredients` |
+| **Master Reference Data** | Identity & Access | Master | ADM | UC-ADM-04 Manage System Users & Roles | — | SCR-ADM-04 User Account & Permissions | `users` |
 
 ---
 
 ## Detailed Trace Examples
 
-### Example 1 — Meal Demand Quantity Calculation (complete chain)
+### Example 1 — Meal Participation & Attendance Audit Trail (Complete Chain)
 
 ```
-Core Domain:       Meal Planning & Menu Management
-                          ↓
-Core Capability:   Demand Calculation
-                          ↓
-Core Feature:      F-MPN-04 — Calculate Meal Demand Quantities
-                          ↓
-Actor:             Meal / Nutrition Manager (MGR)
-                          ↓
-Use Cases:         UC-MGR-04 Review Auto-Calculated Quantities
-                   UC-MGR-05 Override Dish Buffer Percentage
-                          ↓
-Task Flow:         TF-04 — Meal Demand Quantity Calculation Flow
-                          ↓
-Screen:            SCR-MGR-06 — Review Calculated Quantities
-                   (UI: demand.html → Screen 2 — Calculate Quantities)
-                          ↓
-DB Entities:       expected_meal_quantities
-                   → daily_meal_demand_id → daily_meal_demands
-                   → menu_dish_id → menu_dishes → dishes
-```
-
----
-
-### Example 2 — Post-Cutoff Emergency Change Request (complete chain)
-
-```
-Core Domain:       Meal Operation
-                          ↓
-Core Capability:   Meal Demand Determination
-                          ↓
-Core Feature:      F-MOP-02 — Manage Post-Cutoff Change Requests
-                          ↓
-Actors:            Homeroom Teacher (TCH) — initiates
-                   Meal/Nutrition Manager (MGR) — approves/rejects
-                          ↓
-Use Cases:         UC-TCH-03 Submit Post-Cutoff Change Request
-                   UC-MGR-07 Approve Change Request
-                   UC-MGR-08 Reject Change Request
-                          ↓
-Task Flows:        TF-02 — Post-Cutoff Change Request Flow
-                   TF-08 — Emergency Shortcut Flow
-                          ↓
-Screens:           SCR-TCH-03 — Submit Change Request Form
-                   SCR-MGR-07 — Change Request List
-                   SCR-MGR-08 — Change Request Detail
-                   (UI: demand.html → Screen 3 — Manage Changes)
-                          ↓
-DB Entities:       meal_demand_change_requests
-                   meal_demand_change_logs
-                   → daily_meal_demand_id → daily_meal_demands
-                   → student_id → students
-```
-
----
-
-### Example 3 — Student Meal Attendance Submission (complete chain)
-
-```
-Core Domain:       Student Meal Management
-                          ↓
-Core Capability:   Meal Participation
-                          ↓
-Core Feature:      F-STU-03 — Record Daily Meal Participation
-                          ↓
+Core Module:       Module 1: Meal Participation Management
+                         ↓
+Capability:        Daily Attendance & Amendment
+                         ↓
+Core Features:     F-PAR-01 (Record Attendance) & F-PAR-02 (Audit Changes)
+                         ↓
 Actor:             Homeroom Teacher (TCH)
-                          ↓
-Use Cases:         UC-TCH-01 Record Student Attendance for Meal
-                   UC-TCH-02 Submit Attendance Before Cutoff
-                          ↓
-Task Flow:         TF-01 — Student Meal Attendance Flow
-                          ↓
-Screens:           SCR-TCH-01 — Class Roster (Meal Attendance)
-                   SCR-TCH-02 — Submit Attendance / Lock Demand
-                   (UI: demand.html → Screen 1 — Determine Demand)
-                          ↓
-DB Entities:       daily_meal_demand_details (per student row)
-                   daily_meal_demands (class-level summary)
-                   → student_id → students → class_id → classes
-                   → meal_session_id → meal_sessions
+                         ↓
+Use Cases:         UC-TCH-01 Record Daily Student Meal Participation
+                   UC-TCH-02 Amend Participation Status with Reason
+                         ↓
+Task Flow:         TF-01 — Student Meal Participation & Amendment Flow
+                         ↓
+Screens:           SCR-TCH-01 — Class Roster Meal Participation
+                   SCR-TCH-02 — Participation Amendment Modal
+                   (Implemented in prototype: ui/demand.html → Screen 1)
+                         ↓
+DB Entities:       meal_participations (attendance state)
+                   meal_participation_changes (audit log)
+                   → student_id → students
+                   → meal_schedule_id → meal_schedules
 ```
 
 ---
 
-## Coverage Summary
+### Example 2 — Meal Demand Aggregation & Dish Scaling (Complete Chain)
 
-| Artifact Type | Total | Traced | Coverage |
-|--------------|-------|--------|----------|
-| Core Features | 12 | 12 | 100% |
-| Use Cases | 24 | 24 | 100% |
-| Task Flows | 8 | 8 | 100% |
-| Screens | 25 | 25 | 100% |
-| DB Tables | 10 | 10 | 100% |
-| Prototyped Screens | 5 | 5 | 100% |
+```
+Core Module:       Module 2: Meal Demand & Quantity Management
+                         ↓
+Capability:        Demand Determination & Quantity Calculation
+                         ↓
+Core Features:     F-DMD-01 (Aggregated Demand) & F-DMD-02 (Dish Quantities)
+                         ↓
+Actor:             Meal / Nutrition Manager (MGR)
+                         ↓
+Use Cases:         UC-MGR-01 Aggregate & Determine Daily Meal Demand
+                   UC-MGR-02 Calculate & Adjust Expected Dish Quantities
+                         ↓
+Task Flow:         TF-02 — Meal Demand Determination & Dish Quantity Calculation Flow
+                         ↓
+Screens:           SCR-MGR-01 — Demand Determination Dashboard
+                   SCR-MGR-02 — Dish Quantity Calculation & Overrides
+                   (Implemented in prototype: ui/demand.html → Screen 2)
+                         ↓
+DB Entities:       meal_demands (total headcount, method, buffer %, confirmed status)
+                   meal_demand_dish_quantities (dish expected quantities)
+                   → meal_schedule_id → meal_schedules
+                   → dish_id → dishes
+```
+
+---
+
+### Example 3 — Kitchen Preparation, Cooking Batches & Yield Reconciliation (Complete Chain)
+
+```
+Core Module:       Module 3: Meal Preparation
+                         ↓
+Capability:        Shift Planning, Cooking Batches & Quantity Confirmation
+                         ↓
+Core Features:     F-PRP-01 (Prep Plan), F-PRP-02 (Allocations), F-PRP-03 (Batches), F-PRP-04 (Verification)
+                         ↓
+Actors:            Meal / Nutrition Manager (MGR) & Kitchen Staff (KIT)
+                         ↓
+Use Cases:         UC-MGR-04 Create & Schedule Kitchen Meal Preparation Plan
+                   UC-KIT-01 View Active Kitchen Preparation Plan
+                   UC-KIT-02 Receive & Adjust Ingredient Allocation
+                   UC-KIT-03 Record Cooking Batch Execution
+                   UC-KIT-04 Confirm Prepared Quantity & Log Discrepancies
+                   UC-MGR-05 Review Discrepancies & Sign Off Preparation Summary
+                         ↓
+Task Flows:        TF-04 — Kitchen Preparation Planning & Ingredient Allocation Flow
+                   TF-05 — Cooking Batch Execution & Quantity Confirmation Flow
+                         ↓
+Screens:           SCR-MGR-04 — Kitchen Shift Preparation Planning
+                   SCR-KIT-01 — Kitchen Prep Shift Dashboard (Kiosk)
+                   SCR-KIT-02 — Ingredient Allocation Checklist
+                   SCR-KIT-03 — Cooking Batch Execution & Yield Logging
+                   SCR-KIT-04 — Prepared Quantity Verification Screen
+                   SCR-MGR-05 — Daily Prep Summary & Discrepancy Sign-off
+                         ↓
+DB Entities:       meal_preparation_plans (shift schedule)
+                   meal_preparation_plan_dishes (dish targets)
+                   ingredient_allocations (storage reservations)
+                   meal_preparations (cooking sessions)
+                   meal_preparation_dish_records (finished yields)
+                   prepared_quantity_confirmations (reconciliation & discrepancy audit)
+```
+
+---
+
+## Database Table Coverage Verification
+
+| Category | DB Table Name | Mapped Feature | Mapped Use Case | Mapped Screen | Status |
+|---|---|---|---|---|:---:|
+| **Module 1** | `meal_participations` | `F-PAR-01`, `F-PAR-03` | `UC-TCH-01`, `UC-TCH-03` | `SCR-TCH-01`, `SCR-TCH-03` | 100% Covered |
+| **Module 1** | `meal_participation_changes` | `F-PAR-02` | `UC-TCH-02` | `SCR-TCH-02` | 100% Covered |
+| **Module 2** | `meal_demands` | `F-DMD-01`, `F-DMD-03` | `UC-MGR-01`, `UC-MGR-03` | `SCR-MGR-01`, `SCR-MGR-03` | 100% Covered |
+| **Module 2** | `meal_demand_dish_quantities`| `F-DMD-02` | `UC-MGR-02` | `SCR-MGR-02` | 100% Covered |
+| **Module 2** | `meal_demand_changes` | `F-DMD-03` | `UC-MGR-03`, `UC-TCH-04` | `SCR-MGR-03`, `SCR-TCH-04` | 100% Covered |
+| **Module 3** | `meal_preparation_plans` | `F-PRP-01` | `UC-MGR-04`, `UC-KIT-01` | `SCR-MGR-04`, `SCR-KIT-01` | 100% Covered |
+| **Module 3** | `meal_preparation_plan_dishes`| `F-PRP-01` | `UC-MGR-04`, `UC-KIT-01` | `SCR-MGR-04`, `SCR-KIT-01` | 100% Covered |
+| **Module 3** | `ingredient_allocations` | `F-PRP-02` | `UC-KIT-02` | `SCR-KIT-02` | 100% Covered |
+| **Module 3** | `meal_preparations` | `F-PRP-03` | `UC-KIT-03` | `SCR-KIT-03` | 100% Covered |
+| **Module 3** | `meal_preparation_dish_records`| `F-PRP-03` | `UC-KIT-03` | `SCR-KIT-03` | 100% Covered |
+| **Module 3** | `prepared_quantity_confirmations`| `F-PRP-04`| `UC-KIT-04`, `UC-MGR-05` | `SCR-KIT-04`, `SCR-MGR-05` | 100% Covered |
+| **Reference**| `students` | Master Data | `UC-ADM-01` | `SCR-ADM-01` | 100% Covered |
+| **Reference**| `meal_registrations` | Master Data | `UC-ADM-01` | `SCR-ADM-01` | 100% Covered |
+| **Reference**| `meal_schedules` | Master Data | `UC-ADM-02` | `SCR-ADM-02` | 100% Covered |
+| **Reference**| `dishes` | Master Data | `UC-ADM-03` | `SCR-ADM-03` | 100% Covered |
+| **Reference**| `ingredients` | Master Data | `UC-ADM-03` | `SCR-ADM-03` | 100% Covered |
+| **Reference**| `users` | Master Data | `UC-ADM-04` | `SCR-ADM-04` | 100% Covered |
+
+---
+
+## Metric Summary
+
+- **Total Operational Modules Covered:** 3 Active Core Modules + 1 Reference Master Domain
+- **Total Core Features:** 10 Core Features (`F-PAR-01..03`, `F-DMD-01..03`, `F-PRP-01..04`)
+- **Total Use Cases:** 16 Use Cases across 4 Roles
+- **Total Task Flows:** 5 End-to-End Decision Flows
+- **Total Screens:** 17 Standardized Screens
+- **Total DBML Tables Traced:** 17 Tables (11 Operational + 6 Reference)
+- **End-to-End Traceability Coverage:** **100.0%**

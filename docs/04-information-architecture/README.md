@@ -2,30 +2,36 @@
 
 ## What is this?
 
-This folder bridges the Use Case Specifications (Phase 03) to the UI/UX Prototype (Phase 05).
+This phase bridges the Use Case Specifications ([Phase 03](../03-roles-usecases/README.md)) to the UI/UX screens ([Phase 05](../05-ui-ux/README.md)) and Database Architecture ([Phase 06](../06-database/README.md)).
 
-Information Architecture (IA) answers: **What screens exist? How are they organized? How does a user navigate between them? What decisions happen at which step?**
+Information Architecture (IA) establishes:
+- **What screens exist?** (Screen Inventory)
+- **How are screens organized?** (Sitemap & Role Portals)
+- **How do users navigate?** (Screen Hierarchy & Navigation Depth)
+- **What operational decisions happen at each step?** (Task Flows)
 
-Every screen in this IA is traceable to a Use Case. Every task flow is traceable to a core feature.
-
-## IA Components
+## IA Components & Coverage
 
 ```
-Information Architecture
-      ├── Sitemap               ← What screens exist and how they are grouped
-      ├── Screen Hierarchy      ← Parent/child relationships between screens
-      ├── Task Flows            ← Step-by-step user journeys with decision points
-      └── Screen Inventory      ← Full list of screens with UC source and actor
+Use Case Specifications (Phase 03)
+            ↓
+Information Architecture (Phase 04)
+   ├── Sitemap            → Role-based portals (TCH, MGR, KIT, ADM)
+   ├── Screen Hierarchy   → Parent/child relationships & modal depths
+   ├── Screen Inventory   → 17 active screens mapped to DBML entities
+   └── Task Flows         → 5 end-to-end Mermaid flows (TF-01 to TF-05)
+            ↓
+Database Entities & Lifecycles (Phase 06)
 ```
 
 ## Artifacts in this folder
 
 | File | Purpose |
-|------|---------|
-| [sitemap.md](sitemap.md) | Top-level screen groupings by role and domain |
-| [screen-hierarchy.md](screen-hierarchy.md) | Parent → child screen structure with navigation paths |
-| [task-flows.md](task-flows.md) | Mermaid flowcharts for 8 core user journeys |
-| [screen-inventory.md](screen-inventory.md) | Full screen list with ID, UC source, actor, and description |
+|---|---|
+| [sitemap.md](sitemap.md) | High-level system navigation map across the 4 role portals |
+| [screen-hierarchy.md](screen-hierarchy.md) | Navigation depth, parent-child views, and modal structure |
+| [screen-inventory.md](screen-inventory.md) | Complete catalog of 17 screens with ID, Actor, Use Case, and DB Entity links |
+| [task-flows.md](task-flows.md) | Visual Mermaid decision flows tracing student attendance, demand locking, change triage, prep planning, and cooking verification |
 
 ## Next Step
 

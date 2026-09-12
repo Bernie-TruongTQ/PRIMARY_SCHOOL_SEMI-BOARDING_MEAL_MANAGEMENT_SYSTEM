@@ -1,169 +1,131 @@
-# UC-KIT — Kitchen Staff Use Cases
+# Use Case Specifications — Kitchen Staff / Head Chef (KIT)
 
-## Use Case Diagram
+## Actor Overview
+
+- **Actor Name:** Kitchen Staff / Head Chef (`KIT`)
+- **Primary Domain:** Module 3: Meal Preparation
+- **Key Objectives:** Review scheduled prep targets, accept allocated ingredients from storage, record physical cooking batches, and verify final prepared yields against demand.
+
+---
+
+## Use Case Diagram — Kitchen Staff
 
 ```mermaid
-graph LR
-    KIT([Kitchen Staff])
+flowchart LR
+    KIT(["👤 Kitchen Staff / Head Chef\n(KIT)"])
 
-    subgraph SYSTEM["Meal Operation — Kitchen Execution"]
-        subgraph PREP["Meal Preparation"]
-            UC_KIT_01["UC-KIT-01\nView Meal Preparation Plan"]
-            UC_KIT_02["UC-KIT-02\nRecord Prepared Quantity"]
-            UC_KIT_03["UC-KIT-03\nConfirm Preparation Complete"]
-        end
-
-        subgraph DIST["Meal Distribution"]
-            UC_KIT_04["UC-KIT-04\nView Distribution Plan"]
-            UC_KIT_05["UC-KIT-05\nRecord Distributed Quantity"]
-        end
-
-        subgraph HAND["Meal Handover"]
-            UC_KIT_06["UC-KIT-06\nConfirm Meal Handover"]
-        end
+    subgraph SYSTEM["Module 3: Kitchen Meal Preparation Execution"]
+        UC1(["UC-KIT-01\nView Active Kitchen Preparation Plan"])
+        UC2(["UC-KIT-02\nReceive & Adjust Ingredient Allocation"])
+        UC3(["UC-KIT-03\nRecord Cooking Batch Execution"])
+        UC4(["UC-KIT-04\nConfirm Prepared Quantity & Log Discrepancies"])
     end
 
-    KIT --> UC_KIT_01
-    KIT --> UC_KIT_02
-    KIT --> UC_KIT_03
-    KIT --> UC_KIT_04
-    KIT --> UC_KIT_05
-    KIT --> UC_KIT_06
+    KIT --- UC1
+    KIT --- UC2
+    KIT --- UC3
+    KIT --- UC4
 
-    UC_KIT_01 -.->|"«include»"| UC_KIT_02
-    UC_KIT_02 -.->|"«include»"| UC_KIT_03
-    UC_KIT_04 -.->|"«include»"| UC_KIT_05
-    UC_KIT_05 -.->|"«include»"| UC_KIT_06
+    UC4 -.->|"<<include>>"| UC3
 ```
 
 ---
 
-## Use Case Specifications
+## UC-KIT-01 — View Active Kitchen Preparation Plan
 
-### UC-KIT-01 — View Meal Preparation Plan
+- **Core Feature:** `F-PRP-01`
+- **Primary DB Entity:** `meal_preparation_plans`, `meal_preparation_plan_dishes`
+- **Secondary Entities:** `dishes`, `meal_demands`
 
-| Field | Value |
-|-------|-------|
-| **Actor** | Kitchen Staff |
-| **Feature** | F-MOP-03 Record Meal Preparation |
-| **Precondition** | Meal demand is locked (`determination_status = 'locked'`). Menu is published. Expected quantities have been calculated. |
-| **Trigger** | Kitchen staff opens the preparation plan for the current meal session |
+### Preconditions
 
-**Main Flow:**
-1. Kitchen staff selects the current date and meal session
-2. System retrieves the published menu for the session
-3. System displays `expected_meal_quantities` per dish: dish name, category, expected quantity, unit, buffer %
-4. Kitchen staff reviews the plan
+1. Kitchen shift has started.
+2. Manager (MGR) has published a preparation plan (`plan_status = 'planned'`).
 
-**Postcondition:** Kitchen staff has a clear view of what and how much to prepare.
+### Main Success Scenario
 
----
-
-### UC-KIT-02 — Record Prepared Quantity
-
-| Field | Value |
-|-------|-------|
-| **Actor** | Kitchen Staff |
-| **Feature** | F-MOP-03 Record Meal Preparation |
-| **Precondition** | Preparation plan is loaded (UC-KIT-01 completed) |
-| **Trigger** | Kitchen staff finishes preparing a dish and records the quantity |
-
-**Main Flow:**
-1. Kitchen staff selects a dish from the preparation plan
-2. System displays the expected quantity
-3. Kitchen staff enters the actual quantity prepared
-4. System validates: quantity must be > 0 and ≤ 150% of expected
-5. System saves the record and updates preparation status for the dish to `in_progress`
-6. System highlights any dishes still pending entry
-
-**Alternative Flow — Quantity Outside Tolerance:**
-- 4a. Entered quantity exceeds 150% of expected → System shows warning: "Quantity significantly higher than expected. Confirm?"
-- 4b. Kitchen staff confirms → System records with a `discrepancy_flag = true`
-
-**Postcondition:** Prepared quantity is recorded for the dish.
+1. Kitchen staff open the **Kitchen Kiosk Preparation Board** ([SCR-KIT-01](../04-information-architecture/screen-inventory.md)).
+2. System displays target dishes, scheduled meal service, target completion times, and planned quantities (e.g., Steamed Rice: 100 kg, Braised Pork: 65 kg, Vegetable Soup: 130 L).
+3. Kitchen lead clicks **Start Shift Execution**.
+4. System updates `meal_preparation_plans.plan_status = 'in_progress'`.
+5. System guides staff to the ingredient requisition and allocation checklist ([UC-KIT-02](#uc-kit-02)).
 
 ---
 
-### UC-KIT-03 — Confirm Preparation Complete
+## UC-KIT-02 — Receive & Adjust Ingredient Allocation
 
-| Field | Value |
-|-------|-------|
-| **Actor** | Kitchen Staff |
-| **Feature** | F-MOP-03 Record Meal Preparation |
-| **Precondition** | All dishes have an actual quantity recorded |
-| **Trigger** | Kitchen staff confirms that all dishes for the session are prepared |
+- **Core Feature:** `F-PRP-02`
+- **Primary DB Entity:** `ingredient_allocations`
+- **Secondary Entities:** `ingredients`, `meal_preparation_plans`
 
-**Main Flow:**
-1. Kitchen staff reviews the summary (all dishes + actual quantities)
-2. System shows overall completion status: all dishes marked ✅
-3. Kitchen staff taps "Confirm Preparation Complete"
-4. System transitions preparation status to `completed`
-5. System notifies the Meal/Nutrition Manager that preparation is done
+### Preconditions
 
-**Alternative Flow — Incomplete Dishes:**
-- 2a. One or more dishes have no quantity recorded → System shows warning listing incomplete dishes
-- 2b. Kitchen staff may proceed anyway by acknowledging: "Some dishes not recorded — confirm anyway?"
+1. Preparation plan is in progress.
+2. Ingredients have been assigned from pantry storage for the meal plan.
 
-**Postcondition:** Preparation phase is marked complete; distribution plan is unlocked.
+### Main Success Scenario
 
----
-
-### UC-KIT-04 — View Distribution Plan
-
-| Field | Value |
-|-------|-------|
-| **Actor** | Kitchen Staff |
-| **Feature** | F-MOP-04 Record Meal Distribution |
-| **Precondition** | Preparation is confirmed complete (UC-KIT-03). Demand is locked with class-level breakdowns. |
-| **Trigger** | Kitchen staff opens the distribution plan |
-
-**Main Flow:**
-1. Kitchen staff selects the current meal session
-2. System displays per-class distribution plan: class name, confirmed headcount, expected portions per dish
-3. Kitchen staff reviews plan before starting distribution rounds
-
-**Postcondition:** Kitchen staff knows how many portions to deliver to each class.
+1. Kitchen staff navigate to the **Ingredient Allocation Checklist** ([SCR-KIT-02](../04-information-architecture/screen-inventory.md)).
+2. System displays required raw ingredients with allocated quantities (e.g., Jasmine Rice: 50 kg raw, Pork belly: 40 kg, Cabbage: 30 kg).
+3. Staff physically inspect and weigh items received at the kitchen station.
+4. Staff tap **Confirm Receipt** for each item:
+   - System updates `ingredient_allocations.allocation_status = 'allocated'`.
+   - Records `allocated_by = current_user.id`, `allocated_at = now()`.
+5. If raw stock is defective or adjusted, staff update quantity (`allocation_status = 'adjusted'` or `'returned'`) with reason.
 
 ---
 
-### UC-KIT-05 — Record Distributed Quantity
+## UC-KIT-03 — Record Cooking Batch Execution
 
-| Field | Value |
-|-------|-------|
-| **Actor** | Kitchen Staff |
-| **Feature** | F-MOP-04 Record Meal Distribution |
-| **Precondition** | Distribution plan is loaded (UC-KIT-04) |
-| **Trigger** | Kitchen staff delivers a dish to a class and records the quantity |
+- **Core Feature:** `F-PRP-03`
+- **Primary DB Entity:** `meal_preparations`, `meal_preparation_dish_records`
+- **Secondary Entities:** `dishes`, `meal_preparation_plans`
 
-**Main Flow:**
-1. Kitchen staff selects a class
-2. System shows the expected portion count for the class
-3. Kitchen staff enters the actual quantity distributed
-4. System saves and marks that class as distributed
-5. System updates the running total: distributed vs. expected
+### Preconditions
 
-**Alternative Flow — Under-Distribution:**
-- 3a. Quantity distributed is less than expected → System flags the class with `underdistributed`
-- 3b. Kitchen staff records reason (e.g., "class absent for field trip")
+1. Ingredients are allocated and verified.
+2. Cooking equipment and cooking staff are assigned.
 
-**Postcondition:** Distribution quantity is recorded for the class.
+### Main Success Scenario
+
+1. Chef opens the **Cooking Execution Monitor** ([SCR-KIT-03](../04-information-architecture/screen-inventory.md)).
+2. Chef taps **Start Batch** for a specific dish (e.g., Rice Steamer #1).
+3. System creates a preparation session in `meal_preparations` with `prep_status = 'in_progress'`, `prepared_by = current_user.id`, and `started_at = now()`.
+4. Upon batch completion, chef weighs or counts the finished product.
+5. Chef inputs actual batch output and taps **Complete Batch**.
+6. System logs a record in `meal_preparation_dish_records`:
+   - `dish_id`
+   - `actual_prepared_quantity` (e.g., 98.5 kg)
+7. Chef repeats for all dishes until all scheduled items are cooked.
+8. System updates `meal_preparations.prep_status = 'completed'` and `completed_at = now()`.
 
 ---
 
-### UC-KIT-06 — Confirm Meal Handover
+## UC-KIT-04 — Confirm Prepared Quantity & Log Discrepancies
 
-| Field | Value |
-|-------|-------|
-| **Actor** | Kitchen Staff |
-| **Feature** | F-MOP-05 Confirm Meal Handover & Reconcile |
-| **Precondition** | Distribution quantity recorded for the class (UC-KIT-05) |
-| **Trigger** | Kitchen staff physically hands over the meal batch to the class supervisor |
+- **Core Feature:** `F-PRP-04`
+- **Primary DB Entity:** `prepared_quantity_confirmations`
+- **Secondary Entities:** `meal_preparation_dish_records`, `meal_preparation_plan_dishes`
 
-**Main Flow:**
-1. Kitchen staff selects the class for handover
-2. System shows summary: expected portions, distributed quantity
-3. Kitchen staff confirms handover with timestamp
-4. System records handover event and notifies the Homeroom Teacher (UC-TCH-04 triggered)
-5. System runs reconciliation: Planned vs. Prepared vs. Distributed
+### Preconditions
 
-**Postcondition:** Handover is recorded. Reconciliation discrepancies (if any) are surfaced to the Meal/Nutrition Manager.
+1. Cooking batches for all dishes have reached `completed` status.
+2. Target planned quantities from `meal_preparation_plan_dishes` are available for comparison.
+
+### Main Success Scenario
+
+1. Head Chef or Kitchen Lead accesses the **Prepared Quantity Verification Screen** ([SCR-KIT-04](../04-information-architecture/screen-inventory.md)).
+2. System computes reconciliation between Planned vs. Actual Yield:
+   - Example 1: Rice planned 100 kg, actual 99 kg (Variance: -1%, within $\pm 2\%$ tolerance) $\rightarrow$ `confirmation_status = 'matched'`.
+   - Example 2: Pork planned 65 kg, actual 57 kg (Variance: -12.3%, exceeding tolerance) $\rightarrow$ `confirmation_status = 'discrepancy'`.
+3. For matched dishes, chef clicks **Confirm Batch**.
+4. For discrepancy dishes, system prompts for a mandatory **Discrepancy Reason** (e.g., "Meat over-trimmed due to excessive fat proportion").
+5. Chef inputs explanation and submits verification.
+6. System creates records in `prepared_quantity_confirmations`:
+   - `meal_preparation_dish_record_id`
+   - `confirmed_quantity`
+   - `confirmation_status` (`matched` or `discrepancy`)
+   - `discrepancy_reason`
+   - `confirmed_by = current_user.id`
+   - `confirmed_at = now()`
+7. An alert is dispatched to Meal Manager (MGR) for final daily sign-off ([UC-MGR-05](usecase-manager.md#uc-mgr-05)).
