@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hệ thống Quản lý Bán trú Tiểu học - Hoa Sen Elementary</title>
+  <meta name="description" content="Ứng dụng điều hành bán trú tiểu học: Điểm danh suất ăn, Xác định nhu cầu & định lượng, Kiosk chế biến nhà bếp.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- CSS Stylesheets -->
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/teacher.css">
+  <link rel="stylesheet" href="css/manager.css">
+  <link rel="stylesheet" href="css/kitchen.css">
+</head>
+<body>
+
+  <!-- 1. Thanh điều khiển Viewport (Mobile Simulator vs Desktop) -->
+  <div class="viewport-control-bar">
+    <div class="viewport-info">
+      <span class="app-badge">Hoa Sen Dining SaaS</span>
+      <span>Hệ thống Quản lý Bán trú Cốt lõi (3 Module Cốt lõi)</span>
+    </div>
+    <div class="viewport-toggle-group">
+      <button class="viewport-btn" id="btnViewMobile" title="Xem dạng giả lập điện thoại di động">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+        <span>Mobile (390px)</span>
+      </button>
+      <button class="viewport-btn active" id="btnViewDesktop" title="Xem dạng màn hình rộng">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect><line x1="8" y1="21" x2="16" y2="21"></line><line x1="12" y1="17" x2="12" y2="21"></line></svg>
+        <span>Desktop / Tablet</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- 2. Master App Container -->
+  <div class="app-container mode-desktop" id="appContainer">
+
+    <!-- Top App Bar -->
+    <header class="top-app-bar">
+      <div class="brand-section">
+        <div class="school-logo-box" title="Trường Tiểu học Bán trú Hoa Sen">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1-2.5-2.5Z"></path>
+            <path d="M12 6v6"></path>
+            <path d="M9 9h6"></path>
+            <circle cx="16" cy="16" r="3"></circle>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h1>Tiểu Học Hoa Sen</h1>
+          <div class="brand-meta">
+            <span>Bếp ăn Bán trú</span>
+            <span class="badge badge-neutral">Năm học 2026-2027</span>
+            <span>• Hôm nay: 12/09/2026 (Bữa trưa)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Role / Portal Switcher -->
+      <nav class="portal-switcher" id="portalSwitcher">
+        <button class="portal-nav-btn active" data-portal="teacher" title="Chuyển sang giao diện Giáo viên">
+          <span>📝</span>
+          <span>Giáo Viên (M1)</span>
+        </button>
+        <button class="portal-nav-btn" data-portal="manager" title="Chuyển sang giao diện Quản lý Dinh dưỡng">
+          <span>📋</span>
+          <span>Quản Lý Bếp (M2 & M3)</span>
+        </button>
+        <button class="portal-nav-btn" data-portal="kitchen" title="Chuyển sang Kiosk Nhà bếp">
+          <span>🍳</span>
+          <span>Kiosk Nhà Bếp (M3)</span>
+        </button>
+      </nav>
+
+      <!-- Global Actions -->
+      <div>
+        <button class="btn btn-secondary btn-sm" onclick="window.app.resetData()" title="Khôi phục trạng thái dữ liệu mẫu ban đầu">
+          ↺ Khôi phục Dữ liệu
+        </button>
+      </div>
+    </header>
+
+    <!-- ========================================================================= -->
+    <!-- PORTAL 1: GIÁO VIÊN - MODULE 1: ĐIỂM DANH SUẤT ĂN                         -->
+    <!-- ========================================================================= -->
+    <main class="portal-section active" id="portal_teacher">
+      <div class="portal-content">
+        <div class="teacher-view-container">
+
+          <!-- Header session & cutoff card (SCR-TCH-01) -->
+          <div class="session-summary-card" id="teacherSessionHeader">
+            <!-- Dynamic render from teacher.js -->
+          </div>
+
+          <!-- Class Selection Ribbon -->
+          <div>
+            <div style="font-size:0.8rem; font-weight:700; color:var(--color-text-secondary); margin-bottom:8px; text-transform:uppercase;">
+              Chọn lớp học quản lý:
+            </div>
+            <div class="class-selector-ribbon" id="classSelectorRibbon">
+              <!-- Dynamic class pills -->
+            </div>
+          </div>
+
+          <!-- Roster Search & Filter Controls -->
+          <div class="roster-actions-bar">
+            <div style="display:flex; align-items:center; gap:8px; flex:1;">
+              <input type="text" id="rosterSearchInput" class="form-input roster-search-input" placeholder="🔍 Tìm tên hoặc mã học sinh...">
+              <div class="class-selector-ribbon" id="rosterFilterGroup">
+                <button class="class-pill-btn filter-btn active" data-filter="all">Tất cả</button>
+                <button class="class-pill-btn filter-btn" data-filter="attended">Ăn bán trú</button>
+                <button class="class-pill-btn filter-btn" data-filter="excused_absence">Có phép</button>
+                <button class="class-pill-btn filter-btn" data-filter="unexcused_absence">Không phép</button>
+                <button class="class-pill-btn filter-btn" data-filter="guest_meal">Suất khách</button>
+              </div>
+            </div>
+            <div>
+              <button class="btn btn-danger btn-sm" onclick="window.teacherModule.openEmergencyModal()" title="Mở form gửi yêu cầu đột xuất sau chốt sổ">
+                ⚡ Yêu Cầu Đột Xuất (SCR-TCH-04)
+              </button>
+            </div>
+          </div>
+
+          <!-- Student Roster Grid (SCR-TCH-01) -->
+          <div class="student-roster-grid" id="studentRosterList">
+            <!-- Dynamic student cards -->
+          </div>
+
+          <!-- Sticky Roster Summary & Lock Action (SCR-TCH-03) -->
+          <div class="roster-sticky-bar">
+            <div class="roster-summary-counts" id="rosterSummaryCounts">
+              <!-- Dynamic count chips -->
+            </div>
+            <div>
+              <button class="btn btn-primary" id="btnLockRoster" onclick="window.teacherModule.openLockConfirmationModal()">
+                <span>🔒 Chốt Sổ Sĩ Số (SCR-TCH-03)</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Audit Timeline (SCR-TCH-02 log) -->
+          <div style="background:#FFFFFF; border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:20px; box-shadow:var(--shadow-sm);">
+            <div style="display:flex; align-items:center; gap:8px; margin-bottom:4px;">
+              <span class="badge badge-screen-id">SCR-TCH-02 LOG</span>
+              <h3 style="font-size:1rem;">Nhật ký Thay đổi & Lý do Điểm danh gần nhất</h3>
+            </div>
+            <div class="audit-timeline" id="teacherAuditTimeline">
+              <!-- Dynamic audit items -->
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- ========================================================================= -->
+    <!-- PORTAL 2: QUẢN LÝ DINH DƯỠNG - MODULE 2 & 3                               -->
+    <!-- ========================================================================= -->
+    <main class="portal-section" id="portal_manager">
+      <!-- Sub Nav Bar -->
+      <nav class="sub-nav-bar" id="managerSubNav">
+        <button class="sub-nav-item active" data-tab="demand">
+          <span>📊</span>
+          <span>Xác Định Nhu Cầu (SCR-MGR-01)</span>
+        </button>
+        <button class="sub-nav-item" data-tab="dishes">
+          <span>🍲</span>
+          <span>Định Lượng Món Ăn (SCR-MGR-02)</span>
+        </button>
+        <button class="sub-nav-item" data-tab="queue">
+          <span>⚡</span>
+          <span>Yêu Cầu Khẩn Cấp (SCR-MGR-03)</span>
+        </button>
+        <button class="sub-nav-item" data-tab="prep_plan">
+          <span>📅</span>
+          <span>Kế Hoạch Ca Bếp (SCR-MGR-04)</span>
+        </button>
+        <button class="sub-nav-item" data-tab="summary">
+          <span>✍️</span>
+          <span>Nghiệm Thu & Ký Duyệt (SCR-MGR-05)</span>
+        </button>
+      </nav>
+
+      <div class="portal-content">
+        <div class="manager-view-container">
+
+          <!-- TAB 1: Xác định nhu cầu (SCR-MGR-01) -->
+          <div class="manager-tab-content" id="mgrTab_demand">
+            <div style="display:flex; flex-direction:column; gap:20px;">
+              <!-- KPI Cards -->
+              <div class="kpi-grid">
+                <div class="kpi-card">
+                  <span class="kpi-label">Sĩ số danh sách gốc</span>
+                  <div class="kpi-value-row">
+                    <span class="kpi-value" id="kpiRegistered">210</span>
+                    <span class="kpi-badge badge-neutral">học sinh</span>
+                  </div>
+                </div>
+                <div class="kpi-card">
+                  <span class="kpi-label">Điểm danh có mặt</span>
+                  <div class="kpi-value-row">
+                    <span class="kpi-value" id="kpiAttended" style="color:var(--color-success);">202</span>
+                    <span class="kpi-badge badge-success">thực tế</span>
+                  </div>
+                </div>
+                <div class="kpi-card">
+                  <span class="kpi-label">Tỷ lệ dự phòng thức ăn</span>
+                  <div class="kpi-value-row">
+                    <span class="kpi-value" id="kpiBufferPct" style="color:var(--color-warning);">3%</span>
+                    <span class="kpi-badge badge-warning">đệm hao hụt</span>
+                  </div>
+                </div>
+                <div class="kpi-card" style="border-color:var(--color-primary);">
+                  <span class="kpi-label" style="color:var(--color-primary);">Nhu cầu chốt nấu</span>
+                  <div class="kpi-value-row">
+                    <span class="kpi-value" id="kpiFinalHeadcount" style="color:var(--color-primary);">208</span>
+                    <span class="kpi-badge badge-primary">suất ăn</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Tiến độ nộp điểm danh của các lớp -->
+              <div class="submission-progress-card">
+                <div class="progress-header">
+                  <div>
+                    <h3 style="font-size:1.05rem;">Tiến độ Chốt Sổ Điểm Danh Của Các Khối Lớp</h3>
+                    <p style="font-size:0.8rem; color:var(--color-text-secondary);">Dữ liệu liên thông trực tiếp từ giáo viên chủ nhiệm</p>
+                  </div>
+                  <span style="font-weight:700; color:var(--color-primary);" id="submissionProgressText">5/6 Lớp đã chốt (83%)</span>
+                </div>
+                <div class="progress-bar-track">
+                  <div class="progress-bar-fill" id="submissionProgressFill" style="width: 83%;"></div>
+                </div>
+                <div class="class-chips-row" id="classChipsRow">
+                  <!-- Dynamic chips -->
+                </div>
+              </div>
+
+              <!-- Chọn phương pháp tính & Buffer % -->
+              <div class="calculation-box">
+                <div class="trace-header">
+                  <div class="trace-title-group">
+                    <span class="badge badge-screen-id">SCR-MGR-01</span>
+                    <h3 style="font-size:1.1rem;">Lựa Chọn Phương Pháp Tính Nhu Cầu & Tỉ Lệ Đệm</h3>
+                  </div>
+                  <span class="badge badge-info">Tính toán tự động theo DBML: meal_demands</span>
+                </div>
+
+                <div class="method-options-grid">
+                  <div class="method-card selected" data-method="participation_based" onclick="window.managerModule.selectMethod('participation_based')">
+                    <div class="method-card-title">
+                      <span>Theo Điểm Danh Thực Tế</span>
+                      <span class="badge badge-success">Khuyên dùng</span>
+                    </div>
+                    <div class="method-card-desc">
+                      Lấy tổng sĩ số thực tế từ các lớp đã chốt sổ cộng thêm tỉ lệ dự phòng Buffer %. Tránh lãng phí thực phẩm tối đa.
+                    </div>
+                  </div>
+
+                  <div class="method-card" data-method="manual_forecast" onclick="window.managerModule.selectMethod('manual_forecast')">
+                    <div class="method-card-title">
+                      <span>Theo Sĩ Số Đăng Ký Gốc</span>
+                    </div>
+                    <div class="method-card-desc">
+                      Nấu đủ theo 100% học sinh đăng ký đầu kỳ (210 suất) bất kể số lượng nghỉ học thực tế.
+                    </div>
+                  </div>
+
+                  <div class="method-card" data-method="historical_average" onclick="window.managerModule.selectMethod('historical_average')">
+                    <div class="method-card-title">
+                      <span>Trung Bình Lịch Sử 7 Ngày</span>
+                    </div>
+                    <div class="method-card-desc">
+                      Lấy mức trung bình tiêu thụ 7 ngày gần nhất (khoảng 205 suất) để dự báo nhu cầu.
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Buffer control -->
+                <div class="buffer-control-card">
+                  <div>
+                    <strong style="font-size:0.95rem;">Tỷ Lệ Đệm Dự Phòng Hao Hụt (Buffer %):</strong>
+                    <div style="font-size:0.8rem; color:var(--color-text-secondary); margin-top:2px;">
+                      Dùng để xử lý các phát sinh đột xuất hoặc hao hụt khi chia khay ăn.
+                    </div>
+                  </div>
+                  <div class="stepper-group">
+                    <button class="stepper-btn" id="btnBufferMinus">-</button>
+                    <span class="stepper-val" id="bufferValueDisplay">3%</span>
+                    <button class="stepper-btn" id="btnBufferPlus">+</button>
+                  </div>
+                </div>
+
+                <!-- Confirm Action -->
+                <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+                  <button class="btn btn-primary btn-lg" id="btnConfirmDemand" onclick="window.managerModule.confirmDemandAction()">
+                    Xác Nhận Nhu Cầu Suất Ăn (208 Suất)
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- TAB 2: Định lượng món ăn (SCR-MGR-02) -->
+          <div class="manager-tab-content" id="mgrTab_dishes" style="display:none;">
+            <div class="data-table-card">
+              <div class="trace-header" style="padding:16px 20px 0 20px;">
+                <div class="trace-title-group">
+                  <span class="badge badge-screen-id">SCR-MGR-02</span>
+                  <h3 style="font-size:1.15rem;">Bảng Tính Toán & Điều Chỉnh Định Lượng Món Ăn</h3>
+                </div>
+                <span style="font-size:0.85rem; color:var(--color-text-secondary);">
+                  Công thức: <strong>Định mức chuẩn × Nhu cầu chốt (208) × (1 + Buffer%)</strong>
+                </span>
+              </div>
+
+              <div class="table-responsive">
+                <table class="custom-table">
+                  <thead>
+                    <tr>
+                      <th>Món ăn & Thực đơn</th>
+                      <th>Định mức suất chuẩn</th>
+                      <th>Khối lượng tính toán</th>
+                      <th>Ghi đè điều chỉnh</th>
+                      <th>Kế hoạch nấu chốt</th>
+                      <th>Ghi chú & Lý do điều chỉnh</th>
+                    </tr>
+                  </thead>
+                  <tbody id="dishQuantityTableBody">
+                    <!-- Dynamic rows -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Hàng đợi yêu cầu khẩn cấp (SCR-MGR-03) -->
+          <div class="manager-tab-content" id="mgrTab_queue" style="display:none;">
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <div class="trace-header">
+                <div class="trace-title-group">
+                  <span class="badge badge-screen-id">SCR-MGR-03</span>
+                  <h3 style="font-size:1.15rem;">Hàng Đợi Thẩm Định Yêu Cầu Thay Đổi Khẩn Cấp Sau Chốt Sổ</h3>
+                </div>
+                <span class="badge badge-warning">Cần thẩm định ngay trước giờ chia cơm</span>
+              </div>
+              <div class="queue-grid" id="emergencyQueueList">
+                <!-- Dynamic cards -->
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: Kế hoạch ca bếp (SCR-MGR-04) -->
+          <div class="manager-tab-content" id="mgrTab_prep_plan" style="display:none;">
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <div class="trace-header">
+                <div class="trace-title-group">
+                  <span class="badge badge-screen-id">SCR-MGR-04</span>
+                  <h3 style="font-size:1.15rem;">Lập Kế Hoạch Ca Chế Biến Nhà Bếp</h3>
+                </div>
+                <span class="badge badge-success">Đã xuất bản tới Kiosk Bếp</span>
+              </div>
+              <div id="prepPlanDetails">
+                <!-- Dynamic prep plan -->
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 5: Nghiệm thu & Ký duyệt ca (SCR-MGR-05) -->
+          <div class="manager-tab-content" id="mgrTab_summary" style="display:none;">
+            <div style="display:flex; flex-direction:column; gap:20px;">
+              <div class="trace-header">
+                <div class="trace-title-group">
+                  <span class="badge badge-screen-id">SCR-MGR-05</span>
+                  <h3 style="font-size:1.15rem;">Báo Cáo Nghiệm Thu Chế Biến & Ký Duyệt Chênh Lệch Hàng Ngày</h3>
+                </div>
+                <span class="badge badge-info">Đối chiếu Kế hoạch vs Thực nấu</span>
+              </div>
+
+              <div class="data-table-card">
+                <div class="table-responsive">
+                  <table class="custom-table">
+                    <thead>
+                      <tr>
+                        <th>Món ăn</th>
+                        <th>Kế hoạch chốt</th>
+                        <th>Thực tế cân tại bếp</th>
+                        <th>Chênh lệch (Variance)</th>
+                        <th>Giải trình nguyên nhân</th>
+                        <th>Người xác nhận tại bếp</th>
+                      </tr>
+                    </thead>
+                    <tbody id="auditSummaryTableBody">
+                      <!-- Dynamic rows -->
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Sign-off card -->
+              <div class="signoff-card" id="signoffAuditBox">
+                <!-- Dynamic signoff form or stamp -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- ========================================================================= -->
+    <!-- PORTAL 3: KIOSK NHÀ BẾP - MODULE 3: CHẾ BIẾN BẾP                         -->
+    <!-- ========================================================================= -->
+    <main class="portal-section" id="portal_kitchen">
+      <nav class="sub-nav-bar" id="kitchenSubNav">
+        <button class="sub-nav-item active" data-tab="kiosk">
+          <span>📺</span>
+          <span>Bảng Kiosk Ca Bếp (SCR-KIT-01)</span>
+        </button>
+        <button class="sub-nav-item" data-tab="ingredients">
+          <span>📦</span>
+          <span>Kiểm Nhận Nguyên Liệu (SCR-KIT-02)</span>
+        </button>
+        <button class="sub-nav-item" data-tab="cooking">
+          <span>🍳</span>
+          <span>Trạm Nấu & Mẻ Nấu (SCR-KIT-03)</span>
+        </button>
+        <button class="sub-nav-item" data-tab="verification">
+          <span>⚖️</span>
+          <span>Cân Nghiệm Thu (SCR-KIT-04)</span>
+        </button>
+      </nav>
+
+      <div class="portal-content">
+        <div class="kitchen-view-container">
+
+          <!-- Top Kiosk Header Wallboard Card -->
+          <div class="kiosk-header-card">
+            <div class="kiosk-title-box">
+              <div style="display:flex; align-items:center; gap:8px;">
+                <span class="badge badge-screen-id" style="background:#0F172A; color:#38BDF8; border-color:#0284C7;">SCR-KIT-01</span>
+                <h2>Kiosk Điều Hành Nhà Bếp - Ca Nấu Trưa</h2>
+              </div>
+              <div class="kiosk-meta">
+                <span>Bếp trưởng: <strong>Nguyễn Quốc Hưng</strong></span>
+                <span>• Hạn hoàn thành chia cơm: <strong style="color:#FBBF24;">10:45</strong></span>
+                <span>• Chỉ tiêu: <strong>208 suất ăn</strong></span>
+              </div>
+            </div>
+            <div class="kiosk-clock-badge">
+              <div style="font-size:0.75rem; color:#94A3B8; text-transform:uppercase; letter-spacing:0.05em;">Đồng hồ bếp</div>
+              <div class="kiosk-clock-time" id="kioskLiveClock">09:42:15</div>
+            </div>
+          </div>
+
+          <!-- TAB 1: Bảng Kiosk các món ăn (SCR-KIT-01) -->
+          <div class="kitchen-tab-content" id="kitTab_kiosk">
+            <div class="kiosk-dishes-grid" id="kioskDishesContainer">
+              <!-- Dynamic dish kiosk cards -->
+            </div>
+          </div>
+
+          <!-- TAB 2: Kiểm nhận nguyên liệu xuất kho (SCR-KIT-02) -->
+          <div class="kitchen-tab-content" id="kitTab_ingredients" style="display:none;">
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <div class="trace-header">
+                <div class="trace-title-group">
+                  <span class="badge badge-screen-id">SCR-KIT-02</span>
+                  <h3 style="font-size:1.2rem;">Danh Mục Kiểm Nhận Nguyên Liệu Từ Kho Thực Phẩm</h3>
+                </div>
+                <span class="badge badge-info">Xác nhận đúng chủng loại & trọng lượng trước khi sơ chế</span>
+              </div>
+              <div class="ingredient-checklist" id="ingredientChecklistContainer">
+                <!-- Dynamic ingredient items -->
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Trạm nấu & Mẻ nấu (SCR-KIT-03) -->
+          <div class="kitchen-tab-content" id="kitTab_cooking" style="display:none;">
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <div class="trace-header">
+                <div class="trace-title-group">
+                  <span class="badge badge-screen-id">SCR-KIT-03</span>
+                  <h3 style="font-size:1.2rem;">Trạm Nấu Công Nghiệp & Bấm Giờ Mẻ Nấu</h3>
+                </div>
+                <span class="badge badge-warning">Theo dõi thời gian chín đạt chuẩn ATTP</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:16px;" id="cookingBatchesContainer">
+                <!-- Dynamic batch station cards -->
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: Cân nghiệm thu thành phẩm & Soát chênh lệch (SCR-KIT-04) -->
+          <div class="kitchen-tab-content" id="kitTab_verification" style="display:none;">
+            <div style="display:flex; flex-direction:column; gap:16px;">
+              <div class="trace-header">
+                <div class="trace-title-group">
+                  <span class="badge badge-screen-id">SCR-KIT-04</span>
+                  <h3 style="font-size:1.2rem;">Cân Nghiệm Thu Khối Lượng Thành Phẩm & Soát Chênh Lệch</h3>
+                </div>
+                <span class="badge badge-danger">Dung sai cho phép: ±5.0% so với kế hoạch</span>
+              </div>
+              <div style="display:flex; flex-direction:column; gap:16px;" id="verificationContainer">
+                <!-- Dynamic verification cards -->
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <div>
+        <span>Trường Tiểu học Bán trú Hoa Sen</span> • 
+        <span>Hệ thống Quản lý Vận hành Suất ăn Top-Down</span>
+      </div>
+      <div>
+        <span>Phiên bản 2.0 • 100% Traceability Coverage</span>
+      </div>
+    </footer>
+
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODALS                                                                    -->
+  <!-- ========================================================================= -->
+
+  <!-- Modal SCR-TCH-02: Điểm danh chi tiết & Lý do thay đổi -->
+  <div class="modal-overlay" id="modalAmendParticipation">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge badge-screen-id">SCR-TCH-02</span>
+          <h3>Điều Chỉnh Trạng Thái Suất Ăn</h3>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="window.app.closeModal('modalAmendParticipation')">✕</button>
+      </div>
+      <form id="amendParticipationForm">
+        <div class="modal-body">
+          <div style="margin-bottom:16px; background:#F8FAFC; padding:12px; border-radius:8px;">
+            Học sinh: <strong id="amendStudentName">Nguyễn Gia Bảo</strong> 
+            (<span id="amendStudentCode">HS101</span>)
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Trạng thái tham gia ăn bán trú:</label>
+            <select id="amendTargetStatus" class="form-select">
+              <option value="attended">Ăn bán trú (Có mặt)</option>
+              <option value="excused_absence">Nghỉ ăn có phép</option>
+              <option value="unexcused_absence">Nghỉ ăn không phép</option>
+              <option value="guest_meal">Đăng ký suất khách bổ sung</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Phân loại thay đổi (Change Category):</label>
+            <select id="amendCategory" class="form-select">
+              <option value="status_update">Cập nhật điểm danh thông thường</option>
+              <option value="correction">Đính chính do nhầm lẫn</option>
+              <option value="reschedule">Phụ huynh đổi lịch ăn đột xuất</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Lý do điều chỉnh (Bắt buộc theo chuẩn audit DBML):</label>
+            <textarea id="amendReason" class="form-textarea" placeholder="Nhập lý do cụ thể (ví dụ: Phụ huynh gọi điện báo sốt lúc 07:45)..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="window.app.closeModal('modalAmendParticipation')">Hủy bỏ</button>
+          <button type="submit" class="btn btn-primary">Lưu Thay Đổi & Ghi Log</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal SCR-TCH-03: Xác nhận chốt sổ lớp -->
+  <div class="modal-overlay" id="modalConfirmLockRoster">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge badge-screen-id">SCR-TCH-03</span>
+          <h3>Xác Nhận Khóa Sổ Sĩ Số Bán Trú</h3>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="window.app.closeModal('modalConfirmLockRoster')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.95rem; line-height:1.6;">
+          Bạn đang thực hiện khóa sổ điểm danh cho <strong id="confirmLockClassName">Lớp 1A</strong>.
+        </p>
+        <div style="margin:16px 0; background:#FFFBEB; border:1px solid #FCD34D; padding:14px; border-radius:10px; color:#92400E;">
+          Tổng số suất ăn chốt giao cho nhà bếp: <strong style="font-size:1.2rem; color:#B45309;" id="confirmLockTotalCount">33 suất</strong>.
+          <p style="font-size:0.8rem; margin-top:4px;">
+            ⚠️ Sau khi khóa sổ, mọi điều chỉnh phát sinh phải gửi qua Form Yêu cầu Đột xuất (SCR-TCH-04) để Quản lý bếp phê duyệt.
+          </p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="window.app.closeModal('modalConfirmLockRoster')">Kiểm tra lại</button>
+        <button type="button" class="btn btn-primary" onclick="window.teacherModule.executeLockRoster()">Xác Nhận & Khóa Sổ</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal SCR-TCH-04: Form gửi yêu cầu đột xuất sau chốt sổ -->
+  <div class="modal-overlay" id="modalEmergencyRequest">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="badge badge-screen-id">SCR-TCH-04</span>
+          <h3>Yêu Cầu Thay Đổi Khẩn Cấp Sau Chốt Sổ</h3>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="window.app.closeModal('modalEmergencyRequest')">✕</button>
+      </div>
+      <form id="emergencyRequestForm">
+        <div class="modal-body">
+          <p style="font-size:0.85rem; color:var(--color-text-secondary); margin-bottom:14px;">
+            Yêu cầu này sẽ được gửi trực tiếp tới màn hình thẩm định của Quản lý Dinh dưỡng (SCR-MGR-03) và thông báo tới nhà bếp.
+          </p>
+
+          <div class="form-group">
+            <label class="form-label">Biến động số suất (+ thêm hoặc - giảm):</label>
+            <select id="emgDeltaHeadcount" class="form-select">
+              <option value="1">+1 Suất (Học sinh đến muộn / bổ sung)</option>
+              <option value="2">+2 Suất</option>
+              <option value="3">+3 Suất</option>
+              <option value="-1">-1 Suất (Học sinh về sớm)</option>
+              <option value="-2">-2 Suất</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Lý do phát sinh khẩn cấp:</label>
+            <textarea id="emgReason" class="form-textarea" placeholder="Nhập lý do cụ thể gửi tới Quản lý bếp..." required></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" onclick="window.app.closeModal('modalEmergencyRequest')">Đóng</button>
+          <button type="submit" class="btn btn-danger">Gửi Yêu Cầu Khẩn Cấp</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toastContainer"></div>
+
+  <!-- Scripts: Ordered by dependency -->
+  <script src="js/state.js"></script>
+  <script src="js/teacher.js"></script>
+  <script src="js/manager.js"></script>
+  <script src="js/kitchen.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

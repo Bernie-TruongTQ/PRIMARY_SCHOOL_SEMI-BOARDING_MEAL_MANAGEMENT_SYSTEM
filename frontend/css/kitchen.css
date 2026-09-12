@@ -1,0 +1,231 @@
+/* ==========================================================================
+   MODULE 3: KITCHEN KIOSK PORTAL STYLES (SCR-KIT-01, 02, 03, 04)
+   Focus: High-contrast touch screen, large hit targets, wall-mount friendly
+   Traceability: docs/04-information-architecture/screen-inventory.md
+   ========================================================================== */
+
+.kitchen-view-container {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+/* Kiosk Wallboard Top Shift Header */
+.kiosk-header-card {
+  background: #1E293B;
+  color: #FFFFFF;
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: var(--shadow-lg);
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.kiosk-title-box h2 {
+  color: #FFFFFF;
+  font-size: 1.4rem;
+  margin-bottom: 4px;
+}
+
+.kiosk-meta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #94A3B8;
+  font-size: 0.85rem;
+}
+
+.kiosk-clock-badge {
+  background-color: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 10px 20px;
+  border-radius: var(--radius-lg);
+  text-align: center;
+}
+
+.kiosk-clock-time {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #38BDF8;
+  font-family: monospace;
+  line-height: 1;
+}
+
+/* Dish Kanban Shift Cards Grid (SCR-KIT-01) */
+.kiosk-dishes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.dish-kiosk-card {
+  background: #FFFFFF;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: var(--shadow-md);
+  transition: transform var(--transition-fast), border-color var(--transition-fast);
+}
+
+.dish-kiosk-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--color-primary);
+}
+
+.dish-kiosk-card.status-completed {
+  border-color: var(--color-success);
+  background-color: #F0FDF4;
+}
+
+.dish-kiosk-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.dish-kiosk-name {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+}
+
+.dish-kiosk-metric {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.dish-target-qty {
+  font-size: 1.8rem;
+  font-weight: 800;
+  color: var(--color-primary);
+}
+
+.dish-unit {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--color-text-secondary);
+}
+
+/* Ingredient Allocation Checklist (SCR-KIT-02) */
+.ingredient-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ingredient-row-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+  flex-wrap: wrap;
+}
+
+.ingredient-row-card.checked {
+  background-color: #F8FAFC;
+  border-left: 6px solid var(--color-success);
+}
+.ingredient-row-card.shortage {
+  background-color: #FEF2F2;
+  border-left: 6px solid var(--color-danger);
+}
+
+.ing-name-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ing-loc-tag {
+  font-size: 0.775rem;
+  color: var(--color-text-muted);
+}
+
+/* Cooking Batch Stations & Timers (SCR-KIT-03) */
+.batch-station-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-shadow: var(--shadow-sm);
+}
+
+.batch-station-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.station-pill {
+  background-color: #EEF2FF;
+  color: #4F46E5;
+  font-weight: 700;
+  font-size: 0.8rem;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+}
+
+.timer-display {
+  font-family: monospace;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: #0F172A;
+  background-color: #F1F5F9;
+  padding: 6px 14px;
+  border-radius: var(--radius-md);
+}
+
+/* Yield Verification & Tolerance Alert (SCR-KIT-04) */
+.verification-card {
+  background: #FFFFFF;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-xl);
+  padding: 24px;
+  box-shadow: var(--shadow-md);
+}
+
+.variance-meter {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  margin-top: 10px;
+}
+
+.variance-meter.pass {
+  background-color: var(--color-success-light);
+  border: 1px solid var(--color-success-border);
+  color: #15803D;
+}
+
+.variance-meter.alert {
+  background-color: var(--color-danger-light);
+  border: 1px solid var(--color-danger-border);
+  color: #B91C1C;
+}
+
+.variance-badge {
+  font-size: 1.1rem;
+  font-weight: 800;
+  font-family: monospace;
+}
