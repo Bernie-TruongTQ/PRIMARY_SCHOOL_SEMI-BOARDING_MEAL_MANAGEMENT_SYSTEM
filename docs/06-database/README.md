@@ -2,48 +2,44 @@
 
 ## What is this?
 
-This folder documents the database schema that supports the Phase 1 Selected Core Features. The schema was designed by working **top-down**:
+This folder documents the database schema supporting the selected core modules from the Primary School Semi-Boarding Meal Management System mind map. The architecture is derived **top-down**:
 
 ```
-Selected Core Features
+Mind Map / Selected Core Modules
         ↓
-Business Entities derived from each feature
+Business Entities & Lifecycle Flows
         ↓
-Relationships between entities
+Entity-Relationship Diagrams (ERD)
         ↓
-ERD
+DBML (Source of Truth)
         ↓
-DBML (source of truth)
-        ↓
-PostgreSQL DDL (in /database/ folder)
+PostgreSQL DDL (`PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.sql`)
 ```
 
-## Feature → Entity Mapping
+## Implemented Modules & Entity Mapping
 
-| Core Feature | Primary Entities |
-|-------------|-----------------|
-| F-STU-01 Manage Eligibility | `students`, `classes` |
-| F-STU-02 Register Meal Session | `meal_registrations`, `meal_sessions` |
-| F-STU-03 Record Daily Participation | `daily_meal_demand_details` |
-| F-MPN-01/02/03 Menu Planning | `menus`, `dishes`, `menu_dishes` |
-| F-MPN-04 Quantity Calculation | `expected_meal_quantities` |
-| F-MOP-01 Demand Determination | `daily_meal_demands` |
-| F-MOP-02 Change Requests | `meal_demand_change_requests`, `meal_demand_change_logs` |
-| F-MOP-03/04/05 Prep, Dist, Handover | *(Phase 1.5 tables — placeholders)* |
+The current implementation focuses on three high-impact operational modules:
+
+| Module | Core Functional Scope | Primary & Audit Entities | Reference Entities |
+|---|---|---|---|
+| **Module 1: Meal Participation Management** | Record participation, track change history, confirm meal participation | `meal_participations`<br>`meal_participation_changes` | `students`<br>`meal_schedules`<br>`meal_registrations`<br>`users` |
+| **Module 2: Meal Demand & Quantity Management** | Aggregate/determine meal demand, calculate dish expected quantities, manage demand adjustments | `meal_demands`<br>`meal_demand_dish_quantities`<br>`meal_demand_changes` | `meal_schedules`<br>`dishes`<br>`users` |
+| **Module 3: Meal Preparation** | Create meal preparation plans, allocate ingredients, record actual cooking progress, confirm prepared quantities & discrepancies | `meal_preparation_plans`<br>`meal_preparation_plan_dishes`<br>`ingredient_allocations`<br>`meal_preparations`<br>`meal_preparation_dish_records`<br>`prepared_quantity_confirmations` | `meal_demands`<br>`meal_schedules`<br>`dishes`<br>`ingredients`<br>`users` |
+
+## Interactive Documentation
+
+> [!TIP]
+> View and explore the live interactive schema diagram and relationship graph directly on dbdocs:
+> 🔗 **[dbdocs.io — Primary School Semi-Boarding Meal Management System](https://dbdocs.io/tqtolympia/PRIMARY-SCHOOL-SEMI-BOARDING-MEAL-MANAGEMENT-SYSTEM)**
 
 ## Artifacts in this folder
 
-| File | Purpose |
-|------|---------|
-| [database-erd.md](database-erd.md) | Mermaid `erDiagram` — entity relationship diagram |
-| [schema.dbml](schema.dbml) | DBML source of truth (human-readable schema) |
-| [data-dictionary.md](data-dictionary.md) | Table and column documentation with feature traceability |
+| File / Link | Purpose |
+|---|---|
+| [dbdocs.io Interactive Schema](https://dbdocs.io/tqtolympia/PRIMARY-SCHOOL-SEMI-BOARDING-MEAL-MANAGEMENT-SYSTEM) | Live web-based interactive schema viewer, relationship explorer, and search |
+| [schema.dbml](file:///d:/WORKSPACE/Top-Down-Approach/docs/06-database/schema.dbml) | DBML source of truth defining tables, enums, indexes, and relations |
+| [PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.sql](file:///d:/WORKSPACE/Top-Down-Approach/docs/06-database/PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.sql) | Production-ready PostgreSQL DDL with types, constraints, and indexes |
+| [database-erd.md](file:///d:/WORKSPACE/Top-Down-Approach/docs/06-database/database-erd.md) | Visual Mermaid Entity-Relationship Diagrams (Overview & Sub-module breakdowns) |
+| [data-dictionary.md](file:///d:/WORKSPACE/Top-Down-Approach/docs/06-database/data-dictionary.md) | Comprehensive table, column, enum, constraint, and lifecycle documentation |
+| [PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.png](file:///d:/WORKSPACE/Top-Down-Approach/docs/06-database/PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.png) | High-level architectural schema visual diagram |
 
-## Source DDL
-
-The PostgreSQL DDL is maintained at:
-`/database/PRIMARY SCHOOL SEMI-BOARDING MEAL MANAGEMENT SYSTEM.sql`
-
-## Next Step
-
-→ [Prototype](../../prototype/README.md)
