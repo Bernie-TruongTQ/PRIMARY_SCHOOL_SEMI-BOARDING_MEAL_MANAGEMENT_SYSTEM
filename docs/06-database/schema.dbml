@@ -1,0 +1,204 @@
+// Primary School Semi-Boarding Meal Management System
+// DBML Schema — Phase 1 Core Features
+// Source: docs/06-database/schema.dbml
+// Derived from: docs/02-core-features/core-feature-breakdown.md
+
+// ─── ENUMS ──────────────────────────────────────────────────────────────────
+
+enum meal_intention_type {
+  attend
+  absent
+  extra_guest
+}
+
+enum demand_status_type {
+  draft
+  confirmed
+  locked
+}
+
+enum change_type_enum {
+  add
+  cancel
+  modify_quantity
+  absence
+  extra_guest
+}
+
+enum approval_status_enum {
+  pending
+  approved
+  rejected
+}
+
+enum calculation_method_enum {
+  auto
+  manual
+}
+
+// ─── STUDENT MEAL MANAGEMENT ─────────────────────────────────────────────────
+// Features: F-STU-01, F-STU-02, F-STU-03
+
+Table classes {
+  id          int        [pk, increment]
+  class_name  varchar
+  grade_level varchar
+  school_year varchar
+
+  Note: 'Supports F-STU-01. Managed by School Administrator (ADM).'
+}
+
+Table students {
+  id           int     [pk, increment]
+  student_code varchar [unique, note: 'School-assigned student ID']
+  full_name    varchar
+  class_id     int     [ref: > classes.id]
+  status       varchar [note: 'active / inactive / transferred']
+
+  Note: 'Supports F-STU-01 — Manage Student Meal Eligibility.'
+}
+
+Table meal_sessions {
+  id                      int     [pk, increment]
+  code                    varchar [unique, note: 'breakfast / lunch / snack / dinner']
+  name                    varchar
+  start_time              time
+  end_time                time
+  registration_cutoff_time time   [note: 'Cutoff for attendance submissions before meal starts']
+  is_active               boolean [default: true]
+
+  Note: 'Configured by ADM. Drives cutoff logic for F-MOP-01.'
+}
+
+Table meal_registrations {
+  id              int     [pk, increment]
+  student_id      int     [ref: > students.id]
+  meal_session_id int     [ref: > meal_sessions.id]
+  effective_from  date
+  effective_to    date
+  status          varchar [note: 'active / suspended / cancelled']
+
+  Note: 'Supports F-STU-02 — Register Student for Meal Session. Drives base_registered_count in daily_meal_demands.'
+}
+
+// ─── MEAL PLANNING & MENU MANAGEMENT ─────────────────────────────────────────
+// Features: F-MPN-01, F-MPN-02, F-MPN-03, F-MPN-04
+
+Table dishes {
+  id        int     [pk, increment]
+  dish_name varchar
+  category  varchar [note: 'Main / Staple / Soup / Vegetable / Dessert']
+
+  Note: 'Catalog managed by ADM (UC-ADM-06). Used by MGR in UC-MGR-02.'
+}
+
+Table menus {
+  id              int     [pk, increment]
+  menu_date       date
+  meal_session_id int     [ref: > meal_sessions.id]
+  status          varchar [note: 'draft / approved / published']
+
+  Note: 'Supports F-MPN-01 through F-MPN-03. Created and published by MGR.'
+}
+
+Table menu_dishes {
+  id                   int     [pk, increment]
+  menu_id              int     [ref: > menus.id]
+  dish_id              int     [ref: > dishes.id]
+  standard_portion_size decimal [note: 'Standard portion per student — used in F-MPN-04 calculation']
+  unit                 varchar [note: 'g / ml / piece']
+
+  Note: 'Supports F-MPN-02. The unit_portion_size here is copied to expected_meal_quantities.'
+}
+
+// ─── MEAL OPERATION ──────────────────────────────────────────────────────────
+// Features: F-MOP-01, F-MOP-02; F-MOP-03/04/05 entities deferred to Phase 1.5
+
+Table daily_meal_demands {
+  id                     int               [pk, increment]
+  demand_date            date
+  meal_session_id        int               [ref: > meal_sessions.id]
+  class_id               int               [ref: > classes.id]
+  base_registered_count  int               [note: 'Snapshot from meal_registrations at demand creation time']
+  confirmed_attend_count int               [note: 'Live-updated from daily_meal_demand_details']
+  absence_count          int               [default: 0]
+  extra_count            int               [default: 0, note: 'Staff guests, meal monitors']
+  determination_status   demand_status_type [default: 'draft']
+  determined_by          int               [note: 'user_id — homeroom teacher / boarding staff']
+  determined_at          datetime
+  locked_at              datetime          [note: 'Set at registration_cutoff_time or manual lock']
+
+  indexes {
+    (demand_date, meal_session_id, class_id) [unique, name: 'uq_demand_date_session_class']
+  }
+
+  Note: 'Supports F-MOP-01. One record per class per session per day.'
+}
+
+Table daily_meal_demand_details {
+  id                   int                [pk, increment]
+  daily_meal_demand_id int                [ref: > daily_meal_demands.id]
+  student_id           int                [ref: > students.id]
+  intention            meal_intention_type
+  reason               varchar            [note: 'Required for absent intentions']
+  reported_by          int                [note: 'user_id — teacher or parent']
+  reported_at          datetime
+  is_within_cutoff     boolean            [note: 'true = submitted before session cutoff time']
+
+  indexes {
+    (daily_meal_demand_id, student_id) [unique, name: 'uq_demand_student']
+  }
+
+  Note: 'Supports F-STU-03 and F-MOP-01. One row per student per demand record.'
+}
+
+Table expected_meal_quantities {
+  id                   int                    [pk, increment]
+  daily_meal_demand_id int                    [ref: > daily_meal_demands.id]
+  menu_dish_id         int                    [ref: > menu_dishes.id]
+  planned_headcount    int                    [note: 'confirmed_attend_count + extra_count at calculation time']
+  unit_portion_size    decimal                [note: 'Copied from menu_dishes.standard_portion_size']
+  unit                 varchar
+  buffer_percentage    decimal                [default: 0, note: '0–20% shrinkage/surplus buffer']
+  total_quantity       decimal                [note: 'planned_headcount × unit_portion_size × (1 + buffer_percentage)']
+  calculation_method   calculation_method_enum [default: 'auto']
+  calculated_by        int                    [note: 'user_id; null if auto-calculated by system']
+  calculated_at        datetime
+
+  indexes {
+    (daily_meal_demand_id, menu_dish_id) [unique, name: 'uq_demand_menudish']
+  }
+
+  Note: 'Supports F-MPN-04. One row per dish per demand record.'
+}
+
+Table meal_demand_change_requests {
+  id                       int                  [pk, increment]
+  daily_meal_demand_id     int                  [ref: > daily_meal_demands.id]
+  student_id               int                  [ref: > students.id, note: 'null if class/aggregate level change']
+  change_type              change_type_enum
+  requested_quantity_delta int                  [note: 'Signed integer: +1 (add) or -1 (remove)']
+  reason                   varchar
+  requested_by             int                  [note: 'user_id — teacher or staff']
+  requested_at             datetime
+  is_emergency             boolean              [default: false, note: 'true if > 30 min past cutoff']
+  approval_status          approval_status_enum [default: 'pending']
+  approved_by              int                  [note: 'user_id — MGR']
+  approved_at              datetime
+
+  Note: 'Supports F-MOP-02. Created by TCH; approved/rejected by MGR.'
+}
+
+Table meal_demand_change_logs {
+  id                   int      [pk, increment]
+  change_request_id    int      [ref: > meal_demand_change_requests.id]
+  daily_meal_demand_id int      [ref: > daily_meal_demands.id]
+  field_changed        varchar  [note: 'e.g. confirmed_attend_count, extra_count, total_quantity']
+  old_value            varchar
+  new_value            varchar
+  changed_by           int      [note: 'user_id']
+  changed_at           datetime
+  note                 varchar
+
+  Note: 'Audit trail for F-MOP-02. Immutable log — no updates or deletes.'
+}
