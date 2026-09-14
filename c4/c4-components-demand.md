@@ -8,49 +8,8 @@ This document specifies the internal components within the `Backend API Service`
 
 ## 2. Component Diagram (C4Component)
 
-```mermaid
-C4Component
-  title Component Diagram - Module 2: Meal Demand & Quantity Management
-
-  Container(spaManager, "Manager Dashboard SPA", "HTML5/Vanilla JS", "Analytical dashboard for the Nutrition Manager to review headcounts, tune buffer margins, and approve dish quantities")
-  ContainerDb(db, "PostgreSQL Database", "PostgreSQL 15", "Stores meal_demands, meal_demand_dish_quantities, meal_demand_changes, and dish master data")
-  Container(realtime, "Event Broker", "WebSocket", "Dispatches real-time broadcast when meal demand is finalized for the kitchen")
-
-  Container_Boundary(demandBoundary, "Backend API Service - Module 2 Boundary") {
-    Component(demandController, "Demand Controller", "Express Router", "Provides REST endpoints for triggering headcount aggregation, computing dish weights, and managing emergency changes")
-    
-    Component(aggregationEngine, "Roster Aggregation Engine", "Analytics Engine", "Aggregates confirmed attendance records across all classrooms, separating standard portions from specialized dietary diets")
-    
-    Component(bufferManager, "Buffer Policy Manager", "Domain Rule Component", "Applies configurable institutional buffer percentages (default 3% - 5%) to protect against accidental spillage or late visitors")
-    
-    Component(portionCalculator, "Portion Calculation Engine", "Mathematical Engine", "Calculates required cooking quantities: Planned Weight = Headcount x Standard Portion x (1 + Buffer%)")
-    
-    Component(emergencyHandler, "Emergency Amendment Handler", "Workflow Service", "Evaluates post-cutoff change requests; logs approved adjustments into meal_demand_changes and recalculates yields")
-    
-    Component(demandRepo, "Demand Repository", "Data Access (pg)", "Performs transactional persistence for meal_demands, meal_demand_dish_quantities, and meal_demand_changes")
-  }
-
-  %% Relationships
-  Rel(spaManager, demandController, "Triggers aggregation, adjusts buffer, confirms demand", "JSON/HTTPS")
-  Rel(demandController, aggregationEngine, "Requests scan of confirmed rosters from Module 1", "Internal Call")
-  Rel(aggregationEngine, demandRepo, "Queries confirmed attendance headcounts", "Internal Call")
-  
-  Rel(demandController, bufferManager, "Retrieves active buffer margin percentage", "Internal Call")
-  Rel(demandController, portionCalculator, "Executes dish quantity calculation", "Internal Call")
-  Rel(portionCalculator, bufferManager, "Queries buffer factor per dish category", "Internal Call")
-  Rel(portionCalculator, demandRepo, "Reads standard portion baselines from dishes table", "Internal Call")
-  
-  Rel(demandController, emergencyHandler, "Forwards post-cutoff emergency requests", "Internal Call")
-  Rel(emergencyHandler, demandRepo, "Inserts change records into meal_demand_changes", "Internal Call")
-  Rel(portionCalculator, demandRepo, "Persists computed targets into meal_demand_dish_quantities", "Internal Call")
-  
-  Rel(demandRepo, db, "Executes atomic SQL transactions", "SQL / Connection Pool")
-  Rel(demandController, realtime, "Publishes DEMAND_LOCKED_FOR_KITCHEN event", "Socket Event")
-
-  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
-```
-
----
+![](.\images\DemandManagementComponents.png)
+![](.\images\DemandManagementComponents-key.png)
 
 ## 3. Component Details & Operational Responsibilities
 

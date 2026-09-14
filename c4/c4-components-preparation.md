@@ -8,50 +8,8 @@ This document specifies the internal components within the `Backend API Service`
 
 ## 2. Component Diagram (C4Component)
 
-```mermaid
-C4Component
-  title Component Diagram - Module 3: Meal Preparation & Kitchen Operations
-
-  Container(spaKiosk, "Kitchen Kiosk Touch SPA", "HTML5/Vanilla JS", "Wall-mounted touchscreen kiosk interface in the cooking area for recipe view, station timers, and yield logging")
-  ContainerDb(db, "PostgreSQL Database", "PostgreSQL 15", "Stores meal_preparation_plans, ingredient_allocations, meal_preparations, and prepared_quantity_confirmations")
-  Container(realtime, "Event Broker", "WebSocket", "Streams cooking progress updates back to the Manager Dashboard")
-  System_Ext(inventory, "Pantry Inventory System", "External Warehouse API", "Issues raw ingredient lots based on daily kitchen preparation plans")
-
-  Container_Boundary(prepBoundary, "Backend API Service - Module 3 Boundary") {
-    Component(prepController, "Preparation Controller", "Express Router", "Exposes REST endpoints for querying daily kitchen plans, recording batch progress, and submitting yield confirmations")
-    
-    Component(planCoordinator, "Kitchen Plan Coordinator", "Domain Service", "Translates approved dish demand into kitchen station shift plans (rice steaming, braising, soup, cold prep)")
-    
-    Component(allocationManager, "Ingredient Allocation Manager", "Resource Component", "Calculates required raw ingredient quantities and tracks pantry requisition status (allocated, adjusted, returned)")
-    
-    Component(batchTracker, "Cooking Batch Tracker", "Execution Component", "Tracks cooking batch lifecycles: starts station countdown timers, monitors internal temperatures, and records yields")
-    
-    Component(yieldReconciliation, "Yield Reconciliation Engine", "Verification Engine", "Compares actual prepared dish weights against planned targets; enforces mandatory justification on variances")
-    
-    Component(prepRepo, "Preparation Repository", "Data Access (pg)", "Performs transactional persistence for meal_preparation_plans, ingredient_allocations, batch records, and sign-offs")
-  }
-
-  %% Relationships
-  Rel(spaKiosk, prepController, "Sends batch progress and finished dish measurements", "JSON/HTTPS")
-  Rel(prepController, planCoordinator, "Generates and retrieves shift prep plans", "Internal Call")
-  Rel(planCoordinator, allocationManager, "Requests ingredient issuance based on recipe specs", "Internal Call")
-  Rel(allocationManager, inventory, "Submits raw ingredient dispatch requisition", "REST/JSON")
-  
-  Rel(prepController, batchTracker, "Logs cooking start/stop and batch milestones", "Internal Call")
-  Rel(batchTracker, realtime, "Publishes COOKING_PROGRESS_UPDATED event", "Socket Event")
-  
-  Rel(prepController, yieldReconciliation, "Submits finished dish weights for verification", "Internal Call")
-  Rel(yieldReconciliation, prepRepo, "Persists sign-off to prepared_quantity_confirmations", "Internal Call")
-  Rel(planCoordinator, prepRepo, "Saves meal_preparation_plans", "Internal Call")
-  Rel(allocationManager, prepRepo, "Saves ingredient_allocations", "Internal Call")
-  Rel(batchTracker, prepRepo, "Saves meal_preparation_dish_records", "Internal Call")
-  
-  Rel(prepRepo, db, "Executes transactional SQL operations", "SQL / Connection Pool")
-
-  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
-```
-
----
+![](.\images\MealPreparationComponents.png)
+![](.\images\MealPreparationComponents-key.png)
 
 ## 3. Component Details & Operational Responsibilities
 

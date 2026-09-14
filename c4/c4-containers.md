@@ -8,53 +8,8 @@ The **Container Diagram** unpacks the Semi-Boarding Meal Management System into 
 
 ## 2. Container Diagram (C4Container)
 
-```mermaid
-C4Container
-  title Container Diagram - Primary School Semi-Boarding Meal Management System
-
-  Person(teacher, "Homeroom Teacher", "Performs roll call and locks class roster via mobile device")
-  Person(manager, "Meal / Nutrition Manager", "Supervises demand calculations and signs off on kitchen yields")
-  Person(kitchen, "Kitchen Staff / Head Chef", "Tracks station batches and enters completed yields via touch kiosk")
-  Person(admin, "School Administrator", "Manages user access, meal schedules, and master recipes")
-
-  System_Boundary(mealSystem, "Semi-Boarding Meal Management System") {
-    Container(spa, "Single-Page Application (SPA)", "HTML5, ES6 Vanilla JS, CSS3 Tokens", "Unified client-side web application incorporating 3 role portals: Teacher Mobile Portal, Manager Analytical Dashboard, and Kitchen Touch Kiosk")
-    
-    Container(api, "Backend API Service", "Node.js / Express, REST, JWT", "Executes business domain logic, enforces morning cutoff locks, computes portion formulas, and governs multi-tier audit trails")
-    
-    Container(realtime, "Real-time Event Broker", "WebSocket / Socket.io Engine", "Broadcasts asynchronous live push notifications (class roster locks, post-cutoff emergency alerts, batch completion timers)")
-    
-    ContainerDb(db, "Relational Database", "PostgreSQL 15", "Authoritative persistence layer storing operational entities, audit change ledgers, recipe multipliers, and RBAC credentials")
-    
-    ContainerDb(fileStorage, "Asset & Certificate Storage", "Object Storage / Local FS", "Stores 24-hour food retention sample photographs, scale printout captures, and signed inspection receipts")
-  }
-
-  System_Ext(sis, "School Information System (SIS)", "REST/JSON", "Student roster and medical allergy profile sync")
-  System_Ext(inventory, "Pantry & Supplier System", "REST/JSON", "Stock checks and automated raw ingredient dispatch")
-
-  %% Client interactions
-  Rel(teacher, spa, "Enters attendance and notes", "HTTPS")
-  Rel(manager, spa, "Monitors dashboard, approves buffer & recipes", "HTTPS")
-  Rel(kitchen, spa, "Interacts with station timers & yields", "HTTPS")
-  Rel(admin, spa, "Configures master catalogs & permissions", "HTTPS")
-
-  %% Client to Backend
-  Rel(spa, api, "Issues authenticated business commands (CRUD, Confirm, Scale)", "JSON/HTTPS")
-  Rel(spa, realtime, "Subscribes to live operational event streams", "WSS")
-
-  %% Backend Internal
-  Rel(api, realtime, "Publishes state change events to connected clients", "TCP / IPC")
-  Rel(api, db, "Executes transactional read/write operations", "SQL / Connection Pool")
-  Rel(api, fileStorage, "Persists and retrieves food safety photo evidence", "HTTPS / S3 API")
-
-  %% External Integrations
-  Rel(api, sis, "Synchronizes student eligibility & medical allergies", "HTTPS/REST")
-  Rel(api, inventory, "Submits raw ingredient requisition requests", "HTTPS/REST")
-
-  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
-```
-
----
+![](.\images\ContainerDiagram.png)
+![](.\images\ContainerDiagram-key.png)
 
 ## 3. Container Technical Responsibilities & Stack
 

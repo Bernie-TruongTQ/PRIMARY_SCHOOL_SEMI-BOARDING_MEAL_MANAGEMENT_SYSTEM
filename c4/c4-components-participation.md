@@ -8,45 +8,8 @@ This document specifies the internal software components within the `Backend API
 
 ## 2. Component Diagram (C4Component)
 
-```mermaid
-C4Component
-  title Component Diagram - Module 1: Meal Participation Management
-
-  Container(spaTeacher, "Teacher Portal SPA", "HTML5/Vanilla JS", "Mobile web interface used by homeroom teachers to record attendance and lock rosters")
-  ContainerDb(db, "PostgreSQL Database", "PostgreSQL 15", "Stores meal_participations, meal_participation_changes, and student master records")
-  Container(realtime, "Event Broker", "WebSocket", "Dispatches real-time broadcast when a class completes roster locking")
-
-  Container_Boundary(apiBoundary, "Backend API Service - Module 1 Boundary") {
-    Component(partController, "Participation Controller", "Express Router", "Exposes REST endpoints to query classroom rosters, submit bulk attendance, and lock rosters")
-    
-    Component(cutoffGuard, "Cutoff Policy Guard", "Middleware / Rule Enforcer", "Enforces the daily 08:00 cutoff deadline; blocks direct roster modifications after the limit")
-    
-    Component(allergyGuard, "Allergy Alert Interceptor", "Domain Component", "Cross-references student medical records to attach prominent allergen warning flags")
-    
-    Component(partService, "Participation Service", "Domain Logic Service", "Executes attendance business logic: transitions status (pending -> recorded -> confirmed) and counts headcounts")
-    
-    Component(auditLogger, "Participation Audit Logger", "Audit Interceptor", "Captures status changes and appends before/after values with mandatory reasons to meal_participation_changes")
-    
-    Component(partRepo, "Participation Repository", "Data Access (pg)", "Executes transactional queries against meal_participations and meal_participation_changes tables")
-  }
-
-  %% Relationships
-  Rel(spaTeacher, partController, "Submits attendance data & lock requests", "JSON/HTTPS")
-  Rel(partController, cutoffGuard, "Validates submission timestamp against cutoff", "Direct Call")
-  Rel(cutoffGuard, partService, "Forwards validated request", "Internal Call")
-  
-  Rel(partService, allergyGuard, "Evaluates allergy and dietary flags", "Internal Call")
-  Rel(partService, auditLogger, "Logs modification events", "Internal Call")
-  Rel(partService, partRepo, "Persists updated participation records", "Internal Call")
-  Rel(auditLogger, partRepo, "Inserts audit ledger records", "Internal Call")
-  
-  Rel(partRepo, db, "Executes SQL statements in single transaction", "SQL / Connection Pool")
-  Rel(partService, realtime, "Publishes CLASS_ROSTER_LOCKED event", "Socket Event")
-
-  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
-```
-
----
+![](.\images\MealParticipationComponents.png)
+![](.\images\MealParticipationComponents-key.png)
 
 ## 3. Component Details & Operational Responsibilities
 

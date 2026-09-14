@@ -52,8 +52,7 @@ primary-school-meal-management/
 │   ├── c4-context.md                  ← Level 1: System Context Diagram
 │   ├── c4-containers.md               ← Level 2: Container Diagram
 │   ├── c4-components-*.md             ← Level 3: Component Diagrams (M1, M2, M3)
-│   ├── c4-dynamic-operational-flow.md ← Dynamic Diagram: Morning operations lifecycle
-│   └── c4-deployment.md               ← Level 4: Deployment Diagram
+│   └── c4-code-*.md                   ← Level 4: Code Diagrams (M1, M2, M3 UML Class Diagrams)
 │
 ├── docs/                              ← Comprehensive top-down engineering documentation
 │   ├── README.md                      ← Documentation index and methodology guide
@@ -127,7 +126,7 @@ primary-school-meal-management/
 | Phase | Artifact | Description | Status |
 |:---:|---|---|:---:|
 | **—** | [Documentation Hub](docs/README.md) | Central navigation hub for all 6 top-down engineering phases | ✅ Complete |
-| **C4** | [C4 Model Architecture](c4/README.md) | Level 1 Context, Level 2 Containers, Level 3 Components (M1, M2, M3), Dynamic & Deployment | ✅ Complete |
+| **C4** | [C4 Model Architecture](c4/README.md) | Full 4-Level Architecture: Level 1 Context, Level 2 Containers, Level 3 Components (M1, M2, M3), Level 4 Code (M1, M2, M3) | ✅ Complete |
 | **01** | [Top-Down Decomposition](docs/01-top-down/README.md) | Business domain classification & system mind map | ✅ Complete |
 | **02** | [Core Feature Breakdown](docs/02-core-features/README.md) | In-depth breakdown of the 3 active MVP core modules | ✅ Complete |
 | **03** | [Roles & Use Cases](docs/03-roles-usecases/README.md) | Actor definition, permission matrix, and UML use cases | ✅ Complete |
@@ -145,6 +144,586 @@ primary-school-meal-management/
 Every artifact in this repository is strictly derived from the tier directly above it. See [docs/traceability.md](docs/traceability.md) for the complete end-to-end mapping:
 
 $$\text{Core Domain} \longrightarrow \text{Core Capability} \longrightarrow \text{Core Feature} \longrightarrow \text{Actor} \longrightarrow \text{Use Case} \longrightarrow \text{Task Flow} \longrightarrow \text{Screen} \longrightarrow \text{DB Entity}$$
+
+---
+
+## C4 Software Architecture Model
+
+This project models its software architecture using the complete 4-level **C4 Model** (Context, Containers, Components, Code), providing high-fidelity visual diagrams and structural specifications:
+
+### Level 1 — System Context Diagram
+Defines the boundary of the Semi-Boarding Meal Management System, human actors, and external system integrations (SIS, Pantry/Supplier, Parent Notification Gateway):
+
+![System Context Diagram](c4/images/SystemContext.png)
+
+*For detailed actor specifications and external integration profiles, refer to [c4/c4-context.md](c4/c4-context.md).*
+
+---
+
+### Level 2 — Container Diagram
+Illustrates the high-level technical building blocks: Unified SPA (3 role portals), Node.js/Express Backend API, WebSocket Real-time Broker, and PostgreSQL 15 Relational Database:
+
+![Container Diagram](c4/images/ContainerDiagram.png)
+
+*For runtime technical responsibilities and networking details, refer to [c4/c4-containers.md](c4/c4-containers.md).*
+
+---
+
+### Level 3 — Component Diagrams
+
+#### 1. Module 1: Meal Participation Management Components
+Internal components governing classroom student roll call, dietary/allergen alerts, and morning cutoff lock enforcement:
+
+![Module 1 Component Diagram](c4/images/MealParticipationComponents.png)
+
+*For endpoint specifications and rule guard documentation, refer to [c4/c4-components-participation.md](c4/c4-components-participation.md).*
+
+#### 2. Module 2: Meal Demand & Quantity Management Components
+Internal components managing headcount aggregation, portion formula calculations, buffer policy, and emergency adjustments:
+
+![Module 2 Component Diagram](c4/images/DemandManagementComponents.png)
+
+*For formula details and policy configurations, refer to [c4/c4-components-demand.md](c4/c4-components-demand.md).*
+
+#### 3. Module 3: Meal Preparation & Kitchen Operations Components
+Internal components orchestrating kitchen shift plans, raw ingredient allocations, station batch timers, and finished yield reconciliation:
+
+![Module 3 Component Diagram](c4/images/MealPreparationComponents.png)
+
+*For kitchen station workflows and verification logic, refer to [c4/c4-components-preparation.md](c4/c4-components-preparation.md).*
+
+---
+
+### Level 4 — Code Diagrams (UML Class Diagrams)
+
+#### 1. Module 1: Meal Participation Class Diagram
+- **Key Domain Entities:** `MealParticipation`, `MealParticipationChange`, `ParticipationStatus`, `ChangeType`.
+- **Core Services & Contracts:** `ParticipationService`, `CutoffPolicyGuard`, `AllergyAlertInterceptor`, `IParticipationRepository`.
+- **Detailed Specification:** [c4/c4-code-participation.md](c4/c4-code-participation.md)
+
+```mermaid
+classDiagram
+  direction TB
+
+  class ParticipationStatus {
+    <<enumeration>>
+    PENDING
+    RECORDED
+    CONFIRMED
+    CANCELLED
+  }
+
+  class ChangeType {
+    <<enumeration>>
+    STATUS_UPDATE
+    CORRECTION
+    RESCHEDULE
+  }
+
+  class MealParticipation {
+    <<entity>>
+    +UUID id
+    +UUID mealScheduleId
+    +UUID studentId
+    +ParticipationStatus status
+    +UUID recordedByUserId
+    +Date recordedAt
+    +UUID confirmedByUserId
+    +Date confirmedAt
+    +Date createdAt
+    +Date updatedAt
+    +markRecorded(userId: UUID): void
+    +confirm(userId: UUID): void
+    +cancel(userId: UUID): void
+  }
+
+  class MealParticipationChange {
+    <<entity>>
+    +UUID id
+    +UUID mealParticipationId
+    +ParticipationStatus previousStatus
+    +ParticipationStatus newStatus
+    +ChangeType changeType
+    +string changeReason
+    +UUID changedByUserId
+    +Date createdAt
+  }
+
+  class BulkRecordDto {
+    +UUID mealScheduleId
+    +UUID classId
+    +RecordItem[] records
+  }
+
+  class AmendParticipationDto {
+    +ParticipationStatus newStatus
+    +ChangeType changeType
+    +string reason
+  }
+
+  class ConfirmRosterDto {
+    +UUID mealScheduleId
+    +UUID classId
+  }
+
+  class IParticipationRepository {
+    <<interface>>
+    +findByScheduleAndClass(scheduleId: UUID, classId: UUID): Promise~MealParticipation[]~
+    +findById(id: UUID): Promise~MealParticipation~
+    +bulkSave(participations: MealParticipation[]): Promise~void~
+    +save(participation: MealParticipation): Promise~MealParticipation~
+    +createChangeLog(change: MealParticipationChange): Promise~void~
+    +countConfirmedBySchedule(scheduleId: UUID): Promise~number~
+  }
+
+  class PgParticipationRepository {
+    -Pool dbPool
+    +findByScheduleAndClass(scheduleId: UUID, classId: UUID): Promise~MealParticipation[]~
+    +findById(id: UUID): Promise~MealParticipation~
+    +bulkSave(participations: MealParticipation[]): Promise~void~
+    +save(participation: MealParticipation): Promise~MealParticipation~
+    +createChangeLog(change: MealParticipationChange): Promise~void~
+    +countConfirmedBySchedule(scheduleId: UUID): Promise~number~
+  }
+
+  class CutoffPolicyGuard {
+    <<service>>
+    -string CUTOFF_TIME_HHMM
+    +isBeforeCutoff(scheduleDate: Date): boolean
+    +assertBeforeCutoff(scheduleDate: Date): void
+  }
+
+  class AllergyAlertInterceptor {
+    <<service>>
+    +enrichWithAllergies(students: StudentProfile[]): EnrichedStudentRoster[]
+    +hasCriticalAllergen(studentId: UUID): Promise~boolean~
+  }
+
+  class ParticipationAuditLogger {
+    <<service>>
+    -IParticipationRepository repo
+    +logStatusChange(participationId: UUID, prev: ParticipationStatus, next: ParticipationStatus, reason: string, userId: UUID): Promise~void~
+  }
+
+  class ParticipationService {
+    <<service>>
+    -IParticipationRepository repo
+    -CutoffPolicyGuard cutoffGuard
+    -AllergyAlertInterceptor allergyInterceptor
+    -ParticipationAuditLogger auditLogger
+    +getClassRoster(scheduleId: UUID, classId: UUID): Promise~EnrichedStudentRoster~
+    +recordClassParticipation(dto: BulkRecordDto, userId: UUID): Promise~void~
+    +amendParticipation(id: UUID, dto: AmendParticipationDto, userId: UUID): Promise~MealParticipation~
+    +confirmClassRoster(dto: ConfirmRosterDto, userId: UUID): Promise~RosterConfirmationSummary~
+  }
+
+  class ParticipationController {
+    <<controller>>
+    -ParticipationService service
+    +getRoster(req: Request, res: Response): Promise~void~
+    +bulkRecord(req: Request, res: Response): Promise~void~
+    +amend(req: Request, res: Response): Promise~void~
+    +confirmRoster(req: Request, res: Response): Promise~void~
+  }
+
+  %% Realizations and Associations
+  PgParticipationRepository ..|> IParticipationRepository : implements
+  ParticipationController --> ParticipationService : delegates to
+  ParticipationService --> IParticipationRepository : uses
+  ParticipationService --> CutoffPolicyGuard : verifies time
+  ParticipationService --> AllergyAlertInterceptor : decorates roster
+  ParticipationService --> ParticipationAuditLogger : logs audit
+  ParticipationAuditLogger --> IParticipationRepository : persists log
+  IParticipationRepository ..> MealParticipation : persists / queries
+  IParticipationRepository ..> MealParticipationChange : persists
+  MealParticipation *-- ParticipationStatus : has status
+  MealParticipationChange *-- ChangeType : has type
+  MealParticipationChange *-- ParticipationStatus : tracks status
+  ParticipationController ..> BulkRecordDto : binds body
+  ParticipationController ..> AmendParticipationDto : binds body
+  ParticipationController ..> ConfirmRosterDto : binds body
+```
+
+---
+
+#### 2. Module 2: Meal Demand & Quantity Class Diagram
+- **Key Domain Entities:** `MealDemand`, `MealDemandDishQuantity`, `MealDemandChange`, `DemandStatus`, `AdjustmentType`.
+- **Core Services & Contracts:** `DemandService`, `RosterAggregationEngine`, `PortionCalculationEngine`, `BufferPolicyManager`, `IDemandRepository`.
+- **Detailed Specification:** [c4/c4-code-demand.md](c4/c4-code-demand.md)
+
+```mermaid
+classDiagram
+  direction TB
+
+  class DemandStatus {
+    <<enumeration>>
+    DRAFT
+    CALCULATED
+    CONFIRMED
+    REVISED
+  }
+
+  class AdjustmentType {
+    <<enumeration>>
+    QUANTITY_INCREASE
+    QUANTITY_DECREASE
+    DISH_ADJUSTMENT
+    CANCELLATION
+  }
+
+  class ReviewStatus {
+    <<enumeration>>
+    PENDING
+    APPROVED
+    REJECTED
+  }
+
+  class MealDemand {
+    <<entity>>
+    +UUID id
+    +UUID mealScheduleId
+    +string determinationMethod
+    +number totalHeadcount
+    +number bufferPercentage
+    +number finalDemandCount
+    +DemandStatus status
+    +UUID confirmedByUserId
+    +Date confirmedAt
+    +Date createdAt
+    +Date updatedAt
+    +applyAggregation(headcount: number, bufferPct: number): void
+    +confirm(userId: UUID): void
+    +markRevised(): void
+  }
+
+  class MealDemandDishQuantity {
+    <<entity>>
+    +UUID id
+    +UUID mealDemandId
+    +UUID dishId
+    +number standardPortionGrams
+    +number expectedQuantityKg
+    +string portionUnit
+    +string notes
+    +calculateQuantity(headcount: number, bufferPct: number): void
+  }
+
+  class MealDemandChange {
+    <<entity>>
+    +UUID id
+    +UUID mealDemandId
+    +AdjustmentType changeType
+    +number previousQuantity
+    +number newQuantity
+    +string reason
+    +UUID requestedByUserId
+    +UUID reviewedByUserId
+    +ReviewStatus reviewStatus
+    +Date reviewedAt
+    +Date createdAt
+    +approve(reviewerId: UUID): void
+    +reject(reviewerId: UUID): void
+  }
+
+  class CalculateDishesDto {
+    +UUID mealScheduleId
+    +number bufferPercentage
+  }
+
+  class EmergencyAdjustmentDto {
+    +UUID mealDemandId
+    +AdjustmentType changeType
+    +number quantityDelta
+    +string reason
+  }
+
+  class IDemandRepository {
+    <<interface>>
+    +findActiveDemand(scheduleId: UUID): Promise~MealDemand~
+    +saveDemand(demand: MealDemand): Promise~MealDemand~
+    +saveDishQuantities(quantities: MealDemandDishQuantity[]): Promise~void~
+    +findDishQuantities(demandId: UUID): Promise~MealDemandDishQuantity[]~
+    +createDemandChange(change: MealDemandChange): Promise~MealDemandChange~
+    +findConfirmedParticipationCount(scheduleId: UUID): Promise~number~
+  }
+
+  class PgDemandRepository {
+    -Pool dbPool
+    +findActiveDemand(scheduleId: UUID): Promise~MealDemand~
+    +saveDemand(demand: MealDemand): Promise~MealDemand~
+    +saveDishQuantities(quantities: MealDemandDishQuantity[]): Promise~void~
+    +findDishQuantities(demandId: UUID): Promise~MealDemandDishQuantity[]~
+    +createDemandChange(change: MealDemandChange): Promise~MealDemandChange~
+    +findConfirmedParticipationCount(scheduleId: UUID): Promise~number~
+  }
+
+  class RosterAggregationEngine {
+    <<service>>
+    -IDemandRepository repo
+    +aggregateScheduleRoster(scheduleId: UUID): Promise~AggregationResult~
+    +getSpecialDietCount(scheduleId: UUID): Promise~DietaryCountSummary~
+  }
+
+  class BufferPolicyManager {
+    <<service>>
+    -number DEFAULT_BUFFER_PERCENT
+    -number MAX_ALLOWABLE_BUFFER
+    +validateBuffer(bufferPct: number): boolean
+    +getEffectiveBuffer(customPct: number): number
+  }
+
+  class PortionCalculationEngine {
+    <<service>>
+    -BufferPolicyManager bufferPolicy
+    +computeDishTargets(headcount: number, bufferPct: number, menuDishes: DishMaster[]): MealDemandDishQuantity[]
+    +computeSingleDishWeight(headcount: number, portionGrams: number, bufferPct: number): number
+  }
+
+  class EmergencyAmendmentHandler {
+    <<service>>
+    -IDemandRepository repo
+    +submitRequest(dto: EmergencyAdjustmentDto, userId: UUID): Promise~MealDemandChange~
+    +reviewRequest(changeId: UUID, approve: boolean, reviewerId: UUID): Promise~void~
+  }
+
+  class DemandService {
+    <<service>>
+    -IDemandRepository repo
+    -RosterAggregationEngine aggregationEngine
+    -BufferPolicyManager bufferManager
+    -PortionCalculationEngine portionCalculator
+    -EmergencyAmendmentHandler emergencyHandler
+    +aggregateAndCalculate(dto: CalculateDishesDto, userId: UUID): Promise~DemandCalculationResult~
+    +confirmDemand(demandId: UUID, userId: UUID): Promise~MealDemand~
+    +handleEmergencyRequest(dto: EmergencyAdjustmentDto, userId: UUID): Promise~MealDemandChange~
+  }
+
+  class DemandController {
+    <<controller>>
+    -DemandService service
+    +getTodayDemand(req: Request, res: Response): Promise~void~
+    +calculateDishes(req: Request, res: Response): Promise~void~
+    +confirm(req: Request, res: Response): Promise~void~
+    +emergencyAdjust(req: Request, res: Response): Promise~void~
+  }
+
+  %% Relationships
+  PgDemandRepository ..|> IDemandRepository : implements
+  DemandController --> DemandService : delegates to
+  DemandService --> IDemandRepository : uses
+  DemandService --> RosterAggregationEngine : triggers
+  DemandService --> BufferPolicyManager : validates buffer
+  DemandService --> PortionCalculationEngine : calculates targets
+  DemandService --> EmergencyAmendmentHandler : routes adjustments
+  PortionCalculationEngine --> BufferPolicyManager : queries policy
+  RosterAggregationEngine --> IDemandRepository : queries counts
+  EmergencyAmendmentHandler --> IDemandRepository : saves changes
+  IDemandRepository ..> MealDemand : queries & saves
+  IDemandRepository ..> MealDemandDishQuantity : queries & saves
+  IDemandRepository ..> MealDemandChange : queries & saves
+  MealDemand *-- DemandStatus : has status
+  MealDemandChange *-- AdjustmentType : has type
+  MealDemandChange *-- ReviewStatus : has review state
+  DemandController ..> CalculateDishesDto : binds body
+  DemandController ..> EmergencyAdjustmentDto : binds body
+```
+
+---
+
+#### 3. Module 3: Meal Preparation & Kitchen Class Diagram
+- **Key Domain Entities:** `MealPreparationPlan`, `MealPreparationPlanDish`, `IngredientAllocation`, `MealPreparation`, `PreparedQuantityConfirmation`.
+- **Core Services & Contracts:** `PreparationService`, `KitchenPlanCoordinator`, `IngredientAllocationManager`, `CookingBatchTracker`, `YieldReconciliationEngine`, `IPreparationRepository`.
+- **Detailed Specification:** [c4/c4-code-preparation.md](c4/c4-code-preparation.md)
+
+```mermaid
+classDiagram
+  direction TB
+
+  class PlanStatus {
+    <<enumeration>>
+    PLANNED
+    IN_PROGRESS
+    COMPLETED
+    CANCELLED
+  }
+
+  class AllocationStatus {
+    <<enumeration>>
+    ALLOCATED
+    ADJUSTED
+    RETURNED
+  }
+
+  class ConfirmationStatus {
+    <<enumeration>>
+    MATCHED
+    DISCREPANCY
+  }
+
+  class MealPreparationPlan {
+    <<entity>>
+    +UUID id
+    +UUID mealDemandId
+    +string shiftName
+    +PlanStatus status
+    +Date scheduledStartTime
+    +Date scheduledEndTime
+    +Date createdAt
+    +startShift(): void
+    +completeShift(): void
+  }
+
+  class MealPreparationPlanDish {
+    <<entity>>
+    +UUID id
+    +UUID preparationPlanId
+    +UUID dishId
+    +number targetQuantityKg
+    +string assignedStation
+  }
+
+  class IngredientAllocation {
+    <<entity>>
+    +UUID id
+    +UUID preparationPlanId
+    +UUID ingredientId
+    +number allocatedQuantity
+    +string unit
+    +AllocationStatus status
+    +markAdjusted(delta: number): void
+    +markReturned(returnedQty: number): void
+  }
+
+  class MealPreparation {
+    <<entity>>
+    +UUID id
+    +UUID preparationPlanId
+    +string stationName
+    +number batchNumber
+    +Date cookingStartTime
+    +Date cookingEndTime
+    +number coreTemperatureCelsius
+    +UUID chefUserId
+    +completeBatch(coreTempC: number): void
+  }
+
+  class MealPreparationDishRecord {
+    <<entity>>
+    +UUID id
+    +UUID mealPreparationId
+    +UUID dishId
+    +number actualPreparedQuantityKg
+  }
+
+  class PreparedQuantityConfirmation {
+    <<entity>>
+    +UUID id
+    +UUID mealPreparationPlanId
+    +UUID dishId
+    +number plannedQuantityKg
+    +number confirmedQuantityKg
+    +ConfirmationStatus status
+    +string discrepancyReason
+    +UUID confirmedByUserId
+    +Date confirmedAt
+    +evaluateVariance(tolerancePct: number): ConfirmationStatus
+  }
+
+  class YieldSignoffDto {
+    +UUID planId
+    +UUID dishId
+    +number measuredWeightKg
+    +string discrepancyReason
+  }
+
+  class IPreparationRepository {
+    <<interface>>
+    +findActivePlanByDemand(demandId: UUID): Promise~MealPreparationPlan~
+    +savePlan(plan: MealPreparationPlan): Promise~MealPreparationPlan~
+    +savePlanDishes(dishes: MealPreparationPlanDish[]): Promise~void~
+    +saveAllocations(allocations: IngredientAllocation[]): Promise~void~
+    +createCookingBatch(batch: MealPreparation): Promise~MealPreparation~
+    +saveDishRecord(record: MealPreparationDishRecord): Promise~void~
+    +saveConfirmation(confirmation: PreparedQuantityConfirmation): Promise~PreparedQuantityConfirmation~
+  }
+
+  class PgPreparationRepository {
+    -Pool dbPool
+    +findActivePlanByDemand(demandId: UUID): Promise~MealPreparationPlan~
+    +savePlan(plan: MealPreparationPlan): Promise~MealPreparationPlan~
+    +savePlanDishes(dishes: MealPreparationPlanDish[]): Promise~void~
+    +saveAllocations(allocations: IngredientAllocation[]): Promise~void~
+    +createCookingBatch(batch: MealPreparation): Promise~MealPreparation~
+    +saveDishRecord(record: MealPreparationDishRecord): Promise~void~
+    +saveConfirmation(confirmation: PreparedQuantityConfirmation): Promise~PreparedQuantityConfirmation~
+  }
+
+  class KitchenPlanCoordinator {
+    <<service>>
+    -IPreparationRepository repo
+    +generateShiftPlan(demandId: UUID, targets: DishTargetSummary[]): Promise~MealPreparationPlan~
+    +assignStations(planDishes: MealPreparationPlanDish[]): void
+  }
+
+  class IngredientAllocationManager {
+    <<service>>
+    -IPreparationRepository repo
+    +calculateRequisition(targets: DishTargetSummary[]): IngredientAllocation[]
+    +dispatchPantryOrder(allocations: IngredientAllocation[]): Promise~boolean~
+  }
+
+  class CookingBatchTracker {
+    <<service>>
+    -IPreparationRepository repo
+    +startBatch(planId: UUID, station: string, chefId: UUID): Promise~MealPreparation~
+    +completeBatch(prepId: UUID, tempC: number, measuredKg: number): Promise~MealPreparation~
+  }
+
+  class YieldReconciliationEngine {
+    <<service>>
+    -number TOLERANCE_PERCENTAGE
+    +reconcileYield(targetKg: number, actualKg: number, reason: string, reviewerId: UUID): PreparedQuantityConfirmation
+    +isWithinTolerance(targetKg: number, actualKg: number): boolean
+  }
+
+  class PreparationService {
+    <<service>>
+    -IPreparationRepository repo
+    -KitchenPlanCoordinator coordinator
+    -IngredientAllocationManager allocationMgr
+    -CookingBatchTracker batchTracker
+    -YieldReconciliationEngine yieldEngine
+    +getTodayKitchenPlan(demandId: UUID): Promise~FullKitchenPlan~
+    +startCookingBatch(planId: UUID, station: string, chefId: UUID): Promise~MealPreparation~
+    +recordYieldSignoff(dto: YieldSignoffDto, userId: UUID): Promise~PreparedQuantityConfirmation~
+  }
+
+  class PreparationController {
+    <<controller>>
+    -PreparationService service
+    +getShiftPlan(req: Request, res: Response): Promise~void~
+    +startBatch(req: Request, res: Response): Promise~void~
+    +completeBatch(req: Request, res: Response): Promise~void~
+    +signoffYield(req: Request, res: Response): Promise~void~
+  }
+
+  %% Relationships
+  PgPreparationRepository ..|> IPreparationRepository : implements
+  PreparationController --> PreparationService : delegates to
+  PreparationService --> IPreparationRepository : uses
+  PreparationService --> KitchenPlanCoordinator : coordinates plans
+  PreparationService --> IngredientAllocationManager : allocates ingredients
+  PreparationService --> CookingBatchTracker : monitors batches
+  PreparationService --> YieldReconciliationEngine : evaluates yields
+  IPreparationRepository ..> MealPreparationPlan : persists
+  IPreparationRepository ..> IngredientAllocation : persists
+  IPreparationRepository ..> MealPreparation : persists
+  IPreparationRepository ..> PreparedQuantityConfirmation : persists
+  MealPreparationPlan *-- PlanStatus : has status
+  IngredientAllocation *-- AllocationStatus : has status
+  PreparedQuantityConfirmation *-- ConfirmationStatus : has status
+  PreparationController ..> YieldSignoffDto : binds body
+```
 
 ---
 

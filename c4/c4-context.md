@@ -8,38 +8,8 @@ The **System Context Diagram** establishes the boundary of the **Primary School 
 
 ## 2. System Context Diagram (C4Context)
 
-```mermaid
-C4Context
-  title System Context Diagram - Primary School Semi-Boarding Meal Management System
-
-  Person(teacher, "Homeroom Teacher", "Records student meal attendance, logs absence/allergy notices, and confirms the class roster before cutoff")
-  Person(manager, "Meal / Nutrition Manager", "Aggregates school-wide headcounts, computes recipe portion weights, approves emergency requests, and signs off on kitchen yields")
-  Person(kitchen, "Kitchen Staff / Head Chef", "Receives raw ingredients, operates cooking stations via wall-mount touch kiosk, and records actual prepared quantities")
-  Person(admin, "School Administrator", "Manages user credentials, configures RBAC permissions, academic calendars, and dish recipe master catalogs")
-
-  Enterprise_Boundary(schoolOrg, "Primary School Campus") {
-    System(mealSystem, "Semi-Boarding Meal Management System", "Central operational web platform coordinating student attendance, dynamic demand scaling, kitchen preparation, and food safety auditability")
-    
-    System_Ext(sis, "School Information System (SIS)", "External master registry for student rosters, class enrollments, and medical allergy records")
-    System_Ext(inventory, "Pantry Inventory & Supplier System", "External system managing bulk dry goods, spice reserves, and daily fresh ingredient deliveries")
-  }
-
-  System_Ext(notifGateway, "Parent Notification Gateway", "Third-party SMS / OTT messaging service dispatching real-time attendance confirmations and meal notices to parents")
-
-  %% Relationships
-  Rel(teacher, mealSystem, "Submits daily attendance and locks roster", "HTTPS/Mobile Portal")
-  Rel(manager, mealSystem, "Calculates demand, adjusts buffer, and reviews kitchen yield", "HTTPS/Workstation")
-  Rel(kitchen, mealSystem, "Views prep plan, runs station timers, and enters finished yields", "HTTPS/Touch Kiosk")
-  Rel(admin, mealSystem, "Configures schedules, menus, and user access policies", "HTTPS/Admin Portal")
-
-  Rel(mealSystem, sis, "Synchronizes student rosters and dietary/allergy alerts", "REST/JSON")
-  Rel(mealSystem, inventory, "Queries stock availability and issues ingredient dispatch orders", "REST/JSON")
-  Rel(mealSystem, notifGateway, "Dispatches meal confirmation webhooks", "HTTPS/Webhook")
-
-  UpdateLayoutConfig($c4ShapeInRow="3", $c4BoundaryInRow="1")
-```
-
----
+![System Context Diagram (C4Context)](.\images\SystemContext.png)
+![Test](.\images\SystemContext-key.png)
 
 ## 3. Actor & External System Specifications
 
