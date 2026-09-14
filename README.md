@@ -47,6 +47,21 @@ primary-school-meal-management/
 │
 ├── README.md                          ← Main project documentation (Project Map)
 │
+├── arc42/                             ← arc42 Software Architecture Documentation Suite
+│   ├── README.md                      ← arc42 master navigation index & section tracker
+│   ├── 01-introduction-and-goals.md   ← Section 1: System requirements & Q42 quality goals
+│   ├── 02-architecture-constraints.md ← Section 2: Technical, operational & legal constraints
+│   ├── 03-context-and-scope.md        ← Section 3: Business & technical context, external interfaces
+│   ├── 04-solution-strategy.md        ← Section 4: Modular monolith, DDD, technology rationale
+│   ├── 05-building-block-view.md      ← Section 5: Level-1 Containers & Level-2 Components
+│   ├── 06-runtime-view.md             ← Section 6: Dynamic sequence scenarios (Cutoff, Triage, HACCP)
+│   ├── 07-deployment-view.md          ← Section 7: Campus infrastructure, Docker & device profiles
+│   ├── 08-crosscutting-concepts.md    ← Section 8: Domain model, RBAC, cutoff guards, audit logs
+│   ├── 09-architecture-decisions.md   ← Section 9: ADRs (Monolith, Cutoff Guard, Vanilla UI, WSS)
+│   ├── 10-quality-requirements.md     ← Section 10: Measurable quality scenarios (QS-01 to QS-08)
+│   ├── 11-risks-and-technical-debt.md ← Section 11: Risk register & technical debt backlog
+│   └── 12-glossary.md                 ← Section 12: Domain dictionary & acronyms
+│
 ├── c4/                                ← C4 Software Architecture Documentation
 │   ├── README.md                      ← C4 documentation map & index
 │   ├── c4-context.md                  ← Level 1: System Context Diagram
@@ -127,6 +142,7 @@ primary-school-meal-management/
 |:---:|---|---|:---:|
 | **—** | [Documentation Hub](docs/README.md) | Central navigation hub for all 6 top-down engineering phases | ✅ Complete |
 | **C4** | [C4 Model Architecture](c4/README.md) | Full 4-Level Architecture: Level 1 Context, Level 2 Containers, Level 3 Components (M1, M2, M3), Level 4 Code (M1, M2, M3) | ✅ Complete |
+| **arc42** | [arc42 Architecture Suite](arc42/README.md) | Comprehensive 12-section architecture documentation adhering to Dr. Starke & Dr. Hruschka's standard (ESSENTIAL level) | ✅ Complete |
 | **01** | [Top-Down Decomposition](docs/01-top-down/README.md) | Business domain classification & system mind map | ✅ Complete |
 | **02** | [Core Feature Breakdown](docs/02-core-features/README.md) | In-depth breakdown of the 3 active MVP core modules | ✅ Complete |
 | **03** | [Roles & Use Cases](docs/03-roles-usecases/README.md) | Actor definition, permission matrix, and UML use cases | ✅ Complete |
@@ -724,6 +740,35 @@ classDiagram
   PreparedQuantityConfirmation *-- ConfirmationStatus : has status
   PreparationController ..> YieldSignoffDto : binds body
 ```
+
+---
+
+## arc42 Software Architecture Documentation Suite
+
+This repository implements the standardized [arc42](https://arc42.org) architecture documentation template (by Dr. Gernot Starke and Dr. Peter Hruschka) at the **ESSENTIAL** detail level. The documentation suite is organized in a modular structure under [`arc42/`](arc42/), cross-referencing upstream business requirements and C4 architecture models:
+
+### Documentation Navigation & Section Map
+
+| Section | Title | Primary Architectural Focus | Status |
+|:---:|:---|:---|:---:|
+| **01** | [Introduction and Goals](arc42/01-introduction-and-goals.md) | Business problem, active MVP features (M1, M2, M3), 4 measurable Q42 quality goals, and 7-role stakeholder sign-off matrix. | ✅ Complete |
+| **02** | [Architecture Constraints](arc42/02-architecture-constraints.md) | Technical constraints (Vanilla Web/Node/PostgreSQL), operational limits (08:00 cutoff), legal standards (Decision 1246/QĐ-BYT). | ✅ Complete |
+| **03** | [Context and Scope](arc42/03-context-and-scope.md) | Business and technical context, external interfaces (`IF-01` SIS, `IF-02` Inventory, `IF-03` Parent Gateway, `IF-04` Accounting). | ✅ Complete |
+| **04** | [Solution Strategy](arc42/04-solution-strategy.md) | Modular Monolith paradigm, DDD decomposition, technology choices, and architectural approaches mapped to Section 1.2 quality goals. | ✅ Complete |
+| **05** | [Building Block View](arc42/05-building-block-view.md) | Static structure: Level-1 Containers (SPA, API, WSS, PostgreSQL, Media) and Level-2 Components for M1, M2, and M3. | ✅ Complete |
+| **06** | [Runtime View](arc42/06-runtime-view.md) | 4 core dynamic sequence scenarios: Morning roll-call lock, emergency cutoff triage, portion scaling, and HACCP temperature/yield checks. | ✅ Complete |
+| **07** | [Deployment View](arc42/07-deployment-view.md) | Infrastructure topology: School campus LAN, client hardware profiles (Tablets, Desktop, Kitchen Kiosks), Docker containers, and TLS proxy. | ✅ Complete |
+| **08** | [Crosscutting Concepts](arc42/08-crosscutting-concepts.md) | Unified Domain Model, RBAC security scopes, temporal cutoff policy, HACCP temperature barrier, immutable audit logging, and error envelopes. | ✅ Complete |
+| **09** | [Architecture Decisions](arc42/09-architecture-decisions.md) | 4 formal Nygard ADRs: ADR-001 (Modular Monolith), ADR-002 (Cutoff Guard & Triage), ADR-003 (Vanilla Web Stack), ADR-004 (WebSocket Pub/Sub). | ✅ Complete |
+| **10** | [Quality Requirements](arc42/10-quality-requirements.md) | 8 concrete, measurable quality scenarios (`QS-01` through `QS-08`) testing `#reliable`, `#efficient`, `#safe`, and `#usable` thresholds. | ✅ Complete |
+| **11** | [Risks and Technical Debt](arc42/11-risks-and-technical-debt.md) | Prioritized risk register (Probability × Impact), mitigation strategies (`RISK-01` to `RISK-04`), and technical debt backlog (`DEBT-01` to `DEBT-03`). | ✅ Complete |
+| **12** | [Glossary](arc42/12-glossary.md) | Canonical ubiquitous domain dictionary (Semi-Boarding, Cutoff, Buffers, HACCP, Kiểm thực 3 bước, Rations) and acronym expansions. | ✅ Complete |
+
+### Key Architectural Anchors
+
+- **Q42 Quality Model:** 4 hard quality goals anchor all architectural decisions: `#reliable` (08:00 AM cutoff lockdown with 100% auditable amendments), `#efficient` (50+ concurrent teacher check-ins at $p95 < 300\text{ms}$ and $< 1.0\text{s}$ rollup), `#safe` (100% persistent allergen alerts and mandatory $\ge 75^\circ\text{C}$ cooking temperature check), and `#usable` (< 90s roll-call, $\le 2\text{ taps}$ kiosk actions).
+- **Architecture Decisions (ADRs):** Decisions are formally recorded in Nygard ADR format in [arc42/09-architecture-decisions.md](arc42/09-architecture-decisions.md), covering the modular monolith, temporal guard interceptor, vanilla UI stack, and WebSocket event distribution.
+- **Bi-directional Traceability with C4:** arc42 building blocks (Section 5) and deployment nodes (Section 7) map directly 1-to-1 with the C4 diagrams in [`c4/`](c4/).
 
 ---
 
