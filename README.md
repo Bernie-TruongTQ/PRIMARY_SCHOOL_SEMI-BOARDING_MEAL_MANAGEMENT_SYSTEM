@@ -47,6 +47,14 @@ primary-school-meal-management/
 │
 ├── README.md                          ← Main project documentation (Project Map)
 │
+├── c4/                                ← C4 Software Architecture Documentation
+│   ├── README.md                      ← C4 documentation map & index
+│   ├── c4-context.md                  ← Level 1: System Context Diagram
+│   ├── c4-containers.md               ← Level 2: Container Diagram
+│   ├── c4-components-*.md             ← Level 3: Component Diagrams (M1, M2, M3)
+│   ├── c4-dynamic-operational-flow.md ← Dynamic Diagram: Morning operations lifecycle
+│   └── c4-deployment.md               ← Level 4: Deployment Diagram
+│
 ├── docs/                              ← Comprehensive top-down engineering documentation
 │   ├── README.md                      ← Documentation index and methodology guide
 │   ├── traceability.md                ← End-to-end traceability chain mapping
@@ -119,6 +127,7 @@ primary-school-meal-management/
 | Phase | Artifact | Description | Status |
 |:---:|---|---|:---:|
 | **—** | [Documentation Hub](docs/README.md) | Central navigation hub for all 6 top-down engineering phases | ✅ Complete |
+| **C4** | [C4 Model Architecture](c4/README.md) | Level 1 Context, Level 2 Containers, Level 3 Components (M1, M2, M3), Dynamic & Deployment | ✅ Complete |
 | **01** | [Top-Down Decomposition](docs/01-top-down/README.md) | Business domain classification & system mind map | ✅ Complete |
 | **02** | [Core Feature Breakdown](docs/02-core-features/README.md) | In-depth breakdown of the 3 active MVP core modules | ✅ Complete |
 | **03** | [Roles & Use Cases](docs/03-roles-usecases/README.md) | Actor definition, permission matrix, and UML use cases | ✅ Complete |
