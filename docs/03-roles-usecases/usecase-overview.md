@@ -71,13 +71,13 @@ flowchart LR
     ADM --- UC_ADM_03
     ADM --- UC_ADM_04
 
-    %% Dependencies: <<include>> & <<extend>>
-    UC_TCH_02 -.->|"<<extend>>"| UC_TCH_01
-    UC_TCH_04 -.->|"<<extend>>"| UC_TCH_03
-    UC_MGR_01 -.->|"<<include>>"| UC_MGR_02
-    UC_MGR_03 -.->|"<<extend>>"| UC_MGR_01
-    UC_KIT_04 -.->|"<<include>>"| UC_KIT_03
-    UC_MGR_05 -.->|"<<include>>"| UC_KIT_04
+    %% Dependencies: &lt;&lt;include&gt;&gt; &amp; &lt;&lt;extend&gt;&gt;
+    UC_TCH_02 -.->|"&lt;&lt;extend&gt;&gt;"| UC_TCH_01
+    UC_TCH_04 -.->|"&lt;&lt;extend&gt;&gt;"| UC_TCH_03
+    UC_MGR_01 -.->|"&lt;&lt;include&gt;&gt;"| UC_MGR_02
+    UC_MGR_03 -.->|"&lt;&lt;extend&gt;&gt;"| UC_MGR_01
+    UC_KIT_04 -.->|"&lt;&lt;include&gt;&gt;"| UC_KIT_03
+    UC_MGR_05 -.->|"&lt;&lt;include&gt;&gt;"| UC_KIT_04
 ```
 
 ---

@@ -26,7 +26,7 @@ flowchart LR
     KIT --- UC3
     KIT --- UC4
 
-    UC4 -.->|"<<include>>"| UC3
+    UC4 -.->|"&lt;&lt;include&gt;&gt;"| UC3
 ```
 
 ---

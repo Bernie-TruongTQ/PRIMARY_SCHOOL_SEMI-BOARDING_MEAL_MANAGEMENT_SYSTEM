@@ -30,8 +30,8 @@ flowchart LR
     TCH --- UC3
     TCH --- UC4
 
-    UC2 -.->|"<<extend>>"| UC1
-    UC4 -.->|"<<extend>>"| UC3
+    UC2 -.->|"&lt;&lt;extend&gt;&gt;"| UC1
+    UC4 -.->|"&lt;&lt;extend&gt;&gt;"| UC3
 ```
 
 ---

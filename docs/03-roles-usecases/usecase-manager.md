@@ -32,8 +32,8 @@ flowchart LR
     MGR --- UC4
     MGR --- UC5
 
-    UC1 -.->|"<<include>>"| UC2
-    UC3 -.->|"<<extend>>"| UC1
+    UC1 -.->|"&lt;&lt;include&gt;&gt;"| UC2
+    UC3 -.->|"&lt;&lt;extend&gt;&gt;"| UC1
 ```
 
 ---
