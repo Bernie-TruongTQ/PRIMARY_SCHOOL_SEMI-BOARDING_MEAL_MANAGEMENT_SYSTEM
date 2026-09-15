@@ -1,65 +1,56 @@
-# Screen Inventory
+# Screen Inventory & Specification Matrix
 
-This document lists all system screens required to support the **three active core operational modules**, indexed by Screen ID and mapped to their originating Use Cases, Core Features, Actors, and Primary Database Entities.
+## 1. Overview
 
----
-
-## Complete Screen Catalog
-
-| Screen ID | Screen Name | Actor | Primary UC | Core Feature | Primary DB Entity | Status |
-|---|---|:---:|---|---|---|:---:|
-| **SCR-TCH-01** | Class Roster Meal Participation | TCH | UC-TCH-01 | `F-PAR-01` | `meal_participations` | Active MVP |
-| **SCR-TCH-02** | Participation Amendment Modal | TCH | UC-TCH-02 | `F-PAR-02` | `meal_participation_changes` | Active MVP |
-| **SCR-TCH-03** | Class Roster Confirmation & Lock | TCH | UC-TCH-03 | `F-PAR-03` | `meal_participations` | Active MVP |
-| **SCR-TCH-04** | Post-Cutoff Emergency Request Form | TCH | UC-TCH-02 | `F-DMD-03` | `meal_demand_changes` | Active MVP |
-| **SCR-MGR-01** | Demand Determination Dashboard | MGR | UC-MGR-01 | `F-DMD-01` | `meal_demands` | Active MVP |
-| **SCR-MGR-02** | Dish Quantity Calculation & Overrides | MGR | UC-MGR-02 | `F-DMD-02` | `meal_demand_dish_quantities` | Active MVP |
-| **SCR-MGR-03** | Demand Changes Review Queue | MGR | UC-MGR-03 | `F-DMD-03` | `meal_demand_changes` | Active MVP |
-| **SCR-MGR-04** | Kitchen Shift Preparation Planning | MGR | UC-MGR-04 | `F-PRP-01` | `meal_preparation_plans` | Active MVP |
-| **SCR-MGR-05** | Daily Prep Summary & Discrepancy Sign-off | MGR | UC-MGR-05 | `F-PRP-04` | `prepared_quantity_confirmations` | Active MVP |
-| **SCR-KIT-01** | Kitchen Prep Shift Dashboard (Kiosk) | KIT | UC-KIT-01 | `F-PRP-01` | `meal_preparation_plans` | Active MVP |
-| **SCR-KIT-02** | Ingredient Allocation Checklist | KIT | UC-KIT-02 | `F-PRP-02` | `ingredient_allocations` | Active MVP |
-| **SCR-KIT-03** | Cooking Batch Execution & Yield Logging | KIT | UC-KIT-03 | `F-PRP-03` | `meal_preparations`, `meal_preparation_dish_records` | Active MVP |
-| **SCR-KIT-04** | Prepared Quantity Verification Screen | KIT | UC-KIT-04 | `F-PRP-04` | `prepared_quantity_confirmations` | Active MVP |
-| **SCR-ADM-01** | Student & Class Directory | ADM | UC-ADM-01 | Master Data | `students` | Active MVP |
-| **SCR-ADM-02** | Meal Calendar & Schedule Setup | ADM | UC-ADM-02 | Master Data | `meal_schedules` | Active MVP |
-| **SCR-ADM-03** | Dish & Ingredient Catalog Management | ADM | UC-ADM-03 | Master Data | `dishes`, `ingredients` | Active MVP |
-| **SCR-ADM-04** | User Account & Role Permissions | ADM | UC-ADM-04 | Master Data | `users` | Active MVP |
+The Screen Inventory catalogs all **17 distinct screens** across the 4 role portals of the Primary School Semi-Boarding Meal Management System. Every screen is cross-referenced with:
+- **INVEST User Stories** ([Phase 02](../02-core-features/invest-requirements.md))
+- **Actor Use Cases & RACI** ([Phase 03](../03-roles-usecases/README.md))
+- **Relational Database Entities** ([Phase 06](../06-database/data-dictionary.md))
+- **Frontend Prototype Elements** ([frontend/README.md](../../frontend/README.md))
 
 ---
 
-## Screen Details & Functionality
+## 2. Complete Screen Catalog (17 Operational Screens)
 
-### SCR-TCH-01 — Class Roster Meal Participation
-- **Layout:** Mobile-first vertical list with quick-tap status chips (Present / Absent / Guest).
-- **Controls:** Date & meal type selector, search by student name, batch "Mark All Attended" button.
-- **Interactions:** Tap student card to toggle participation status or trigger SCR-TCH-02.
+### 2.1. Teacher Portal (`SCR-TCH`) — Module 1
 
-### SCR-TCH-02 — Participation Amendment Modal
-- **Layout:** Slide-up bottom sheet modal.
-- **Fields:** Target status radio group, change category dropdown (`status_update`, `correction`, `reschedule`), mandatory reason text input.
+| Screen ID | Screen Name | Route Path | Target Actor | INVEST Story & Use Case | Primary Database Entities | Core UI Components & Actions |
+|---|---|---|---|---|---|---|
+| **SCR-TCH-01** | Classroom Attendance Roster | `/teacher/roster` | Homeroom Teacher (`TCH`) | **US-PAR-01**<br>`UC-TCH-01` | `meal_participations`<br>`students`<br>`classes`<br>`meal_schedules` | • Class switcher tabs (1A..5E)<br>• Metric header (Registered, Eating, Absent)<br>• Cutoff countdown timer (08:30 AM)<br>• Student roster rows with Eating/Absent toggle pills<br>• Allergy warning badges (Peanut, Seafood)<br>• "Quick Mark All Present" button<br>• "Confirm & Lock Roster" CTA |
+| **SCR-TCH-02** | Attendance Amendment Modal | `/teacher/roster/amend` | Homeroom Teacher (`TCH`) | **US-PAR-02**<br>`UC-TCH-02` | `meal_participation_changes`<br>`meal_participations` | • Slide-up bottom sheet / modal<br>• Current status vs New status selector<br>• Reason dropdown (Sick, Early Pickup, Late, Custom)<br>• Free-text notes input<br>• "Save Amendment & Log Audit" CTA |
+| **SCR-TCH-03** | Roster Confirmation & Lock View | `/teacher/roster/confirm` | Homeroom Teacher (`TCH`), Supervisor (`TCH_SUP`) | **US-PAR-03**<br>`UC-TCH-03` | `meal_participations` (`confirmed`) | • Summary verification sheet (Headcount breakdown)<br>• Unmarked student warning banner<br>• Checkbox acknowledgment: "I confirm roster accuracy"<br>• "Lock & Handover to Kitchen" primary CTA<br>• Transition to Read-Only roster state |
+| **SCR-TCH-04** | Post-Cutoff Emergency Request Sheet | `/teacher/emergency-request` | Homeroom Teacher (`TCH`) | **US-DMD-03**<br>`UC-TCH-04` | `meal_demand_changes`<br>`meal_demands` | • Modal triggered on post-08:30 edits<br>• Change type toggle (+ Add Meals / - Remove Meals)<br>• Delta number input stepper<br>• Mandatory justification textarea<br>• "Submit Emergency Request" CTA |
 
-### SCR-TCH-03 — Class Roster Confirmation & Lock
-- **Layout:** Summary modal with total headcount chips and countdown timer to cutoff.
-- **Action:** Confirm button locks class roster and transitions state to `confirmed`.
+---
 
-### SCR-MGR-01 — Demand Determination Dashboard
-- **Layout:** High-density desktop dashboard showing class submission progress bar, calculation method radio selector (`participation_based`, `manual_forecast`, `historical_average`), editable buffer % input, and final calculated headcount.
+### 2.2. Manager Portal (`SCR-MGR`) — Modules 2 & 3
 
-### SCR-MGR-02 — Dish Quantity Calculation & Overrides
-- **Layout:** Table listing scheduled dishes, portion standard weights, headcount multiplier, calculated expected quantity, manual override field, and final planned quantity.
+| Screen ID | Screen Name | Route Path | Target Actor | INVEST Story & Use Case | Primary Database Entities | Core UI Components & Actions |
+|---|---|---|---|---|---|---|
+| **SCR-MGR-01** | Demand Determination Board | `/manager/demand` | Meal & Nutrition Manager (`MGR`) | **US-DMD-01**<br>`UC-MGR-01` | `meal_demands`<br>`meal_participations` | • 20-Classroom attendance rollup progress table<br>• Status badge: `Open for changes` vs `Locked`<br>• Calculation method radio: `participation_based`, `manual_forecast`, `historical_average`<br>• Safety buffer stepper control ($0\%\text{--}10\%$)<br>• Final headcount calculation display<br>• "Approve & Lock Daily Demand" CTA |
+| **SCR-MGR-02** | Expected Dish Raw Quantities | `/manager/quantities` | Meal & Nutrition Manager (`MGR`), Chef (`KIT_CHEF`) | **US-DMD-02**<br>`UC-MGR-02` | `meal_demand_dish_quantities`<br>`dishes`<br>`ingredients` | • Menu breakdown table by dish<br>• Headcount multiplier $\times$ Standard portion<br>• Gross raw weight vs net cooked weight conversion<br>• Manual rounding override inputs (e.g. 62.4kg $\rightarrow$ 63kg)<br>• "Publish Quantities to Kitchen" CTA |
+| **SCR-MGR-03** | Post-Lock Emergency Review Queue | `/manager/changes` | Meal & Nutrition Manager (`MGR`), Director (`DIR`) | **US-DMD-03**<br>`UC-MGR-03` | `meal_demand_changes`<br>`meal_demands` (`revised`) | • Real-time list of pending teacher emergency requests<br>• Request cards showing Class, Delta ($\pm N$), Reason, Timestamp<br>• One-click "Approve" and "Reject" actions<br>• Rejection reason modal<br>• Automatic demand delta recalculation badge |
+| **SCR-MGR-04** | Kitchen Shift Plan Authoring | `/manager/prep-plans` | Meal & Nutrition Manager (`MGR`), Chef (`KIT_CHEF`) | **US-PRP-01**<br>`UC-MGR-04` | `meal_preparation_plans`<br>`meal_preparation_plan_dishes` | • Shift schedule header (Lunch 10:45 AM deadline)<br>• Station task assignment matrix (Rice, Sauté, Soup)<br>• Target quantity line items<br>• Shift lead assignment dropdown<br>• "Publish Shift Plan to Kiosk" CTA |
+| **SCR-MGR-05** | Daily Yield Reconciliation & Audit | `/manager/reconciliation` | Meal & Nutrition Manager (`MGR`), Inspector (`INS`) | **US-PRP-04**<br>`UC-MGR-05` | `prepared_quantity_confirmations`<br>`meal_preparations` | • Real-time comparison table: Target vs Cooked yield<br>• Discrepancy indicator ($\pm \Delta\%$ variance)<br>• Tolerance threshold warning flags ($>\pm 3\%$)<br>• Reviewer digital signature / approval sign-off<br>• Export daily compliance summary PDF/CSV |
 
-### SCR-MGR-03 — Demand Changes Review Queue
-- **Layout:** Two-column triage view (queue on left, request detail & kitchen status preview on right) with one-click **Approve** and **Reject** buttons.
+---
 
-### SCR-KIT-01 — Kitchen Prep Shift Dashboard (Kiosk)
-- **Layout:** High-contrast tablet kiosk view for kitchen wall mount. Large progress cards for each scheduled dish with deadline badges and target portion counters.
+### 2.3. Kitchen Kiosk Portal (`SCR-KIT`) — Module 3
 
-### SCR-KIT-02 — Ingredient Allocation Checklist
-- **Layout:** Checkbox list of raw ingredients from storage with unit of measurement, allocated weight, and "Confirm Received" / "Report Shortage" actions.
+| Screen ID | Screen Name | Route Path | Target Actor | INVEST Story & Use Case | Primary Database Entities | Core UI Components & Actions |
+|---|---|---|---|---|---|---|
+| **SCR-KIT-01** | Active Prep Shift Board | `/kitchen/shift` | Head Chef (`KIT_CHEF`), Station Cook (`KIT_COOK`) | **US-PRP-01**<br>`UC-KIT-01` | `meal_preparation_plans`<br>`meal_preparation_plan_dishes` | • High-contrast dark/industrial layout<br>• Total target meal count banner (e.g., 630 Meals)<br>• Giant shift countdown clock to 10:45 AM<br>• Menu station cards (Staple, Main, Soup, Greens)<br>• Station status badges (`Pending`, `Cooking`, `Ready`)<br>• Direct jump buttons to station cooking timers |
+| **SCR-KIT-02** | Storage Ingredient Receiving Checklist | `/kitchen/ingredients` | Pantry Handler (`KIT_PANTRY`), Chef (`KIT_CHEF`) | **US-PRP-02**<br>`UC-KIT-02` | `ingredient_allocations`<br>`ingredients` | • Raw ingredient receiving table (Pork, Rice, Eggs, Greens)<br>• Required target weight vs scale weight entry<br>• Quick status buttons: `Matched` (Green) / `Shortfall` (Amber)<br>• Shortfall reason picker (Trimming waste, supplier deficit)<br>• "Confirm Stock Intake" CTA |
+| **SCR-KIT-03** | Station Cooking Timers & Batch Logger | `/kitchen/cooking` | Station Cook (`KIT_COOK`), Chef (`KIT_CHEF`) | **US-PRP-03**<br>`UC-KIT-03` | `meal_preparations`<br>`meal_preparation_dish_records` | • Touch-friendly batch cards per station<br>• Large "Start Batch" / "Pause" / "Complete" controls<br>• Live cooking progress timer<br>• On-screen oversized numeric keypad for scale weight entry<br>• Multi-batch support (Batch #1, Batch #2)<br>• Local IndexedDB offline queue indicator |
+| **SCR-KIT-04** | Prepared Yield Verification Gate | `/kitchen/verification` | Head Chef (`KIT_CHEF`), Inspector (`INS`) | **US-PRP-04**<br>`UC-KIT-04` | `prepared_quantity_confirmations` | • Final distribution gatekeeper screen<br>• Cooked dish scale readout entry<br>• Automated tolerance comparison ($\pm 3\%$ window)<br>• Green "Portions Approved" pass chip<br>• Red "Tolerance Exceeded" alert requiring mandatory note<br>• "Sign-off & Release Trays" primary CTA |
 
-### SCR-KIT-03 — Cooking Batch Execution & Yield Logging
-- **Layout:** Station-based timer and logging view. Start/Stop cooking timers, batch number input, and numeric keypad for entering actual finished weight in kg/liters.
+---
 
-### SCR-KIT-04 — Prepared Quantity Verification Screen
-- **Layout:** Comparison view (Target Planned vs Actual Yield). Variance percentage indicator (green if within tolerance, red if out-of-bounds). Mandatory discrepancy input field before final submit.
+### 2.4. Admin Portal (`SCR-ADM`) — Master Data
+
+| Screen ID | Screen Name | Route Path | Target Actor | Role & Setup Scope | Primary Database Entities | Core UI Components & Actions |
+|---|---|---|---|---|---|---|
+| **SCR-ADM-01** | Student & Classroom Directory | `/admin/students` | System Administrator (`ADM`) | Term Student Ingestion & Class Rosters | `students`<br>`classes` | • Search & filterable student datagrid<br>• Student profile modal (Allergy notes, Parent contact)<br>• Bulk CSV import for start-of-year enrollment<br>• Class assignment editor |
+| **SCR-ADM-02** | Meal Schedules & Cutoff Setup | `/admin/schedules` | System Administrator (`ADM`) | Operational Scheduling Parameters | `meal_schedules` | • Academic calendar view<br>• Daily session editor (Breakfast, Lunch, Snack)<br>• Session cutoff time configuration (e.g., 08:30 AM)<br>• Holiday / non-service date blackout toggle |
+| **SCR-ADM-03** | Dish & Recipe Master Catalog | `/admin/catalog` | System Administrator (`ADM`), Nutritionist | Nutritional Portion Standards | `dishes`<br>`ingredients` | • Dish catalog with imagery and nutritional info<br>• Standard portion size setup (grams per student)<br>• Recipe ingredient breakdown and units<br>• Standard cooking thermal loss yield coefficient |
+| **SCR-ADM-04** | User Roles & Access Control | `/admin/users` | System Administrator (`ADM`) | Security & Identity Governance | `users`<br>`roles` | • Staff user directory<br>• Role assignment (`teacher`, `manager`, `kitchen`, `admin`)<br>• Classroom assignment for homeroom teachers<br>• Password reset and session revocation |

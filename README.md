@@ -97,10 +97,11 @@ primary-school-meal-management/
 │   │
 │   ├── 04-information-architecture/   ← Navigation models, task flows, and screen catalog
 │   │   ├── README.md
+│   │   ├── INFORMATION_ARCHITECTURE.md ← Canonical master IA specification
 │   │   ├── sitemap.md
 │   │   ├── screen-hierarchy.md
-│   │   ├── task-flows.md
-│   │   └── screen-inventory.md
+│   │   ├── screen-inventory.md
+│   │   └── task-flows.md
 │   │
 │   ├── 05-ui-ux/                      ← Design system tokens, wireframes, and mockups
 │   │   ├── README.md
@@ -147,7 +148,7 @@ primary-school-meal-management/
 | **01** | [Top-Down Decomposition](docs/01-top-down/README.md) | Business domain classification & system mind map | ✅ Complete |
 | **02** | [Core Feature Breakdown](docs/02-core-features/README.md) | In-depth breakdown of the 3 active MVP core modules & [INVEST Requirements](docs/02-core-features/invest-requirements.md) (10 User Stories, BDD/Gherkin, 35 SP) | ✅ Complete |
 | **03** | [Roles & Use Cases](docs/03-roles-usecases/README.md) | Actor definition, permission matrix, and UML use cases | ✅ Complete |
-| **04** | [Information Architecture](docs/04-information-architecture/README.md) | Screen inventory, sitemap, and operational task flows | ✅ Complete |
+| **04** | [Information Architecture](docs/04-information-architecture/README.md) & [Master IA](docs/04-information-architecture/INFORMATION_ARCHITECTURE.md) | Canonical IA spec, sitemap, 17-screen inventory, and 5 task flows | ✅ Complete |
 | **05** | [UI/UX Wireframes & Mockups](docs/05-ui-ux/README.md) | Design system, UI component library, and wireframes | 🔄 In Progress |
 | **06** | [Database Architecture](docs/06-database/README.md) | Relational ERD, DBML schema, and data dictionary | ✅ Complete |
 | **—** | [Traceability Chain](docs/traceability.md) | End-to-end forward and backward requirements tracing | ✅ Complete |
@@ -814,6 +815,67 @@ A robust 3NF relational schema that seamlessly interconnects the 3 active operat
 ![Database Schema & ERD](docs/06-database/PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.png)
 
 *For complete entity specifications, data dictionaries, and SQL scripts, refer to [docs/06-database/README.md](docs/06-database/README.md).*
+
+---
+
+## Information Architecture (Phase 04)
+
+The Information Architecture formally connects the 10 INVEST requirements ([docs/02-core-features/invest-requirements.md](docs/02-core-features/invest-requirements.md)) and actor roles ([docs/03-roles-usecases/](docs/03-roles-usecases/)) to the visual design system ([docs/05-ui-ux/](docs/05-ui-ux/)) and relational schema ([docs/06-database/](docs/06-database/)). The canonical master specification is defined in [**docs/04-information-architecture/INFORMATION_ARCHITECTURE.md**](docs/04-information-architecture/INFORMATION_ARCHITECTURE.md).
+
+### 1. Role-Based Navigation & Site Map Architecture
+
+The system enforces a **strict maximum navigation depth of $\le 2$ levels** across four autonomous portals, eliminating deep nesting and cognitive overhead in active school and kitchen environments:
+
+```
+App Root (/)
+│
+├── 📝 Teacher Portal (/teacher)
+│   ├── Classroom Attendance Roster (/teacher/roster)           [SCR-TCH-01, US-PAR-01, US-PAR-03]
+│   │   └── [Modal] Status Amendment & Reason Dialog            [SCR-TCH-02, US-PAR-02]
+│   │   └── [View] Roster Lock & Handover Confirmation          [SCR-TCH-03, US-PAR-03]
+│   └── [Sheet] Post-Cutoff Emergency Request Form              [SCR-TCH-04, US-DMD-03]
+│
+├── 📋 Manager Portal (/manager)
+│   ├── Demand Determination Dashboard (/manager/demand)        [SCR-MGR-01, US-DMD-01]
+│   ├── Expected Raw Dish Quantities (/manager/quantities)      [SCR-MGR-02, US-DMD-02]
+│   ├── Post-Lock Emergency Review Queue (/manager/changes)     [SCR-MGR-03, US-DMD-03]
+│   ├── Kitchen Shift Plan Authoring (/manager/prep-plans)      [SCR-MGR-04, US-PRP-01]
+│   └── Daily Yield Reconciliation & Audit (/manager/reconciliation) [SCR-MGR-05, US-PRP-04]
+│
+├── 🍳 Kitchen Kiosk Portal (/kitchen) [High-Contrast Kiosk Mode]
+│   ├── Active Prep Shift Board (/kitchen/shift)                [SCR-KIT-01, US-PRP-01]
+│   ├── Storage Ingredient Receiving Checklist (/kitchen/ingredients) [SCR-KIT-02, US-PRP-02]
+│   ├── Cooking Timers & Batch Logger (/kitchen/cooking)        [SCR-KIT-03, US-PRP-03]
+│   └── Prepared Yield Verification Gate (/kitchen/verification) [SCR-KIT-04, US-PRP-04]
+│
+└── 🔧 Admin Portal (/admin)
+    ├── Student & Classroom Directory (/admin/students)         [SCR-ADM-01]
+    ├── Meal Calendars & Cutoff Setup (/admin/schedules)        [SCR-ADM-02]
+    ├── Dish & Recipe Master Catalog (/admin/catalog)           [SCR-ADM-03]
+    └── User Roles & Access Control (/admin/users)              [SCR-ADM-04]
+```
+
+### 2. Screen Inventory & Entity Mapping Summary (17 Active Screens)
+
+The full catalog is documented in [docs/04-information-architecture/screen-inventory.md](docs/04-information-architecture/screen-inventory.md):
+
+| Portal | Screen Range | Screen Count | Focus & DB Entities | Primary Viewport |
+|---|---|:---:|---|---|
+| **Teacher** | `SCR-TCH-01` .. `SCR-TCH-04` | 4 | Morning roll call, allergy alerts, cutoff freeze (`meal_participations`, `meal_participation_changes`) | Mobile (390px) |
+| **Manager** | `SCR-MGR-01` .. `SCR-MGR-05` | 5 | Demand aggregation, portion formulas, emergency queue, shift plans (`meal_demands`, `meal_demand_dish_quantities`, `meal_demand_changes`) | Desktop (> 768px) |
+| **Kitchen** | `SCR-KIT-01` .. `SCR-KIT-04` | 4 | Industrial shift board, ingredient checklist, batch timers, yield gate (`meal_preparation_plans`, `ingredient_allocations`, `meal_preparations`, `prepared_quantity_confirmations`) | Wall Touch Kiosk (> 1024px) |
+| **Admin** | `SCR-ADM-01` .. `SCR-ADM-04` | 4 | Academic calendars, students, dish recipes, user access (`students`, `classes`, `meal_schedules`, `dishes`, `users`) | Desktop (> 1024px) |
+
+### 3. Core Operational Task Flows
+
+The operational lifecycle is structured across 5 end-to-end task flows detailed in [docs/04-information-architecture/task-flows.md](docs/04-information-architecture/task-flows.md):
+- **TF-01: Daily Attendance & Cutoff Lock** (`07:30 – 08:30 AM`): Homeroom teacher logs present/absent states; system validates allergies and freezes roster into read-only mode at 08:30 AM.
+- **TF-02: Demand Aggregation & Recipe Buffer Calculation** (`08:30 – 08:45 AM`): Manager runs participation-based aggregation with $+5\%$ safety buffer and scales raw ingredient quantities.
+- **TF-03: Post-Lock Emergency Change Triage** (`08:45 – 10:30 AM`): Controlled teacher request $\rightarrow$ manager approval/rejection $\rightarrow$ instant broadcast to kitchen kiosk.
+- **TF-04: Kitchen Stock Intake & Batch Execution** (`08:45 – 10:30 AM`): Pantry receiving checklist $\rightarrow$ station cooking batch timers and scale weigh-in.
+- **TF-05: Cooking Yield Reconciliation & Discrepancy Gate** (`10:30 – 10:45 AM`): Final dish inspection checking cooked weight against targets with mandatory explanation if variance exceeds $\pm 3\%$.
+
+*For complete sitemaps, modal layer rules, and component reuse specifications, refer to [docs/04-information-architecture/](docs/04-information-architecture/README.md).*
 
 ---
 
