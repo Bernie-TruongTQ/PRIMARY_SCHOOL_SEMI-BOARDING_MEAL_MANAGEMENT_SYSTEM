@@ -126,11 +126,11 @@ primary-school-meal-management/
 │   ├── css/                           ← Modular Vanilla CSS design tokens & layouts
 │   └── js/                            ← Role-separated vanilla ES6 JavaScript modules
 │
-├── screenshots/                       ← High-resolution UI captures categorized by role
-│   ├── README.md                      ← Complete visual catalog with screen annotations
-│   ├── gv/                            ← Homeroom Teacher screens (SCR-TCH-*)
-│   ├── qlb/                           ← Meal/Nutrition Manager screens (SCR-MGR-*)
-│   └── knb/                           ← Kitchen Staff Kiosk screens (SCR-KIT-*)
+├── screenshots/                       ← High-resolution UI captures of the working prototype
+│   ├── s1.png                         ← Admin Dashboard: Tổng quan vận hành bán trú
+│   ├── s2.png                         ← Teacher Portal: Điểm danh bữa trưa & Khóa danh sách (SCR-TCH-01)
+│   ├── s3.png                         ← Manager Portal: Định lượng bữa trưa & Buffer an toàn (SCR-MGR-01)
+│   └── s4.png                         ← Kitchen Kiosk: Kế hoạch & Điều phối ca trực bếp (SCR-KIT-01)
 │
 └── prototype/                         ← Legacy prototype documentation
     └── README.md
@@ -153,7 +153,7 @@ primary-school-meal-management/
 | **06** | [Database Architecture](docs/06-database/README.md) | Relational ERD, DBML schema, and data dictionary | ✅ Complete |
 | **—** | [Traceability Chain](docs/traceability.md) | End-to-end forward and backward requirements tracing | ✅ Complete |
 | **—** | [Interactive Prototype](frontend/README.md) | Prototype architecture guide and live web app ([Launch App](frontend/index.html)) | ✅ Reference |
-| **—** | [UI Visual Catalog](screenshots/README.md) | Complete catalog of 11 system screenshots mapped to screen IDs | ✅ Reference |
+| **—** | [UI Visual Showcase](#user-interface--role-workflows-ui-showcase) | 4 core operational prototype screens (Admin, Teacher, Manager, Kitchen) | ✅ Reference |
 
 ---
 
@@ -881,63 +881,67 @@ The operational lifecycle is structured across 5 end-to-end task flows detailed 
 
 ## User Interface & Role Workflows (UI Showcase)
 
-The platform delivers purpose-built user experiences tailored to the three primary operational actors in the semi-boarding meal supply chain, with real-time state synchronization across all interfaces:
+The platform delivers purpose-built user experiences tailored to all key operational roles in the semi-boarding meal supply chain, with real-time state synchronization across all interfaces:
 
-### 1. Homeroom Teacher — Classroom Supervisor (GV / TCH)
+### 1. School Administrator — Operations Overview & Executive Dashboard (Quản trị / Admin)
+*Executive & operational supervision: Centralized cockpit monitoring daily meal metrics, classroom attendance submission rates, kitchen preparation weight targets, and urgent system alerts.*
+
+![Admin Dashboard: Tổng quan hôm nay](screenshots/s1.png)
+> **Admin Dashboard — Real-Time Operational Cockpit:**
+> - **Operational KPIs:** At-a-glance monitoring of confirmed meals (461 meals), classroom roll-call progress (18 / 20 classes locked), kitchen ingredient prep demand (483 kg), and active system alerts.
+> - **Grade-Level Attendance Distribution:** Visual bar chart tracking completion percentages across classes (1A to 5C) with highlighted lagging classes.
+> - **Actionable Shortcuts & Audit Trail:** Quick access to attendance rosters, portioning rules, kitchen shift boards, and real-time user activity logs.
+
+---
+
+### 2. Homeroom Teacher — Classroom Attendance Supervisor (GV / TCH)
 *Classroom operations: Manages daily student rosters, records meal participation, flags medical dietary restrictions/allergies, and locks headcounts before the morning cutoff deadline.*
 
-![SCR-TCH-01: Class Roster Meal Participation](screenshots/gv/gv-2.png)
+![SCR-TCH-01: Điểm danh bữa trưa](screenshots/s2.png)
 > **SCR-TCH-01 — Class Roster Participation & Cutoff Countdown:**
-> - **Real-Time Attendance:** Fast one-tap status toggling per student (*Attended*, *Excused Absence*, *Unexcused Absence*, *Guest Meal*).
-> - **Allergy Safety Indicators:** High-visibility warning badges for students with registered dietary restrictions (e.g., peanut or seafood allergies) to ensure dietary isolation.
-> - **Cutoff Enforcement:** Live countdown timer to the daily lock deadline (`08:30:00`) to guarantee kitchen prep timelines, paired with an emergency adjustment request trigger (`SCR-TCH-04`).
+> - **One-Tap Attendance Toggle:** Fast inline toggling per student (*Ăn* / *Vắng*) with real-time class headcount tallies (Sĩ số, Ăn hôm nay, Vắng).
+> - **Allergy Safety Badges:** High-visibility warning chips for students with registered dietary restrictions (e.g., *Hải sản*, *Đậu phộng*, *Sữa*) to prevent cross-contamination.
+> - **Strict Cutoff Enforcement:** Live countdown timer to the daily lock deadline (`08:30:00`) paired with a one-click *"Xác nhận & Khóa danh sách"* action.
 
 ---
 
-### 2. Meal / Nutrition Manager — Operations Supervisor (QLB / MGR)
+### 3. Meal / Nutrition Manager — Demand & Buffer Operations Supervisor (QLB / MGR)
 *Operations office: Aggregates real-time attendance across all school grades, computes precise raw ingredient demand, configures safety buffer percentages (`Buffer %`), and reviews late emergency change requests.*
 
-![SCR-MGR-01: Demand Determination Dashboard](screenshots/qlb/qlb-1.png)
+![SCR-MGR-01: Định lượng bữa trưa](screenshots/s3.png)
 > **SCR-MGR-01 — Demand Determination & Buffer Optimization:**
-> - **Live Data Aggregation:** Real-time synchronization of submission progress across all classrooms with a dynamic visual completion indicator.
-> - **Flexible Forecasting Models:** Selectable calculation engines (*Participation-Based Actuals*, *Registered Baseline Roster*, *7-Day Historical Moving Average*).
-> - **Safety Buffer Adjustment:** Configurable portion buffer (`Buffer %`) to prevent shortages during tray distribution and absorb emergency headcounts.
-
-![SCR-MGR-02: Dish Quantity Calculation & Overrides](screenshots/qlb/qlb-2.png)
-> **SCR-MGR-02 — Dish Portion Calculation & Manual Overrides:**
-> - **Automated Batch Scaling:** Automatically calculates required preparation quantities based on standard portion metrics: $\text{Planned Quantity} = \text{Standard Portion} \times \text{Final Demand} \times (1 + \text{Buffer})$.
-> - **Audited Manual Overrides:** Allows managers to adjust dish quantities to account for seasonal ingredient yields or weather variations, enforcing mandatory justification notes.
+> - **Live Data Aggregation:** Real-time synchronization of submission progress across all classrooms with status tags (*Đã xác nhận*, *Chờ xác nhận*).
+> - **Dynamic Safety Buffer:** Interactive buffer slider ($0\%\text{--}10\%$, default $+5\%$) dynamically recalculating final meal count ($404 \text{ học sinh} \times (1 + 5\%) = 425 \text{ suất}$).
+> - **Automated Ingredient Scaling:** Instantly calculates required raw preparation quantities (Cơm trắng, Thịt kho Tàu, Canh chua cá, Rau muống luộc, Chuối) before one-click approval (*"Duyệt & Khóa định lượng"*).
 
 ---
 
-### 3. Kitchen Staff / Head Chef — Kitchen Operations Kiosk (KNB / KIT)
-*Kitchen floor operations: High-contrast touch kiosk interface designed for industrial tablet or wall-mounted displays. Guides chefs through shift targets, ingredient storage verification, cooking timers, and post-cook yield reconciliation.*
+### 4. Kitchen Staff / Head Chef — Kitchen Operations Board (Bếp ăn / KIT)
+*Kitchen floor operations: High-clarity touch interface designed for kitchen tablets or wall-mounted displays. Guides chefs through cooking stations, batch progress, and shift completion.*
 
-![SCR-KIT-01: Kitchen Prep Shift Dashboard](screenshots/knb/knb-1.png)
-> **SCR-KIT-01 — Kitchen Shift Operational Kiosk:**
-> - **Kiosk-Optimized Ergonomics:** Card-based high-contrast UI with large tap targets tailored for kitchen wall mounts and industrial tablets.
-> - **Target Dish Visibility:** Displays real-time preparation quotas across all scheduled meal courses (staple carbs, primary proteins, vegetable broths, sides, desserts).
-> - **One-Touch Workflow Transitions:** Immediate navigation across the four key kitchen phases: Ingredient Receiving (`SCR-KIT-02`), Station Cooking (`SCR-KIT-03`), and Yield Verification (`SCR-KIT-04`).
-
-![SCR-KIT-03: Cooking Batch Execution & Timers](screenshots/knb/knb-3.png)
-> **SCR-KIT-03 — Industrial Cooking Stations & Active Batch Timers:**
-> - **Station-Segregated Execution:** Dedicated tracking by cooking appliance (24-tray industrial steam cabinets, pressure braising pans, 100L soup kettles).
-> - **Real-Time Timers:** Active countdown monitors ensuring food safety thermal standards and precise doneness criteria.
-> - **Seamless Handoff:** Direct transition from batch completion to scale weighing and yield variance logging.
+![SCR-KIT-01: Bếp ăn — Bữa trưa](screenshots/s4.png)
+> **SCR-KIT-01 — Kitchen Shift Operational Board:**
+> - **Station-Segregated Cooking:** Clear tracking by cooking station (Cơm trắng, Thịt kho Tàu, Canh chua cá bông lau, Rau muống luộc, Chuối tráng miệng) with assigned chef, batch counts, and target weights in kg/lít.
+> - **One-Touch Station Transitions:** Simple, mistake-proof state toggle buttons (*"Bắt đầu nấu"*, *"Hoàn thành"*) with visual status highlights (*Đang nấu*, *Chờ xử lý*, *Sẵn sàng*).
+> - **Shift Summary & Deadline:** Real-time countdown timer to service deadline (`10:45:00`), overall station completion progress ($1/5 \text{ station}$ completed), and shift supervisor details.
 
 ---
 
 ## Quick Start (Prototype)
 
-Run the unified interactive web prototype simulating all 3 core operational roles:
+Run the unified interactive React + Vite prototype application:
 
 ```bash
-python -m http.server 8080 --directory frontend
+cd frontend
+pnpm install
+pnpm dev
 ```
 
-Open in your browser: **`http://localhost:8080/index.html`**
+Open in your browser: **`http://localhost:3000/`** (or port displayed in terminal)
 
-The prototype features a dynamic viewport controller (toggling between Mobile 390px and Desktop / Kiosk Tablet modes) and role switching:
-1. **Teacher Portal:** Record Class 1A attendance & lock roster (`SCR-TCH-01`, `SCR-TCH-03`).
-2. **Manager Portal:** Aggregate school demand & scale dish portions (`SCR-MGR-01`, `SCR-MGR-02`).
-3. **Kitchen Kiosk:** Review shift targets, run batch cooking timers & verify yield tolerances (`SCR-KIT-01` → `SCR-KIT-04`).
+The prototype features full role switching via the left sidebar:
+1. **Admin Portal:** Executive operations overview, KPI cards & activity audit.
+2. **Teacher Portal:** Record class attendance, student allergies & lock roster (`SCR-TCH-01`).
+3. **Manager Portal:** Aggregate school demand, buffer tuning & scale dish quantities (`SCR-MGR-01`).
+4. **Kitchen Kiosk:** Review shift targets, station execution & batch completion (`SCR-KIT-01`).
+
