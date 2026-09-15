@@ -44,6 +44,7 @@ Standardized Feature IDs (Phase 02)
 | File | Purpose |
 |------|---------|
 | [core-feature-breakdown.md](core-feature-breakdown.md) | Comprehensive feature breakdown with priorities, DB entity linkages, and descriptions |
+| [invest-requirements.md](invest-requirements.md) | User Stories, INVEST criteria analysis, BDD/Gherkin acceptance criteria & operational edge cases |
 
 ## Next Step
 

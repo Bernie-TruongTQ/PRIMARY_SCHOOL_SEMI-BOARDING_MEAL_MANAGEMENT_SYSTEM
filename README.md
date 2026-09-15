@@ -81,7 +81,8 @@ primary-school-meal-management/
 │   │
 │   ├── 02-core-features/              ← Deep dive into the 3 active MVP core modules
 │   │   ├── README.md
-│   │   └── core-feature-breakdown.md
+│   │   ├── core-feature-breakdown.md
+│   │   └── invest-requirements.md     ← INVEST user stories, BDD/Gherkin acceptance criteria & sizing
 │   │
 │   ├── 03-roles-usecases/             ← Actors, permissions, and UML use case models
 │   │   ├── README.md
@@ -144,7 +145,7 @@ primary-school-meal-management/
 | **C4** | [C4 Model Architecture](c4/README.md) | Full 4-Level Architecture: Level 1 Context, Level 2 Containers, Level 3 Components (M1, M2, M3), Level 4 Code (M1, M2, M3) | ✅ Complete |
 | **arc42** | [arc42 Architecture Suite](arc42/README.md) | Comprehensive 12-section architecture documentation adhering to Dr. Starke & Dr. Hruschka's standard (ESSENTIAL level) | ✅ Complete |
 | **01** | [Top-Down Decomposition](docs/01-top-down/README.md) | Business domain classification & system mind map | ✅ Complete |
-| **02** | [Core Feature Breakdown](docs/02-core-features/README.md) | In-depth breakdown of the 3 active MVP core modules | ✅ Complete |
+| **02** | [Core Feature Breakdown](docs/02-core-features/README.md) | In-depth breakdown of the 3 active MVP core modules & [INVEST Requirements](docs/02-core-features/invest-requirements.md) (10 User Stories, BDD/Gherkin, 35 SP) | ✅ Complete |
 | **03** | [Roles & Use Cases](docs/03-roles-usecases/README.md) | Actor definition, permission matrix, and UML use cases | ✅ Complete |
 | **04** | [Information Architecture](docs/04-information-architecture/README.md) | Screen inventory, sitemap, and operational task flows | ✅ Complete |
 | **05** | [UI/UX Wireframes & Mockups](docs/05-ui-ux/README.md) | Design system, UI component library, and wireframes | 🔄 In Progress |
@@ -152,6 +153,28 @@ primary-school-meal-management/
 | **—** | [Traceability Chain](docs/traceability.md) | End-to-end forward and backward requirements tracing | ✅ Complete |
 | **—** | [Interactive Prototype](frontend/README.md) | Prototype architecture guide and live web app ([Launch App](frontend/index.html)) | ✅ Reference |
 | **—** | [UI Visual Catalog](screenshots/README.md) | Complete catalog of 11 system screenshots mapped to screen IDs | ✅ Reference |
+
+---
+
+## Core Requirements Specification (INVEST Framework)
+
+All **10 Core Operational Features (P1 — MVP)** across the three active operational modules are formally specified in [**docs/02-core-features/invest-requirements.md**](docs/02-core-features/invest-requirements.md) adhering to the **INVEST** criteria (Independent, Negotiable, Valuable, Estimable, Small, Testable) with executable BDD/Gherkin acceptance scenarios:
+
+| Module | Feature ID | User Story Title | Story Points | Key Acceptance & Operational Value |
+|---|---|---|:---:|---|
+| **Module 1: Participation** | **F-PAR-01** | Record Daily Student Meal Attendance | **3 SP** | Primary source of truth; persistent allergy safety alerts |
+| | **F-PAR-02** | Track Attendance Status Amendments | **2 SP** | Immutable audit log for month-end parent fee reconciliation |
+| | **F-PAR-03** | Verify & Lock Classroom Participation Roster | **3 SP** | Enforces 08:30 AM cutoff discipline; freezes attendance for kitchen prep |
+| **Module 2: Demand & Qty** | **F-DMD-01** | Aggregate Confirmed Headcount & Safety Buffer | **5 SP** | Automated aggregation; manages buffer percentages ($+3\text{--}5\%$) |
+| | **F-DMD-02** | Calculate Expected Raw Dish Quantities | **3 SP** | Standard nutritional portion scaling; prevents food waste |
+| | **F-DMD-03** | Process Post-Cutoff Emergency Adjustments | **5 SP** | Controlled triage workflow for late changes without breaking data integrity |
+| **Module 3: Preparation** | **F-PRP-01** | Create Kitchen Shift Preparation Plan | **3 SP** | Line balancing across cooking stations to hit the 10:45 AM service target |
+| | **F-PRP-02** | Allocate & Reconcile Storage Ingredients | **3 SP** | Pantry intake verification; early detection of shortages/spoilage |
+| | **F-PRP-03** | Record Live Cooking Batches via Kiosk | **5 SP** | Real-time progress monitoring without impeding chef manual operations |
+| | **F-PRP-04** | Verify Prepared Yield & Discrepancies | **3 SP** | Final quality gate with mandatory variance justification if outside $\pm 3\%$ |
+| **TOTAL** | **10 Core MVP User Stories** | | **35 SP** | **Estimated for execution across 2–3 standard sprints** |
+
+> For complete BDD/Gherkin scenarios, domain models, and architectural stress tests, see [**docs/02-core-features/invest-requirements.md**](docs/02-core-features/invest-requirements.md).
 
 ---
 
