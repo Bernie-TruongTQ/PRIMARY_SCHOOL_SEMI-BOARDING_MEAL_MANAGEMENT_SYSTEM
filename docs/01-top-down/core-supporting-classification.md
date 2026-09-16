@@ -4,114 +4,96 @@
 
 Classification is determined by the **Primary Business Value Chain Test**:
 
-> "Does removing this domain break the primary value chain from student need to meal delivery?"
+> "Does removing this domain break the primary value chain from student registration to meal delivery, receiving, and reconciliation?"
 
-### Primary Value Chain
+### Primary Operational Value Chain
 
 ```
-Student Enrollment
-       ↓
-Meal Planning & Menu Design
-       ↓
-Demand Calculation (Headcount → Quantities)
-       ↓
-Meal Preparation
-       ↓
-Meal Distribution
-       ↓
-Meal Handover to Class
-       ↓
-Food Safety Verification & Traceability
+[Student Meal Registration & Attendance]
+                    ↓
+[Meal Planning & Menu Assignment]
+                    ↓
+[Meal Demand & Quantity Calculation]
+                    ↓
+[Catering Vendor Order Dispatch]
+                    ↓
+[Meal Receiving & Quality Inspection]
+                    ↓
+[Classroom Meal Distribution]
+                    ↓
+[Meal Reconciliation (Ordered vs Delivered vs Consumed)]
 ```
 
-A domain is **Core** if it contributes directly to at least one step in this chain and its absence causes the chain to break.
-A domain is **Supporting** if it enables, reports on, or finances the chain, but the chain can temporarily function without it.
+A domain is classified as:
+- **Core Domain**: Directly provides essential capabilities along the primary operational chain. Without it, meals cannot be registered, ordered, received, verified, or distributed.
+- **Supporting Domain**: Enables operational feasibility, financial sustainability, safety governance, and administrative oversight, but does not execute the immediate physical meal delivery flow.
+- **Generic / Foundation Domain**: Standard cross-cutting capabilities (user management, master academic data, configurations) required by all enterprise systems.
 
 ---
 
-## Core Business Domains
+## Domain Classifications & Strategic Value
 
-### 1. Student Meal Management
+### 1. Student Meal Management — **[Core Domain]**
 
-**Why Core:** The value chain cannot start without knowing who is enrolled in the meal program. Student registration drives the baseline headcount used in demand calculation. Without this domain, neither demand nor quantities can be computed.
+- **Why Core:** The entire meal chain starts with knowing who is eligible, who registered, and who is present today. Without student registration and attendance records, demand numbers cannot be computed and meals cannot be accounted for.
+- **MVP Scope:** Eligibility criteria & evaluation, meal registration & modification, attendance recording, and basic attendance monitoring.
 
-- Feeds: Demand Calculation, Meal Distribution, Fee Collection
-- If removed: System has no student list → demand is unknown → entire chain collapses
+### 2. Meal Planning & Menu Management — **[Core Domain]**
 
-### 2. Meal Planning & Menu Management
+- **Why Core:** Supplies the catalog of dishes, standard portion parameters, and scheduled daily menus that determine what is ordered and served.
+- **MVP Scope:** Dish definition and catalog maintenance, menu creation, dish-to-menu assignment, simplified 1-level menu approval, and meal schedule calendar assignment.
 
-**Why Core:** Demand Calculation requires a menu (which dishes?) and standard portion sizes (how much per student?). Without this domain, the formula `Total Raw = Headcount × Portion × (1 + Buffer%)` cannot be executed.
+### 3. Meal Operation — **[Core Domain]**
 
-- Feeds: Demand Calculation, Kitchen Preparation Plan, Food Safety Traceability
-- If removed: Quantities cannot be calculated → preparation is guesswork
-
-### 3. Meal Operation
-
-**Why Core:** This is the operational execution layer. Demand determination, preparation, distribution, handover, and reconciliation are all here. This domain *is* the primary value chain in its operational form.
-
-- Feeds: All downstream domains (Safety, Cost, Reporting)
-- If removed: No meals are tracked, prepared, or distributed
-
-### 4. Food Safety & Traceability
-
-**Why Core:** In a school meal context, food safety is not optional. Regulatory and ethical requirements mandate that every ingredient batch be inspectable. Food safety incidents must be traceable back to specific students, meals, and suppliers within hours, not days.
-
-- Feeds: Incident Management, Parent Transparency, Supplier Rating
-- If removed: System cannot respond to contamination events → regulatory and reputational risk
+- **Why Core:** Represents the central execution hub: calculating total demand from student attendance, sending purchase orders to catering vendors, receiving and inspecting delivered hot meals, distributing them to classrooms, and reconciling discrepancies.
+- **MVP Scope:** Demand aggregation, expected quantity calculation, order dispatch to caterer, delivered quantity logging, quality inspection, received quantity confirmation, distribution logging, and simplified reconciliation/discrepancy resolution.
 
 ---
 
-## Supporting Domains
+## Supporting & Governance Domains
 
-### 5. Food Supply & Inventory
+### 4. Nutrition & Health Management — **[Supporting / Safety Governance]**
 
-**Why Supporting:** Inventory management enables efficient procurement and reduces waste, but the core value chain (demand → preparation → distribution) can function with manual purchasing. This domain optimizes the chain; it does not constitute the chain.
+- **Why Supporting:** Provides safety oversight by recording student allergies and dietary restrictions, checking them against menu ingredients, and warning coordinators before meals are ordered or served.
+- **MVP Scope:** Record student dietary restrictions/allergens, flag restricted ingredients in menus, and trigger non-blocking conflict warnings.
 
-- Becomes Core in Phase 2 when automated procurement is introduced.
+### 5. Meal Fee & Cost Management — **[Supporting Domain]**
 
-### 6. Meal Fee & Cost Management
+- **Why Supporting:** Manages student meal billing and tracks caterer meal costs. In a primary school semi-boarding environment, billing and reconciliation are financial settlement cycles that run periodically (monthly/termly); they do not block same-day child feeding.
+- **MVP Scope:** Fee rate definition, chargeable meal calculation, simplified payment status tracking (unpaid/partial/paid), and catering vendor cost logging.
 
-**Why Supporting:** Fee collection is a financial operation that occurs monthly, after meals are delivered. Students are not denied meals due to unpaid invoices in a school context. Cost tracking enables financial oversight but does not affect daily meal delivery.
+### 6. Reporting & Transparency — **[Supporting Domain]**
 
-- Becomes Core in Phase 2 when real-time cost per meal is used to control daily spend.
-
-### 7. Reporting & Transparency
-
-**Why Supporting:** Dashboards and parent-facing reports are derived from the data produced by the Core domains. They are read-only consumers of the value chain, not contributors. Removing them does not affect meal delivery — only visibility.
-
-- Becomes Core in Phase 2 when reports drive real-time operational decisions (e.g., auto-halt preparation on alert).
+- **Why Supporting:** Consumes operational and financial event streams to provide visibility for school principals, accountants, catering partners, and parents.
+- **MVP Scope:** Daily operation reports, vendor reconciliation reports, fee/payment reports, catering payable reports, and published daily menus for parents.
 
 ---
 
-## Active Core Scope Selection (Mind Map → Focus Modules)
+## Generic / Foundation Domains
 
-From the full 7-domain decomposition, a strategic scoping decision was made to focus the detailed specification, UI/UX, and database architecture on the **three most critical operational modules** on the daily school meal execution chain:
+### 7. User & Access Management — **[Generic / Foundation Domain]**
 
-1. **Meal Participation Management** *(from Student Meal Management)*: Captures student attendance and daily meal participation, manages pre/post cutoff status updates, and handles supervisor confirmation.
-2. **Meal Demand & Quantity Management** *(from Meal Planning & Operation)*: Aggregates class-level participation into daily meal session demands, computes expected dish quantities, and processes post-lock demand amendments.
-3. **Meal Preparation** *(from Meal Operation & Kitchen Execution)*: Orchestrates kitchen preparation plans, tracks ingredient allocation from storage, logs cooking batches per dish, and verifies prepared quantities against expected demand with discrepancy tracking.
+- **Why Foundation:** Provides authentication and role-based access control (RBAC) across administrative roles (System Admin, School Accountant, Semi-Boarding Coordinator, Parent).
+- **MVP Scope:** User account registration/updates, fixed role assignments, and pre-defined permission sets.
 
-### Deferred Domains & Reference Boundaries
+### 8. Master Data & System Configuration — **[Generic / Foundation Domain]**
 
-Other domains remain part of the long-term vision but are **Deferred to Future Phases**:
-- **Food Safety & Traceability**: Critical regulatory domain; interfaces via reference batch/inspection IDs in future iterations.
-- **Food Supply & Procurement**: Manages supplier contracts and procurement; interacts with Phase 1 via simplified `ingredients` reference.
-- **Meal Fee & Cost Management**: Financial billing; interacts via recorded participation snapshots.
-- **Full Menu Planning & Nutritional Compliance**: Represented in Phase 1 via simplified `meal_schedules` and `dishes` catalogs.
+- **Why Foundation:** Stores fundamental institutional structures (school years, semesters, grades, classes, student profiles) and system rules (meal-serving days and holiday calendars).
+- **MVP Scope:** Academic structure management (school year, class, grade, student profile), lunch serving schedule configuration, and holiday calendar maintenance.
 
 ---
 
-## Summary Table
+## Classification & MVP Scope Matrix
 
-| Domain / Module | Classification | Implementation Status | Core Artifacts |
-|---|---|---|---|
-| **Meal Participation Management** | **Active Core** | **Phase 1 (Active)** | `meal_participations`, `meal_participation_changes` |
-| **Meal Demand & Quantity Management** | **Active Core** | **Phase 1 (Active)** | `meal_demands`, `meal_demand_dish_quantities`, `meal_demand_changes` |
-| **Meal Preparation** | **Active Core** | **Phase 1 (Active)** | `meal_preparation_plans`, `ingredient_allocations`, `meal_preparations`, `meal_preparation_dish_records`, `prepared_quantity_confirmations` |
-| Meal Planning & Catalog (Basic) | Reference Boundary | Phase 1 (Minimal) | `meal_schedules`, `dishes`, `meal_registrations` |
-| Master Student & User Reference | Reference Boundary | Phase 1 (Minimal) | `students`, `users` |
-| Food Safety & Traceability | Supporting / Regulatory | Deferred (Phase 2) | External reference |
-| Food Supply & Inventory (Master) | Supporting | Deferred (Phase 2) | Simplified `ingredients` |
-| Meal Fee & Cost Management | Supporting | Deferred (Phase 2) | External billing |
-| Reporting & Transparency | Supporting | Deferred (Phase 2) | Operational views |
+| # | Business Domain | Strategic Classification | Role in System | MVP Implementation Status |
+|---|---|---|---|---|
+| **1** | **Student Meal Management** | **Core** | Eligibility, registration, attendance | **In MVP** |
+| **2** | **Meal Planning & Menu Management** | **Core** | Dishes, menus, single-stage approval, schedules | **In MVP** |
+| **3** | **Meal Operation** | **Core** | Demand forecast, vendor orders, receiving, distribution, reconciliation | **In MVP** |
+| **4** | **Nutrition & Health Management** | **Supporting / Safety** | Allergy tracking, ingredient alerts | **In MVP (Simplified alerts)** |
+| **5** | **Meal Fee & Cost Management** | **Supporting** | Fee setup, billing, payment status, caterer cost | **In MVP (Simplified payment)** |
+| **6** | **Reporting & Transparency** | **Supporting** | Operations, vendor reconciliation, parent updates | **In MVP (Essential reports)** |
+| **7** | **User & Access Management** | **Generic / Foundation** | Accounts, fixed roles, RBAC | **In MVP (Fixed roles)** |
+| **8** | **Master Data & System Configuration** | **Generic / Foundation** | School years, classes, students, calendars | **In MVP** |
+
 

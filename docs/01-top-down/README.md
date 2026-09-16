@@ -23,34 +23,32 @@ Level 0 — System
                     └── Level 3 — Function
 ```
 
-## Resulting Business Domains & Active Core Scope
+## Resulting Business Domains & MVP Scope
 
-From the 7 architectural domains identified in the decomposition mind map, the primary implementation focuses on **three active core operational modules**:
+From the functional decomposition mind map ([PRIMARY SCHOOL SEMI-BOARDINGMEAL MANAGEMENT SYSTEM.png](./PRIMARY%20SCHOOL%20SEMI-BOARDINGMEAL%20MANAGEMENT%20SYSTEM.png)), the system is organized into **8 business domains**, all of which have defined capabilities in the MVP baseline:
 
-1. **Meal Participation Management** *(Student Meal Management)*
-2. **Meal Demand & Quantity Management** *(Meal Planning & Operation)*
-3. **Meal Preparation** *(Meal Operation)*
-
-| # | Domain / Module | Role in System | Implementation Scope |
-| - | ------------------------------- | -------------- | -------------------- |
-| 1 | **Meal Participation Management** | Student attendance & meal participation | **Active Core (Phase 1)** |
-| 2 | **Meal Demand & Quantity Management** | Aggregated demand & dish quantity calculation | **Active Core (Phase 1)** |
-| 3 | **Meal Preparation** | Kitchen planning, ingredient allocation & cooking | **Active Core (Phase 1)** |
-| 4 | Meal Planning & Reference Catalogs | Menus, meal schedules & dish catalog | Reference Boundary (Phase 1) |
-| 5 | Food Safety & Traceability | Inspection & sample logging | Deferred (Phase 2) |
-| 6 | Food Supply & Procurement | Supplier contracts & bulk procurement | Deferred (Phase 2) |
-| 7 | Meal Fee & Cost Management | Billing & parent invoicing | Deferred (Phase 2) |
-| 8 | Reporting & Transparency | Executive dashboards & parent portals | Deferred (Phase 2) |
+| # | Business Domain | Strategic Role | Primary Value Chain Position | MVP Scope Coverage |
+|---|---|---|---|---|
+| 1 | **Student Meal Management** | Core | Upstream demand origin (eligibility, enrollment, daily attendance) | Full MVP |
+| 2 | **Meal Planning & Menu Management** | Core | Nutritional dish definitions, menu design, meal scheduling | Full MVP (1-level approval) |
+| 3 | **Meal Operation** | Core | Operational demand calculation, vendor order dispatch, receiving, distribution & reconciliation | Full MVP (streamlined discrepancies) |
+| 4 | **Nutrition & Health Management** | Supporting / Safety | Allergy records, restricted ingredient flags, conflict alerts | Simplified MVP (visual alerts) |
+| 5 | **Meal Fee & Cost Management** | Supporting | Fee configuration, chargeable meal calculations, payment tracking, catering costs | Simplified MVP (basic status flow) |
+| 6 | **Reporting & Transparency** | Supporting | Operational summaries, caterer reconciliation reports, published menus | Simplified MVP (essential reports) |
+| 7 | **User & Access Management** | Generic / Foundation | User registration, fixed RBAC roles (Admin, Accountant, Coordinator, Parent) | Simplified MVP (fixed permissions) |
+| 8 | **Master Data & System Configuration** | Generic / Foundation | Academic school year, grades, classes, student profiles, meal calendars | Full MVP |
 
 ## Artifacts in this folder
 
 | File | Purpose |
 | ---- | ------- |
-| [top-down-mindmap.png](./PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.png) | Full system mind map (visual) |
-| [business-domains.md](business-domains.md) | All 7 domains with their Level 2 & Level 3 functions |
-| [core-supporting-classification.md](core-supporting-classification.md) | Value chain test & rationale for selecting the 3 active core modules |
+| [PRIMARY SCHOOL SEMI-BOARDINGMEAL MANAGEMENT SYSTEM.png](./PRIMARY%20SCHOOL%20SEMI-BOARDINGMEAL%20MANAGEMENT%20SYSTEM.png) | Full system decomposition mind map (visual) |
+| [MVP.md](MVP.md) | Baseline MVP scope definitions and functional requirements |
+| [business-domains.md](business-domains.md) | All 8 business domains with their Level 2 capabilities & Level 3 functions |
+| [core-supporting-classification.md](core-supporting-classification.md) | Value chain test, domain categorization (Core, Supporting, Foundation), and MVP scope matrix |
 
 ## Next Step
 
 → [Phase 02 — Core Feature Breakdown](../02-core-features/README.md)
+
 

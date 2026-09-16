@@ -4,90 +4,99 @@
 
 **Primary School Semi-Boarding Meal Management System**
 
-A system that manages the full meal lifecycle for primary school semi-boarding programs: from student enrollment in the meal program through planning, kitchen execution, food safety inspection, fee management, and operational reporting.
+A system that manages the end-to-end meal lifecycle for primary school semi-boarding programs: from student eligibility and meal registration, menu planning, demand forecasting, catering vendor coordination, meal receiving and distribution, through fee assessment, operational reporting, user access control, allergen monitoring, and master data management.
 
 ---
 
 ## Domain 1 — Student Meal Management
 
-Manages student eligibility, registration, and daily participation in the semi-boarding meal program.
+Manages student meal program eligibility, meal registration, and daily participation tracking.
 
-| Sub-Domain / Capability | Functions (Level 3) |
-|------------------------|---------------------|
-| **Meal Eligibility** | Determine Student Eligibility, Enroll Student in Meal Program, Suspend/Cancel Enrollment |
-| **Meal Registration** | Register Student for Meal Session, Manage Registration Period, Track Registration Status |
-| **Meal Participation** | Record Daily Attendance, Record Absence with Reason, Record Extra Guest, Toggle Participation Within Cutoff |
+| Sub-Domain / Capability | Functions (Level 3) | Scope Notes |
+|------------------------|---------------------|-------------|
+| **Student Meal Eligibility Management** | Define Meal Eligibility Criteria, Determine Student Meal Eligibility | In MVP Scope |
+| **Meal Registration Management** | Register for Meals, Modify Meal Registration, Cancel Meal Registration, Record Dietary Note at Registration | In MVP Scope |
+| **Meal Attendance Management** | Record Meal Attendance, Monitor Meal Attendance | In MVP Scope (attendance monitoring simplified) |
 
 ---
 
 ## Domain 2 — Meal Planning & Menu Management
 
-Manages the planning, design, and nutritional compliance of daily and weekly menus.
+Manages dishes, nutritional menu creation, and daily/weekly meal schedules.
 
-| Sub-Domain / Capability | Functions (Level 3) |
-|------------------------|---------------------|
-| **Menu Design** | Create Weekly Menu, Assign Dishes to Menu, Set Standard Portion Sizes |
-| **Nutritional Compliance** | Check Nutritional Balance, Flag Allergen Conflicts, Approve Menu |
-| **Demand Calculation** | Calculate Required Headcount, Scale Recipe by Headcount, Apply Safety Buffer |
+| Sub-Domain / Capability | Functions (Level 3) | Scope Notes |
+|------------------------|---------------------|-------------|
+| **Dish Management** | Define Dish, Manage Dish Information | In MVP Scope |
+| **Menu Management** | Create Menu, Assign Dishes to Menu, Approve Menu | In MVP Scope (single-level approval) |
+| **Meal Schedule Management** | Define Meal Schedule, Assign Menu to Schedule | In MVP Scope |
 
 ---
 
 ## Domain 3 — Meal Operation
 
-Manages the end-to-end daily execution of meal preparation, distribution, and handover.
+Manages the daily execution of demand forecasting, catering orders, food receiving, quality inspection, classroom distribution, and quantity reconciliation.
 
-| Sub-Domain / Capability | Functions (Level 3) |
-|------------------------|---------------------|
-| **Meal Demand Determination** | Open Demand Form, Lock Demand at Cutoff, Approve Post-Cutoff Change Requests |
-| **Meal Preparation** | View Preparation Plan, Record Prepared Quantity, Confirm Preparation Complete |
-| **Meal Distribution** | View Distribution Plan, Record Distributed Quantity per Class, Handle Distribution Exceptions |
-| **Meal Handover** | Confirm Meal Handover to Class, Record Handover Quantity, Generate Handover Receipt |
-| **Meal Reconciliation** | Compare Prepared vs. Distributed vs. Expected, Record Leftover Quantity, Flag Discrepancies |
-
----
-
-## Domain 4 — Food Safety & Traceability
-
-Manages incoming food batch inspection, supplier traceability, and food safety incident response.
-
-| Sub-Domain / Capability | Functions (Level 3) |
-|------------------------|---------------------|
-| **Food Batch Management** | Register Food Batch, Record Receiving Inspection, Mark Batch as Pass/Fail |
-| **Traceability** | Link Batch to Ingredient, Link Ingredient to Dish, Link Dish to Meal, Trace Affected Meals |
-| **Incident Management** | Log Food Safety Incident, Identify Affected Students, Escalate Incident, Close Incident |
+| Sub-Domain / Capability | Functions (Level 3) | Scope Notes |
+|------------------------|---------------------|-------------|
+| **Meal Demand & Quantity Management** | Determine Meal Demand, Calculate Expected Meal Quantity, Send Meal Order to Catering Vendor | In MVP Scope |
+| **Meal Receiving from Vendor** | Record Delivered Quantity from Vendor, Inspect Delivered Meal Quality, Confirm Received Quantity | In MVP Scope |
+| **Meal Distribution** | Record Distributed Quantity | In MVP Scope |
+| **Meal Reconciliation** | Reconcile Ordered vs Delivered Quantity, Resolve Quantity Discrepancies | In MVP Scope (streamlined discrepancy handling) |
 
 ---
 
-## Domain 5 — Food Supply & Inventory *(Supporting)*
+## Domain 4 — Meal Fee & Cost Management
 
-Manages supplier relationships, purchase orders, and ingredient stock levels.
+Manages meal fee schedules, student charge calculations, parent payments, and catering vendor operational cost tracking.
 
-| Sub-Domain / Capability | Functions (Level 3) |
-|------------------------|---------------------|
-| **Supplier Management** | Register Supplier, Manage Supplier Contracts, Rate Supplier Performance |
-| **Purchase Orders** | Generate Purchase Order from Demand, Approve Purchase Order, Track Delivery Status |
-| **Inventory Control** | Update Stock on Delivery, Deduct Stock on Preparation, Alert on Low Stock |
-
----
-
-## Domain 6 — Meal Fee & Cost Management *(Supporting)*
-
-Manages meal fee collection from families and cost-per-meal tracking.
-
-| Sub-Domain / Capability | Functions (Level 3) |
-|------------------------|---------------------|
-| **Fee Configuration** | Set Meal Fee per Session, Configure Deduction Rules for Absences |
-| **Fee Collection** | Generate Monthly Invoice, Record Payment, Issue Receipts |
-| **Cost Tracking** | Calculate Cost per Meal, Compare Budget vs. Actual, Report Cost Variance |
+| Sub-Domain / Capability | Functions (Level 3) | Scope Notes |
+|------------------------|---------------------|-------------|
+| **Meal Fee Configuration** | Define Meal Fee, Set Effective Period | In MVP Scope |
+| **Meal Fee Assessment** | Determine Chargeable Meals, Calculate Meal Fees | In MVP Scope |
+| **Meal Payment Management** | Record Meal Payment, Track Payment Status | In MVP Scope (simplified payment status tracking: unpaid/partial/paid) |
+| **Meal Cost Management** | Record Meal Costs, Calculate Meal Cost | In MVP Scope (catering vendor cost & payable tracking) |
 
 ---
 
-## Domain 7 — Reporting & Transparency *(Supporting)*
+## Domain 5 — Reporting & Transparency
 
-Provides operational dashboards and parent-facing transparency reports.
+Provides operational dashboards, vendor reconciliation summaries, financial billing reports, and parent transparency updates.
 
-| Sub-Domain / Capability | Functions (Level 3) |
-|------------------------|---------------------|
-| **Operational Reporting** | Daily Meal Summary Report, Weekly Menu Compliance Report, Monthly Cost Report |
-| **Parent Transparency** | View Child's Meal Participation, View Daily Menu, Receive Allergen Alerts |
-| **Management Dashboard** | Real-Time Demand Overview, Preparation Status Board, Incident Alert Feed |
+| Sub-Domain / Capability | Functions (Level 3) | Scope Notes |
+|------------------------|---------------------|-------------|
+| **Operational Reporting** | Generate Daily Meal Operation Report, Generate Reconciliation Report | In MVP Scope (catering reconciliation focused) |
+| **Cost & Fee Reporting** | Generate Fee Report, Generate Payment Report, Generate Cost Report | In MVP Scope (catering payables & revenue reports) |
+| **Transparency Information Management** | Prepare Transparency Information, Publish Transparency Information | In MVP Scope (published menus and daily delivery verification) |
+
+---
+
+## Domain 6 — User & Access Management
+
+Manages user accounts, authentication, and role-based permissions across system stakeholders.
+
+| Sub-Domain / Capability | Functions (Level 3) | Scope Notes |
+|------------------------|---------------------|-------------|
+| **User Account Management** | Register User Account, Update User Information | In MVP Scope |
+| **Role & Permission Management** | Define Role, Assign Permission to Role, Assign Role to User | In MVP Scope (fixed system roles: System Admin, School Accountant, Semi-Boarding Coordinator, Parent) |
+
+---
+
+## Domain 7 — Nutrition & Health Management
+
+Manages student dietary restrictions, food allergies, and menu safety alerts.
+
+| Sub-Domain / Capability | Functions (Level 3) | Scope Notes |
+|------------------------|---------------------|-------------|
+| **Allergy & Dietary Restriction Management** | Record Student Allergy/Dietary Restriction, Flag Restricted Ingredients in Menu, Alert on Menu-Restriction Conflict | In MVP Scope (visual conflict warnings without hard blocking) |
+
+---
+
+## Domain 8 — Master Data & System Configuration
+
+Maintains institutional school structure, academic calendars, serving rules, and student profiles.
+
+| Sub-Domain / Capability | Functions (Level 3) | Scope Notes |
+|------------------------|---------------------|-------------|
+| **Academic Structure Management** | Manage School Year/Semester, Manage Class & Grade Information, Manage Student Profile | In MVP Scope |
+| **System Configuration Management** | Configure Lunch Serving Day, Configure Holiday/Non-Meal Day Calendar | In MVP Scope |
+
