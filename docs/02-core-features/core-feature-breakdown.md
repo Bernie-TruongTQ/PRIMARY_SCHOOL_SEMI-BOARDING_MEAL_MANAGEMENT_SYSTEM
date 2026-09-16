@@ -1,120 +1,149 @@
-# Core Feature Breakdown
+# Phase 02 — Core Features & MVP Functional Breakdown
 
-This document defines the detailed feature breakdown for the **three active core operational modules** of the Primary School Semi-Boarding Meal Management System, derived directly from the Top-Down Mind Map and fully aligned with the Database Architecture ([Phase 06](../06-database/README.md)).
+## 1. Overview & System Scope
 
----
+Phase 02 translates the top-down decomposition defined in [Phase 01 — Top-Down Decomposition](../01-top-down/README.md) into concrete, engineering-ready feature specifications.
 
-## Module 1 — Meal Participation Management
-
-Captures daily student attendance, meal registration status, updates, and supervisor verification.
-
-### Capabilities & Features
-
-| Feature ID | Feature Name | Priority | Associated DB Entities |
-|---|---|---|---|
-| **F-PAR-01** | Record Daily Student Meal Participation | P1 (MVP) | `meal_participations`, `students`, `meal_schedules` |
-| **F-PAR-02** | Track Participation Changes & Amendments | P1 (MVP) | `meal_participation_changes` |
-| **F-PAR-03** | Verify & Confirm Participation Roster | P1 (MVP) | `meal_participations` (status: `confirmed`) |
-| F-PAR-04 | Bulk Import & Recurring Absence Sync | P2 (Backlog) | `meal_participations` |
-
-### Feature Descriptions
-
-#### **F-PAR-01 — Record Daily Student Meal Participation**
-> Homeroom teachers or class supervisors record each student's meal participation for scheduled meal sessions (Breakfast, Lunch, Snack, Dinner). 
-> - Status values: `pending`, `recorded`, `confirmed`, `cancelled`.
-> - Records student ID, meal schedule ID, initial status, and the user who logged the attendance.
-
-#### **F-PAR-02 — Track Participation Changes & Amendments**
-> When a student's participation status changes (e.g. sick leave reported, late arrival, extra guest), the system captures the modification with full audit trails.
-> - Change types: `status_update`, `correction`, `reschedule`.
-> - Logs `previous_status`, `new_status`, `change_reason`, timestamp, and the user who performed the change.
-
-#### **F-PAR-03 — Verify & Confirm Participation Roster**
-> Supervisors or lead teachers review and lock the class participation list prior to the operational cutoff time.
-> - Updates participation status to `confirmed` with `confirmed_by` user reference.
-> - Freezes normal edits and triggers demand aggregation for Module 2.
+Based on the [Functional Decomposition Mind Map](../01-top-down/PRIMARY%20SCHOOL%20SEMI-BOARDINGMEAL%20MANAGEMENT%20SYSTEM.png) and the approved [MVP Scope Baseline](../01-top-down/MVP.md), the system operates across **8 Business Domains**. The baseline scope is organized into:
+1. **The Primary Operational Value Chain (Active Core)**: 3 tightly integrated operational modules executing the daily meal cycle:
+   - **Module 1: Student Meal & Participation Management** (from Domain 1)
+   - **Module 2: Meal Demand & Vendor Order Management** (from Domains 2 & 3)
+   - **Module 3: Meal Receiving, Distribution & Reconciliation** (from Domain 3)
+2. **Supporting & Safety Governance Modules**:
+   - **Module 4: Nutrition & Food Allergy Alerts** (from Domain 7)
+   - **Module 5: Meal Fee & Caterer Cost Tracking** (from Domain 4)
+   - **Module 6: Operational & Transparency Reporting** (from Domain 5)
+3. **Generic & Foundation Modules**:
+   - **Module 7: User Accounts & Fixed Role RBAC** (from Domain 6)
+   - **Module 8: Academic Master Data & Calendar Configuration** (from Domain 8)
 
 ---
 
-## Module 2 — Meal Demand & Quantity Management
+## 2. Feature Taxonomy & ID Architecture
 
-Aggregates class-level participation into meal session headcounts, computes required dish quantities, and processes post-lock amendments.
+Every feature in the system is assigned a deterministic identifier following the domain prefix structure:
 
-### Capabilities & Features
-
-| Feature ID | Feature Name | Priority | Associated DB Entities |
-|---|---|---|---|
-| **F-DMD-01** | Determine Aggregated Meal Demand | P1 (MVP) | `meal_demands`, `meal_schedules` |
-| **F-DMD-02** | Calculate Expected Dish Quantities | P1 (MVP) | `meal_demand_dish_quantities`, `dishes` |
-| **F-DMD-03** | Process Post-Lock Demand Adjustments | P1 (MVP) | `meal_demand_changes`, `meal_demands` |
-| F-DMD-04 | Historical Demand Trend Forecasting | P2 (Backlog) | `meal_demands` (`historical_average`) |
-
-### Feature Descriptions
-
-#### **F-DMD-01 — Determine Aggregated Meal Demand**
-> The Meal/Nutrition Manager aggregates confirmed student participation counts for a given meal schedule into total demand headcounts.
-> - Determination methods: `participation_based`, `manual_forecast`, `historical_average`.
-> - Lifecycle statuses: `draft` → `calculated` → `confirmed` → `revised`.
-> - Tracks headcount figures (`total_headcount`, `buffer_percentage`, `final_demand_count`).
-
-#### **F-DMD-02 — Calculate Expected Dish Quantities**
-> Translates the final approved headcount into planned quantities for each dish on the scheduled menu.
-> - Formula: $\text{Planned Quantity} = \text{Final Headcount} \times \text{Standard Portion Size} \times (1 + \text{Buffer\%})$
-> - Stores `expected_quantity`, portion unit (e.g. grams, bowls, pieces), and any manual nutritionist adjustments in `meal_demand_dish_quantities`.
-
-#### **F-DMD-03 — Process Post-Lock Demand Adjustments**
-> After demand is locked/confirmed, any subsequent emergency changes (e.g., unexpected classroom absence, sudden school event) are submitted as formal change requests.
-> - Change types: `quantity_increase`, `quantity_decrease`, `dish_adjustment`, `cancellation`.
-> - Tracks `previous_quantity`, `new_quantity`, `reason`, `requested_by`, and `reviewed_by`. Approved changes transition demand status to `revised`.
+```
+Mind Map / 8 Business Domains (Phase 01)
+     ↓
+Operational Modules & Capabilities
+     ↓
+Standardized Feature IDs (Phase 02)
+     ├── F-PAR-xx : Student Meal & Participation Management
+     ├── F-PLN-xx : Meal Planning & Menu Management
+     ├── F-OPS-xx : Meal Operations (Demand, Vendor Orders, Receiving, Distribution, Reconciliation)
+     ├── F-NUT-xx : Nutrition & Health Safeguards (Allergies)
+     ├── F-FEE-xx : Meal Fee & Cost Management
+     ├── F-REP-xx : Reporting & Transparency
+     ├── F-USR-xx : User & Access Management (Fixed Roles)
+     └── F-MST-xx : Master Academic Data & System Configurations
+```
 
 ---
 
-## Module 3 — Meal Preparation
+## 3. Master Feature Breakdown across All 8 Domains
 
-Translates meal demand into kitchen execution plans, tracks ingredient allocation, monitors cooking batches, and reconciles finished dishes against targets.
+### Domain 1: Student Meal Management (`F-PAR`)
 
-### Capabilities & Features
+| Feature ID | Feature Name | Priority | Level 3 Functions Covered (from MVP.md) | Associated Entities |
+|---|---|---|---|---|
+| **F-PAR-01** | Student Meal Eligibility Definition & Evaluation | P1 (MVP) | Define Meal Eligibility Criteria, Determine Student Meal Eligibility | `students`, `meal_eligibility` |
+| **F-PAR-02** | Student Meal Registration & Modifications | P1 (MVP) | Register for Meals, Modify Meal Registration, Cancel Meal Registration, Record Dietary Note at Registration | `meal_registrations`, `students` |
+| **F-PAR-03** | Daily Meal Attendance & Absence Logging | P1 (MVP) | Record Meal Attendance | `meal_participations`, `meal_participation_changes` |
+| **F-PAR-04** | Classroom Meal Attendance Monitoring | P1 (MVP - Streamlined) | Monitor Meal Attendance | `meal_participations` (Classroom summary views) |
 
-| Feature ID | Feature Name | Priority | Associated DB Entities |
-|---|---|---|---|
-| **F-PRP-01** | Create & Schedule Meal Preparation Plan | P1 (MVP) | `meal_preparation_plans`, `meal_preparation_plan_dishes` |
-| **F-PRP-02** | Allocate Ingredients from Storage | P1 (MVP) | `ingredient_allocations`, `ingredients` |
-| **F-PRP-03** | Record Kitchen Cooking Batches | P1 (MVP) | `meal_preparations`, `meal_preparation_dish_records` |
-| **F-PRP-04** | Verify Prepared Quantities & Discrepancies | P1 (MVP) | `prepared_quantity_confirmations` |
-| F-PRP-05 | Kitchen Temperature & Safety Sample Logging | P2 (Backlog) | `meal_preparations` (Food Safety link) |
+### Domain 2: Meal Planning & Menu Management (`F-PLN`)
 
-### Feature Descriptions
+| Feature ID | Feature Name | Priority | Level 3 Functions Covered (from MVP.md) | Associated Entities |
+|---|---|---|---|---|
+| **F-PLN-01** | Dish Definition & Catalog Management | P1 (MVP) | Define Dish, Manage Dish Information | `dishes`, `ingredients` |
+| **F-PLN-02** | Weekly Menu Creation & Single-Level Approval | P1 (MVP - Streamlined) | Create Menu, Assign Dishes to Menu, Approve Menu (1 level) | `menus`, `menu_dishes` |
+| **F-PLN-03** | Meal Schedule Calendar Assignment | P1 (MVP) | Define Meal Schedule, Assign Menu to Schedule | `meal_schedules`, `menus` |
 
-#### **F-PRP-01 — Create & Schedule Meal Preparation Plan**
-> Kitchen managers convert approved meal demands into a structured kitchen shift plan.
-> - Plan status lifecycle: `planned` → `in_progress` → `completed` → `cancelled`.
-> - Links to `meal_demands` and breaks down required cooking targets across each dish in `meal_preparation_plan_dishes`.
+### Domain 3: Meal Operation (`F-OPS`)
 
-#### **F-PRP-02 — Allocate Ingredients from Storage**
-> Reserves and issues necessary raw ingredients from the pantry/storage to kitchen stations for each preparation plan.
-> - Tracks `ingredient_id`, `allocated_quantity`, and `allocation_status` (`allocated`, `adjusted`, `returned`).
-> - Ensures the kitchen team has exact verified stock before cooking starts.
+| Feature ID | Feature Name | Priority | Level 3 Functions Covered (from MVP.md) | Associated Entities |
+|---|---|---|---|---|
+| **F-OPS-01** | Demand Determination & Expected Quantity Calculation | P1 (MVP) | Determine Meal Demand, Calculate Expected Meal Quantity | `meal_demands`, `meal_demand_dish_quantities` |
+| **F-OPS-02** | Catering Vendor Order Dispatch | P1 (MVP) | Send Meal Order to Catering Vendor | `meal_demands`, `catering_orders` |
+| **F-OPS-03** | Meal Receiving & Quality Inspection | P1 (MVP) | Record Delivered Quantity from Vendor, Inspect Delivered Meal Quality, Confirm Received Quantity | `meal_deliveries`, `meal_inspections` |
+| **F-OPS-04** | Classroom Meal Distribution Logging | P1 (MVP) | Record Distributed Quantity | `meal_distributions` |
+| **F-OPS-05** | Meal Reconciliation & Discrepancy Resolution | P1 (MVP - Streamlined) | Reconcile Ordered vs Delivered Quantity, Resolve Quantity Discrepancies | `meal_reconciliations`, `meal_discrepancies` |
 
-#### **F-PRP-03 — Record Kitchen Cooking Batches**
-> Kitchen staff record cooking start and finish times, batch numbers, and actual yield produced per dish.
-> - Tracks batch execution status: `in_progress` → `completed`.
-> - Yields granular dish output in `meal_preparation_dish_records` (`actual_prepared_quantity`).
+### Domain 4: Meal Fee & Cost Management (`F-FEE`)
 
-#### **F-PRP-04 — Verify Prepared Quantities & Discrepancies**
-> Kitchen lead or meal inspector conducts quality and quantity checks on the cooked food against the planned demand.
-> - Confirmation status: `matched` vs. `discrepancy`.
-> - Mandatory `discrepancy_reason` if yield falls below or exceeds acceptable tolerance thresholds.
-> - Formal sign-off stored in `prepared_quantity_confirmations` (`confirmed_quantity`, `confirmed_by`, `confirmed_at`).
+| Feature ID | Feature Name | Priority | Level 3 Functions Covered (from MVP.md) | Associated Entities |
+|---|---|---|---|---|
+| **F-FEE-01** | Meal Fee Rate & Effective Period Configuration | P1 (MVP) | Define Meal Fee, Set Effective Period | `meal_fee_configs` |
+| **F-FEE-02** | Chargeable Meal Calculation & Invoicing | P1 (MVP) | Determine Chargeable Meals, Calculate Meal Fees | `student_meal_bills`, `student_billing_items` |
+| **F-FEE-03** | Meal Payment Recording & Basic Status Tracking | P1 (MVP - Streamlined) | Record Meal Payment, Track Payment Status (Unpaid/Partial/Paid) | `meal_payments` |
+| **F-FEE-04** | Caterer Operational Cost & Payable Tracking | P1 (MVP - Streamlined) | Record Meal Costs, Calculate Meal Cost | `catering_costs`, `vendor_payables` |
+
+### Domain 5: Reporting & Transparency (`F-REP`)
+
+| Feature ID | Feature Name | Priority | Level 3 Functions Covered (from MVP.md) | Associated Entities |
+|---|---|---|---|---|
+| **F-REP-01** | Daily Operational & Vendor Reconciliation Reports | P1 (MVP - Streamlined) | Generate Daily Meal Operation Report, Generate Reconciliation Report | Materialized view / Reports |
+| **F-REP-02** | Cost, Fee & Caterer Debt Summary Reports | P1 (MVP - Streamlined) | Generate Fee Report, Generate Payment Report, Generate Cost Report | Materialized view / Reports |
+| **F-REP-03** | Parent Transparency Portal & Daily Menu Publishing | P1 (MVP - Streamlined) | Prepare Transparency Information, Publish Transparency Information | Public / Parent portal views |
+
+### Domain 6: User & Access Management (`F-USR`)
+
+| Feature ID | Feature Name | Priority | Level 3 Functions Covered (from MVP.md) | Associated Entities |
+|---|---|---|---|---|
+| **F-USR-01** | User Profile & Account Management | P1 (MVP) | Register User Account, Update User Information | `users` |
+| **F-USR-02** | Fixed Role Permissions & RBAC Assignment | P1 (MVP - Streamlined) | Define Role, Assign Permission to Role, Assign Role to User (Fixed 4 Roles) | `users`, `roles` |
+
+### Domain 7: Nutrition & Health Management (`F-NUT`)
+
+| Feature ID | Feature Name | Priority | Level 3 Functions Covered (from MVP.md) | Associated Entities |
+|---|---|---|---|---|
+| **F-NUT-01** | Student Allergy & Dietary Restriction Tracking | P1 (MVP) | Record Student Allergy/Dietary Restriction | `student_allergies`, `students` |
+| **F-NUT-02** | Restricted Ingredient Flagging & Menu Conflict Alerts | P1 (MVP - Streamlined) | Flag Restricted Ingredients in Menu, Alert on Menu-Restriction Conflict (Visual alerts) | `dishes`, `menus`, `dietary_alerts` |
+
+### Domain 8: Master Data & System Configuration (`F-MST`)
+
+| Feature ID | Feature Name | Priority | Level 3 Functions Covered (from MVP.md) | Associated Entities |
+|---|---|---|---|---|
+| **F-MST-01** | Academic Structure Management (Years, Classes, Students) | P1 (MVP) | Manage School Year/Semester, Manage Class & Grade Information, Manage Student Profile | `school_years`, `grades`, `classes`, `students` |
+| **F-MST-02** | Serving Calendar & Holiday Configuration | P1 (MVP) | Configure Lunch Serving Day, Configure Holiday/Non-Meal Day Calendar | `meal_calendars`, `holidays` |
 
 ---
 
-## Reference & Deferred Capabilities Summary
+## 4. Operational Value Chain Integration
 
-| Boundary Domain | Handled By | Scope Status in Phase 1 |
-|---|---|---|
-| Student Master & Class Roster | `students` table | Reference only (read-only for daily ops) |
-| Academic Calendar & Session Setup | `meal_schedules` table | Reference only |
-| Dish & Recipe Catalog | `dishes` table | Reference only |
-| Ingredient Master Catalog | `ingredients` table | Reference only |
-| Food Safety Inspections | External / Future module | Phase 2 Backlog |
-| Monthly Invoicing & Fee Collection | External / Future module | Phase 2 Backlog |
+The core features above execute the continuous daily lifecycle of primary school semi-boarding meals:
+
+```
+[F-MST: School Year, Classes, Serving Calendar Setup]
+                          ↓
+[F-PAR: Eligibility & Term Registration]
+                          ↓
+[F-PLN: Dish Catalog & Approved Weekly Menu Schedule] ← [F-NUT: Allergy Conflict Alerts]
+                          ↓
+[F-PAR-03: Daily 08:30 AM Morning Class Attendance & Lock]
+                          ↓
+[F-OPS-01: Session Demand Aggregation & Dish Quantities (+Buffer)]
+                          ↓
+[F-OPS-02: Purchase Order Dispatched to Catering Vendor]
+                          ↓
+[F-OPS-03: 10:30 AM Meal Receiving, Temp/Quality Inspection & Sign-off]
+                          ↓
+[F-OPS-04: 11:00 AM Classroom Tray Distribution Logging]
+                          ↓
+[F-OPS-05: 13:00 PM Quantity Reconciliation (Ordered vs Delivered vs Consumed)]
+                          ↓
+[F-FEE: Chargeable Fee Assessment & Caterer Payable Accrual]
+                          ↓
+[F-REP: Daily Ops Report, Vendor Reconciliation Report & Parent Transparency View]
+```
+
+---
+
+## 5. Artifacts in this folder
+
+| File | Purpose |
+|---|---|
+| [core-feature-breakdown.md](core-feature-breakdown.md) | Comprehensive feature catalog across all 8 domains with capability definitions and entity linkages |
+| [invest-requirements.md](invest-requirements.md) | Exhaustive INVEST requirements, user stories, and BDD/Gherkin acceptance criteria |
+| [README.md](README.md) | Summary, taxonomy, and navigation guide for Phase 02 |
