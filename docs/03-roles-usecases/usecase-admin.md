@@ -2,9 +2,9 @@
 
 ## Actor Overview
 
-- **Actor Name:** School Administrator (`ADM`)
-- **Primary Domain:** System Master Data & Boundary References
-- **Key Objectives:** Maintain foundational entities (students, classrooms, meal schedules, users, dishes, and ingredients) that enable daily operations across Modules 1, 2, and 3.
+- **Actor Code:** `ADM`
+- **Actor Name:** School Administrator / Principal
+- **Primary Operational Scope:** Domain 1 (Eligibility Criteria), Domain 2 (Single-Level Menu Approval), Domain 6 (User & Fixed RBAC Management), Domain 8 (Master Data: Academic Structure & Calendars). Ensures baseline master data integrity, manages staff account permissions, and approves school-level operational decisions.
 
 ---
 
@@ -14,85 +14,107 @@
 flowchart LR
     ADM(["👤 School Administrator\n(ADM)"])
 
-    subgraph SYSTEM["Master Reference Data Administration"]
-        UC1(["UC-ADM-01\nManage Student Records & Eligibility"])
-        UC2(["UC-ADM-02\nConfigure Meal Calendar & Schedules"])
-        UC3(["UC-ADM-03\nMaintain Dish & Ingredient Master Catalog"])
-        UC4(["UC-ADM-04\nManage System Users & Role Permissions"])
+    subgraph SYSTEM["System Administration & Master Data Subsystem (Domains 1, 2, 6, 8)"]
+        UC1(["UC-ADM-01\nDefine & Evaluate Student Meal Eligibility"])
+        UC2(["UC-ADM-02\nApprove Weekly Menu (1-Level Review)"])
+        UC3(["UC-ADM-03\nManage Staff Accounts & User Profiles"])
+        UC4(["UC-ADM-04\nEnforce Fixed 4-Role RBAC Permissions"])
+        UC5(["UC-ADM-05\nManage Academic Structure (Years, Classes, Students)"])
+        UC6(["UC-ADM-06\nConfigure Lunch Serving Days & Holiday Calendar"])
     end
 
     ADM --- UC1
     ADM --- UC2
     ADM --- UC3
     ADM --- UC4
+    ADM --- UC5
+    ADM --- UC6
+
+    UC4 -.->|include| UC3
 ```
 
 ---
 
-## UC-ADM-01 — Manage Student Records & Eligibility
+## UC-ADM-01 — Define & Evaluate Student Meal Eligibility
 
-- **Primary DB Entity:** `students`
-- **Secondary Entities:** `meal_registrations`
-
-### Preconditions
-1. Administrator is authenticated with administrative rights.
-2. Academic year and classroom designations are established.
+- **Core Feature:** `F-PAR-01`
+- **Primary DB Entities:** `meal_eligibility`, `students`
 
 ### Main Success Scenario
-1. Administrator accesses the **Student Master Directory** ([SCR-ADM-01](../04-information-architecture/screen-inventory.md)).
-2. Administrator creates or imports student profiles (`full_name`, `class_name`).
-3. Administrator updates `eligibility_status` (e.g. `eligible`, `suspended`, `withdrawn`).
-4. System persists records in `students` table.
-5. Eligible students automatically populate classroom rosters for Module 1.
+1. Administrator navigates to **Boarding Eligibility Configuration**.
+2. Configures eligibility criteria (e.g., Grade 1–5 students who submitted mandatory medical clearance forms and parent commitments).
+3. Triggers the automated eligibility evaluation batch for the new school year.
+4. System updates `students.eligibility_status = 'eligible'` for all qualifying students.
 
 ---
 
-## UC-ADM-02 — Configure Meal Calendar & Daily Schedules
+## UC-ADM-02 — Approve Weekly Menu (1-Level Review)
 
-- **Primary DB Entity:** `meal_schedules`
-- **Secondary Entities:** `dishes`
+- **Core Feature:** `F-PLN-02`
+- **Primary DB Entity:** `menus`
+- **Secondary Entities:** `menu_dishes`, `dishes`
 
 ### Preconditions
-1. School term dates are known.
+1. Semi-Boarding Coordinator has submitted the weekly menu with status `submitted` ([UC-MGR-04](usecase-manager.md#uc-mgr-04)).
 
 ### Main Success Scenario
-1. Administrator opens the **Meal Calendar Setup Screen** ([SCR-ADM-02](../04-information-architecture/screen-inventory.md)).
-2. Administrator creates meal sessions:
-   - Sets `meal_date` (e.g., `2026-09-15`).
-   - Selects `meal_type` from `meal_type_enum` (`breakfast`, `lunch`, `snack`, `dinner`).
-   - Associates scheduled menu reference `menu_id`.
-3. System saves records into `meal_schedules`.
-4. These schedules become the anchor points for Module 1 (`meal_participations`) and Module 2 (`meal_demands`).
+1. School Principal / Administrator opens the **Weekly Menu Approval** screen.
+2. Reviews daily dish composition (main dishes, side dishes, vegetable soups, desserts, total Kcal energy intake).
+3. Verifies that there are no allergen conflicts or nutritional imbalances.
+4. Clicks **Approve Menu**.
+5. System updates status to `menus.status = 'approved'` and locks the menu against further edits.
 
 ---
 
-## UC-ADM-03 — Maintain Dish & Ingredient Master Catalog
+## UC-ADM-03 — Manage Staff Accounts & User Profiles
 
-- **Primary DB Entities:** `dishes`, `ingredients`
-
-### Preconditions
-1. Standard recipes and nutrition guidelines are approved.
-
-### Main Success Scenario
-1. Administrator accesses the **Dish & Recipe Management Panel** ([SCR-ADM-03](../04-information-architecture/screen-inventory.md)).
-2. Administrator creates or updates dish entries in `dishes` (`name`, `status`).
-3. Administrator maintains ingredient records in `ingredients` (`name`, `unit` e.g., kg, liters).
-4. Data feeds into Module 2 dish quantity calculations and Module 3 kitchen prep plans.
-
----
-
-## UC-ADM-04 — Manage System Users & Role Permissions
-
+- **Core Feature:** `F-USR-01`
 - **Primary DB Entity:** `users`
 
-### Preconditions
-1. School staff rosters are verified.
+### Main Success Scenario
+1. Administrator navigates to **Account & Staff Management**.
+2. Enters staff profile details: Full Name, Email, Phone Number, and Active Status.
+3. Issues initial temporary credentials or sends an account activation email.
+4. System creates a new record in the `users` table.
+
+---
+
+## UC-ADM-04 — Enforce Fixed 4-Role RBAC Permissions
+
+- **Core Feature:** `F-USR-02`
+- **Primary DB Entities:** `users`, `roles`
 
 ### Main Success Scenario
-1. Administrator accesses **User Account & Role Management** ([SCR-ADM-04](../04-information-architecture/screen-inventory.md)).
-2. Administrator registers staff accounts with `full_name` and assigns operational roles:
-   - `teacher`: Grants access to Module 1 class participation.
-   - `manager`: Grants access to Module 2 demand determination and preparation shift planning.
-   - `kitchen`: Grants access to Module 3 kitchen cooking boards and ingredient receipts.
-   - `admin`: Full system administration.
-3. System provisions credentials and access tokens.
+1. On the user profile detail screen, Administrator assigns exactly 1 of the 4 fixed system roles:
+   - `Admin` (System Administration & Governance)
+   - `Accountant` (Financial Billing & Payables)
+   - `Manager` (Semi-Boarding Operations Coordinator)
+   - `Parent` (Guardian & Family Portal)
+2. System enforces immutable role-permission sets per [MVP.md](../01-top-down/MVP.md) (no runtime custom permission tampering allowed in UI).
+3. The authenticated user is strictly bounded by their assigned role permissions upon subsequent logins.
+
+---
+
+## UC-ADM-05 — Manage Academic Structure (Years, Classes, Students)
+
+- **Core Feature:** `F-MST-01`
+- **Primary DB Entities:** `school_years`, `grades`, `classes`, `students`
+
+### Main Success Scenario
+1. Administrator establishes a new school year (e.g., `2026-2027`) partitioned into 2 academic terms.
+2. Initializes grade levels (Grade 1 through Grade 5) and classrooms (1A, 1B, 2A, etc.).
+3. Executes batch import of enrolled student rosters from standardized Excel templates into designated classes.
+4. Master organizational records form the baseline student identity references across the entire boarding lifecycle.
+
+---
+
+## UC-ADM-06 — Configure Lunch Serving Days & Holiday Calendar
+
+- **Core Feature:** `F-MST-02`
+- **Primary DB Entities:** `meal_calendars`, `holidays`
+
+### Main Success Scenario
+1. Administrator opens **School Academic & Boarding Calendar**.
+2. Configures standard meal-serving days: Monday through Friday each week.
+3. Defines national public holidays, term breaks, and non-boarding event days (e.g., National Teachers' Day, Lunar New Year).
+4. System saves records to `holidays` and automatically excludes these dates from `meal_schedules`, preventing unauthorized billing generation or vendor ordering on non-operational days.
