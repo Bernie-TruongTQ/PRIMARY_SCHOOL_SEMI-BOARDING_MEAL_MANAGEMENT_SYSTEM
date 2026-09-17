@@ -37,6 +37,7 @@ The engineering lifecycle cascades through six discrete, verifiable phases. Each
 | **04** | [**04-information-architecture/**](04-information-architecture/README.md) | **Information Architecture**<br>Screen inventory (SCR-*), sitemap hierarchy, and end-to-end operational task flows. | • `screen-inventory.md`<br>• `sitemap.md`<br>• `task-flows.md` | ✅ Complete |
 | **05** | [**05-ui-ux/**](05-ui-ux/README.md) | **UI/UX & Design Tokens**<br>Design system specifications, color palettes, responsive typography, and screen layouts. | • `design-system.md`<br>• Wireframes & Mockups | 🔄 In Progress |
 | **06** | [**06-database/**](06-database/README.md) | **Database Architecture**<br>Third normal form (3NF) relational schema, DBML data model, entity dictionary, and DDL scripts. | • ERD Diagram (`.png`)<br>• `schema.dbml`<br>• `data-dictionary.md`<br>• `.sql` scripts | ✅ Complete |
+| **07** | [**07-api-documentation/**](07-api-documentation/README.md) | **RESTful API Documentation**<br>Comprehensive endpoint contracts across all 8 business domains, OpenAPI 3.0.3 spec, and integration test matrix. | • `README.md`<br>• `api-specification.md`<br>• `openapi.yaml` | ✅ Complete |
 
 ---
 

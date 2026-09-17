@@ -1,0 +1,939 @@
+openapi: 3.0.3
+info:
+  title: Primary School Semi-Boarding Meal Management System API
+  description: |
+    Comprehensive RESTful API for Primary School Semi-Boarding Meal Management System (MVP Scope).
+    - Operating Model: External Catering Vendor Model (Lunch-Only Scope, Mon-Fri).
+    - Access Control: Fixed 4-Role RBAC (ADM, MGR, ACC, PAR).
+    - Temporal Checkpoints: 08:30 AM Attendance Lock, 08:45 AM PO Dispatch, 10:30 AM 3-Step Receiving Inspection, 11:00 AM Distribution, 13:00 PM Reconciliation.
+  version: 1.0.0-MVP
+  contact:
+    name: Engineering Architecture Team
+    email: dev@schoolmeals.edu.vn
+servers:
+  - url: https://api.schoolmeals.edu.vn/api/v1
+    description: Production API Server
+  - url: http://localhost:4000/api/v1
+    description: Local Development Server
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: Auth & Users (Domain 6)
+    description: Authentication, profile management, and fixed role assignments (F-USR)
+  - name: Master Data (Domain 8)
+    description: Academic structure, terms, grades, classes, and serving calendars (F-MST)
+  - name: Student Participation (Domain 1)
+    description: Eligibility, semester registration, daily roll-call, and 08:30 AM cutoff lock (F-PAR)
+  - name: Meal Planning & Menus (Domain 2)
+    description: Dish catalog, weekly menus, and single-level administrative approval (F-PLN)
+  - name: Meal Operations (Domain 3)
+    description: Demand rollup, buffer engine, PO dispatch, dock receiving, 3-step inspection, and reconciliation (F-OPS)
+  - name: Nutrition & Allergies (Domain 7)
+    description: Medical allergy declarations and daily menu conflict detection (F-NUT)
+  - name: Fee & Cost Management (Domain 4)
+    description: Fee schedules, monthly billing batch, VietQR payments, and vendor payables (F-FEE)
+  - name: Reporting & Transparency (Domain 5)
+    description: Daily operations summary, financial debt aging, and parent transparency feed (F-REP)
+
+paths:
+  # ==========================================================================
+  # DOMAIN 6: AUTH & USER MANAGEMENT (F-USR)
+  # ==========================================================================
+  /auth/login:
+    post:
+      tags: [Auth & Users (Domain 6)]
+      summary: Authenticate user & issue JWT
+      description: Validates user credentials and returns JWT containing fixed role (ADM, MGR, ACC, PAR).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, password]
+              properties:
+                username:
+                  type: string
+                  example: coordinator.lan
+                password:
+                  type: string
+                  format: password
+                  example: SecurePassword123!
+      responses:
+        '200':
+          description: Successful authentication
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginSuccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /users/profile:
+    get:
+      tags: [Auth & Users (Domain 6)]
+      summary: Get current authenticated user profile
+      responses:
+        '200':
+          description: User profile details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfileResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+
+  /admin/users:
+    get:
+      tags: [Auth & Users (Domain 6)]
+      summary: List system users with role assignment (Admin only)
+      parameters:
+        - name: role
+          in: query
+          schema:
+            type: string
+            enum: [ADM, MGR, ACC, PAR]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: User list
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    post:
+      tags: [Auth & Users (Domain 6)]
+      summary: Create new staff or parent user with fixed role (Admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [username, email, password, fullName, role]
+              properties:
+                username:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                fullName:
+                  type: string
+                phone:
+                  type: string
+                role:
+                  type: string
+                  enum: [ADM, MGR, ACC, PAR]
+      responses:
+        '201':
+          description: User created
+
+  # ==========================================================================
+  # DOMAIN 8: MASTER DATA & SYSTEM CONFIGURATION (F-MST)
+  # ==========================================================================
+  /master/terms:
+    get:
+      tags: [Master Data (Domain 8)]
+      summary: List school years and active semesters
+      responses:
+        '200':
+          description: School years & semesters list
+
+  /master/classes:
+    get:
+      tags: [Master Data (Domain 8)]
+      summary: List grade levels and classroom entities
+      parameters:
+        - name: schoolYearId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Classrooms list
+
+  /master/calendar/holidays:
+    get:
+      tags: [Master Data (Domain 8)]
+      summary: List institutional non-meal holidays
+      parameters:
+        - name: schoolYearId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Holiday calendar
+
+  # ==========================================================================
+  # DOMAIN 1: STUDENT MEAL & PARTICIPATION (F-PAR)
+  # ==========================================================================
+  /students/eligibility:
+    get:
+      tags: [Student Participation (Domain 1)]
+      summary: Determine student boarding program eligibility (F-PAR-01)
+      parameters:
+        - name: studentId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Eligibility evaluation
+
+  /registrations/apply:
+    post:
+      tags: [Student Participation (Domain 1)]
+      summary: Register or modify semester boarding program enrollment (F-PAR-02)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentId, semesterId, status]
+              properties:
+                studentId:
+                  type: integer
+                semesterId:
+                  type: integer
+                status:
+                  type: string
+                  enum: [active, on_leave, cancelled]
+                dietaryNotes:
+                  type: string
+      responses:
+        '201':
+          description: Registration created or updated
+
+  /classes/{classId}/attendance:
+    get:
+      tags: [Student Participation (Domain 1)]
+      summary: Get classroom daily roll-call roster with allergy flags (F-PAR-03)
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Daily classroom roll-call roster
+
+  /classes/{classId}/attendance/bulk:
+    post:
+      tags: [Student Participation (Domain 1)]
+      summary: Bulk submit daily attendance before 08:30 AM cutoff (F-PAR-03)
+      description: Enforces strict 08:30:00 AM cutoff policy. Rejects modifications after 08:30 AM with 409 Conflict.
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mealScheduleId, attendees]
+              properties:
+                mealScheduleId:
+                  type: integer
+                attendees:
+                  type: array
+                  items:
+                    type: object
+                    required: [studentId, status]
+                    properties:
+                      studentId:
+                        type: integer
+                      status:
+                        type: string
+                        enum: [present, absent_excused, absent_unexcused]
+                      notes:
+                        type: string
+      responses:
+        '200':
+          description: Attendance recorded
+        '409':
+          $ref: '#/components/responses/CutoffExceededError'
+
+  /classes/{classId}/attendance/lock:
+    post:
+      tags: [Student Participation (Domain 1)]
+      summary: Lock classroom attendance roster (F-PAR-03, F-PAR-04)
+      parameters:
+        - name: classId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Classroom attendance locked
+
+  /participations/{id}/amend:
+    post:
+      tags: [Student Participation (Domain 1)]
+      summary: Emergency post-cutoff attendance amendment with mandatory justification (F-PAR-02)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [newStatus, reason]
+              properties:
+                newStatus:
+                  type: string
+                  enum: [present, absent_excused, absent_unexcused]
+                reason:
+                  type: string
+                  minLength: 5
+      responses:
+        '200':
+          description: Attendance amended with audit logging
+
+  # ==========================================================================
+  # DOMAIN 2: MEAL PLANNING & MENUS (F-PLN)
+  # ==========================================================================
+  /dishes:
+    get:
+      tags: [Meal Planning & Menus (Domain 2)]
+      summary: List nutritional dish catalog (F-PLN-01)
+      responses:
+        '200':
+          description: Dish list
+    post:
+      tags: [Meal Planning & Menus (Domain 2)]
+      summary: Define new standard dish profile (F-PLN-01)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, courseType, standardPortionWeight, unit]
+              properties:
+                name:
+                  type: string
+                courseType:
+                  type: string
+                  enum: [main_entree, side_dish, soup, dessert]
+                standardPortionWeight:
+                  type: number
+                unit:
+                  type: string
+                caloriesKcal:
+                  type: number
+      responses:
+        '201':
+          description: Dish created
+
+  /menus/weekly:
+    get:
+      tags: [Meal Planning & Menus (Domain 2)]
+      summary: Get weekly lunch menu details (F-PLN-02)
+      parameters:
+        - name: schoolYearId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: weekNumber
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Weekly menu
+
+  /menus:
+    post:
+      tags: [Meal Planning & Menus (Domain 2)]
+      summary: Compose and submit weekly menu for administrative review (F-PLN-02)
+      responses:
+        '201':
+          description: Menu submitted
+
+  /menus/{menuId}/approve:
+    post:
+      tags: [Meal Planning & Menus (Domain 2)]
+      summary: Single-level menu review and approval sign-off (Admin only) (F-PLN-02)
+      parameters:
+        - name: menuId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [decision]
+              properties:
+                decision:
+                  type: string
+                  enum: [approved, rejected]
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Menu review finalized
+
+  # ==========================================================================
+  # DOMAIN 3: MEAL OPERATIONS (F-OPS)
+  # ==========================================================================
+  /demands/calculate:
+    post:
+      tags: [Meal Operations (Domain 3)]
+      summary: Aggregate morning attendance & apply safety buffer (F-OPS-01)
+      description: Aggregates confirmed attendees at 08:30 AM and calculates expected portions using buffer formula.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mealScheduleId]
+              properties:
+                mealScheduleId:
+                  type: integer
+                bufferRate:
+                  type: number
+                  minimum: 0.0
+                  maximum: 0.10
+                  default: 0.05
+      responses:
+        '200':
+          description: Demand calculated
+
+  /demands/dispatch-order:
+    post:
+      tags: [Meal Operations (Domain 3)]
+      summary: Dispatch formal purchase order to external catering vendor before 08:45 AM (F-OPS-02)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mealDemandId, vendorName, targetDeliveryTime]
+              properties:
+                mealDemandId:
+                  type: integer
+                vendorName:
+                  type: string
+                targetDeliveryTime:
+                  type: string
+                  format: date-time
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Catering PO dispatched
+
+  /operations/receiving/checkin:
+    post:
+      tags: [Meal Operations (Domain 3)]
+      summary: Delivery dock check-in upon vehicle arrival at 10:30 AM (F-OPS-03)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cateringOrderId, vehiclePlate, thermalContainerCount, deliveredPortions]
+              properties:
+                cateringOrderId:
+                  type: integer
+                vehiclePlate:
+                  type: string
+                driverName:
+                  type: string
+                thermalContainerCount:
+                  type: integer
+                deliveredPortions:
+                  type: integer
+      responses:
+        '201':
+          description: Receiving arrival logged
+
+  /operations/receiving/inspect:
+    post:
+      tags: [Meal Operations (Domain 3)]
+      summary: Submit statutory 3-step food safety inspection (Decision 1246/QD-BYT) (F-OPS-03)
+      description: Enforces food core temperature >= 65.0 C, intact tamper seals, sensory check, and 24-hour food retention sample photo.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mealDeliveryId, coreTemperature, containerSealsIntact, sensoryEvalPass, retentionSampleTaken]
+              properties:
+                mealDeliveryId:
+                  type: integer
+                coreTemperature:
+                  type: number
+                  description: Probe reading in Celsius. Must be >= 65.0 C.
+                  example: 72.5
+                containerSealsIntact:
+                  type: boolean
+                sensoryEvalPass:
+                  type: boolean
+                retentionSampleTaken:
+                  type: boolean
+                thermometerPhotoUrl:
+                  type: string
+                samplePhotoUrl:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '200':
+          description: Inspection passed and delivery cleared for trolley distribution
+        '422':
+          description: Food core temperature deficit (< 65.0 C) or missing mandatory compliance sample
+
+  /operations/distribution/plan:
+    get:
+      tags: [Meal Operations (Domain 3)]
+      summary: Get classroom trolley portion allocation plan for 11:00 AM distribution (F-OPS-04)
+      parameters:
+        - name: mealDeliveryId
+          in: query
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Trolley distribution plan
+
+  /operations/distribution/confirm:
+    post:
+      tags: [Meal Operations (Domain 3)]
+      summary: Confirm meal trolley dispatch to designated classroom (F-OPS-04)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [mealDeliveryId, classId, allocatedPortions]
+              properties:
+                mealDeliveryId:
+                  type: integer
+                classId:
+                  type: integer
+                allocatedPortions:
+                  type: integer
+                specialDietaryPortions:
+                  type: integer
+                receivedByTeacherId:
+                  type: integer
+      responses:
+        '200':
+          description: Distribution confirmed
+
+  /operations/reconciliation/calculate:
+    post:
+      tags: [Meal Operations (Domain 3)]
+      summary: Execute 3-way quantity reconciliation at 13:00 PM (F-OPS-05)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cateringOrderId]
+              properties:
+                cateringOrderId:
+                  type: integer
+      responses:
+        '200':
+          description: 3-way reconciliation calculated
+
+  /operations/reconciliation/resolve:
+    post:
+      tags: [Meal Operations (Domain 3)]
+      summary: Finalize reconciliation, log discrepancy reason, and accrue vendor payables (F-OPS-05, F-FEE-04)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [cateringOrderId, deliveredQuantity, acceptedPayableQuantity, discrepancyReason]
+              properties:
+                cateringOrderId:
+                  type: integer
+                deliveredQuantity:
+                  type: integer
+                acceptedPayableQuantity:
+                  type: integer
+                discrepancyCount:
+                  type: integer
+                discrepancyReason:
+                  type: string
+                financialImpactNote:
+                  type: string
+      responses:
+        '200':
+          description: Reconciliation finalized and posted to accountant ledger
+
+  # ==========================================================================
+  # DOMAIN 7: NUTRITION & ALLERGIES (F-NUT)
+  # ==========================================================================
+  /students/{studentId}/allergies:
+    get:
+      tags: [Nutrition & Allergies (Domain 7)]
+      summary: Get student medical food allergies profile (F-NUT-01)
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Allergy profile
+    post:
+      tags: [Nutrition & Allergies (Domain 7)]
+      summary: Declare or update child medical food allergy (F-NUT-01)
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [allergenType, allergenName, severity]
+              properties:
+                allergenType:
+                  type: string
+                  enum: [peanut, tree_nut, seafood, shellfish, egg, cow_milk, soy, wheat_gluten, other]
+                allergenName:
+                  type: string
+                severity:
+                  type: string
+                  enum: [mild, moderate, severe_anaphylaxis]
+                medicalActionPlan:
+                  type: string
+                diagnosedBy:
+                  type: string
+      responses:
+        '201':
+          description: Allergy recorded
+
+  /nutrition/conflicts/today:
+    get:
+      tags: [Nutrition & Allergies (Domain 7)]
+      summary: Detect menu-restricted ingredient conflicts against confirmed attendees (F-NUT-02)
+      responses:
+        '200':
+          description: Allergen conflict detection alerts
+
+  # ==========================================================================
+  # DOMAIN 4: FEE & COST MANAGEMENT (F-FEE)
+  # ==========================================================================
+  /finance/fee-rates:
+    get:
+      tags: [Fee & Cost Management (Domain 4)]
+      summary: List meal fee rate configurations (F-FEE-01)
+      responses:
+        '200':
+          description: Fee configurations
+    post:
+      tags: [Fee & Cost Management (Domain 4)]
+      summary: Configure term meal fee schedule and caterer cost rate (F-FEE-01)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [schoolYearId, name, mealFeeRate, catererCostRate, effectiveFrom, effectiveTo]
+              properties:
+                schoolYearId:
+                  type: integer
+                name:
+                  type: string
+                mealFeeRate:
+                  type: number
+                catererCostRate:
+                  type: number
+                effectiveFrom:
+                  type: string
+                  format: date
+                effectiveTo:
+                  type: string
+                  format: date
+      responses:
+        '201':
+          description: Fee config created
+
+  /finance/billing/generate-batch:
+    post:
+      tags: [Fee & Cost Management (Domain 4)]
+      summary: Generate monthly student meal billing batch with excused absence credits (F-FEE-02)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [billingMonth, feeConfigId, dueDate]
+              properties:
+                billingMonth:
+                  type: string
+                  example: "2026-10"
+                feeConfigId:
+                  type: integer
+                dueDate:
+                  type: string
+                  format: date
+      responses:
+        '200':
+          description: Billing batch generated
+
+  /finance/bills/student/{studentId}:
+    get:
+      tags: [Fee & Cost Management (Domain 4)]
+      summary: Get student itemized bill with dynamic VietQR payload (F-FEE-02, F-FEE-03)
+      parameters:
+        - name: studentId
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          schema:
+            type: string
+            example: "2026-10"
+      responses:
+        '200':
+          description: Student invoice and VietQR transfer information
+
+  /finance/payments/record:
+    post:
+      tags: [Fee & Cost Management (Domain 4)]
+      summary: Record meal fee payment transaction across 3 streamlined states (F-FEE-03)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [studentMealBillId, amount, paymentMethod]
+              properties:
+                studentMealBillId:
+                  type: integer
+                amount:
+                  type: number
+                paymentMethod:
+                  type: string
+                  enum: [vietqr_bank_transfer, cash, bank_transfer_manual]
+                transactionReference:
+                  type: string
+                notes:
+                  type: string
+      responses:
+        '201':
+          description: Payment recorded
+
+  /finance/vendor-payables/monthly:
+    get:
+      tags: [Fee & Cost Management (Domain 4)]
+      summary: Retrieve monthly accrued liabilities owed to catering vendor based on reconciled deliveries (F-FEE-04)
+      parameters:
+        - name: month
+          in: query
+          required: true
+          schema:
+            type: string
+            example: "2026-10"
+      responses:
+        '200':
+          description: Caterer monthly payables statement
+
+  # ==========================================================================
+  # DOMAIN 5: REPORTING & TRANSPARENCY (F-REP)
+  # ==========================================================================
+  /reports/operations/daily:
+    get:
+      tags: [Reporting & Transparency (Domain 5)]
+      summary: Generate daily meal operations summary report (F-REP-01)
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Daily operational report
+
+  /reports/finance/fee-collections:
+    get:
+      tags: [Reporting & Transparency (Domain 5)]
+      summary: Generate financial collection velocity and debt aging report (F-REP-02)
+      parameters:
+        - name: schoolYearId
+          in: query
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Financial report
+
+  /transparency/menu-daily:
+    get:
+      tags: [Reporting & Transparency (Domain 5)]
+      summary: Public / Parent daily lunch transparency feed with inspection badge (F-REP-03)
+      security: []
+      parameters:
+        - name: date
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Daily transparency feed
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Enter valid JWT token obtained from /auth/login.
+
+  schemas:
+    LoginSuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+          properties:
+            accessToken:
+              type: string
+            expiresIn:
+              type: integer
+              example: 28800
+            tokenType:
+              type: string
+              example: Bearer
+            user:
+              $ref: '#/components/schemas/UserDto'
+
+    UserProfileResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          $ref: '#/components/schemas/UserDto'
+
+    UserDto:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        email:
+          type: string
+        fullName:
+          type: string
+        role:
+          type: string
+          enum: [ADM, MGR, ACC, PAR]
+
+    StandardError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+
+  responses:
+    UnauthorizedError:
+      description: Missing or invalid authentication credentials
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+
+    ForbiddenError:
+      description: Access denied due to insufficient role permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
+
+    CutoffExceededError:
+      description: Attendance lock deadline (08:30:00 AM) has passed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/StandardError'
