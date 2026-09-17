@@ -1,4 +1,4 @@
-# C4 Level 3 — Component Diagram: Meal Planning & Menu Management (Domain 2)
+# C4 Level 3 — Component Diagram: Domain 2 — Meal Planning & Menu Management
 
 ## 1. Overview
 
@@ -15,33 +15,7 @@ This document specifies the internal software components within the **Backend AP
 
 ## 2. Component Diagram (C4Component)
 
-```mermaid
-C4Component
-  title Component Diagram — Domain 2: Meal Planning & Menu Management
-
-  Container(spa, "Single-Page Application", "HTML5/ES6/CSS", "Provides Coordinator Menu Composer (/coordinator/menus) and Admin Menu Approval (/admin/menu-approvals)")
-  ContainerDb(db, "Relational Database", "PostgreSQL 15", "Persists dishes, ingredients, menus, menu_dishes, and meal_schedules")
-  Container(ws, "Real-time Event Broker", "WebSocket", "Emits menu approval and publication events")
-
-  Container_Boundary(api, "Backend API Service — Domain 2") {
-    Component(menuCtrl, "Menu & Planning Controller", "Express.js Router", "Exposes REST endpoints for dish catalog CRUD, weekly menu composition, approvals, and calendar scheduling")
-    Component(dishCatalogService, "Dish Catalog Service", "Domain Service", "Manages dishes, nutritional metadata, portion sizes (grams/portions), and associated ingredient lists")
-    Component(menuComposerService, "Menu Composer Service", "Domain Service", "Validates dish category balance (Main, Side, Soup, Dessert) and builds weekly menu drafts")
-    Component(menuApprovalEngine, "Menu Approval Engine", "Workflow Service", "Manages 1-level approval transitions (Draft -> Submitted -> Approved / Rejected) with administrator sign-off")
-    Component(scheduleBinderService, "Schedule Binder Service", "Domain Service", "Binds approved weekly menus to school calendar serving days in meal_schedules")
-    Component(planningRepo, "Planning Repository", "TypeORM / Data Access", "Executes atomic queries across dishes, ingredients, menus, and schedules")
-  }
-
-  Rel(spa, menuCtrl, "Creates dishes, composes weekly menus, submits and approves menus", "JSON / HTTPS")
-  Rel(menuCtrl, dishCatalogService, "Manages dish catalog and ingredients")
-  Rel(menuCtrl, menuComposerService, "Composes weekly menu structures")
-  Rel(menuCtrl, menuApprovalEngine, "Submits and processes administrative approvals")
-  Rel(menuCtrl, scheduleBinderService, "Maps approved menus to calendar dates")
-  Rel(menuCtrl, planningRepo, "Persists menu and schedule entities")
-
-  Rel(menuApprovalEngine, ws, "Emits MENU_APPROVED event to notify stakeholders", "Internal Event")
-  Rel(planningRepo, db, "Reads/writes dishes, ingredients, menus, menu_dishes, meal_schedules", "SQL")
-```
+![Component Diagram — Domain 2: Meal Planning & Menu Management](images/Domain2Components.png)
 
 ---
 

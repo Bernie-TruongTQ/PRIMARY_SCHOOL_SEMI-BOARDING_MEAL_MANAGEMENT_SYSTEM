@@ -1,10 +1,11 @@
-# C4 Level 3 — Component Diagram: Meal Receiving, Distribution & Reconciliation (Module 3)
+# C4 Level 3 — Component Diagram: Domain 3B — Meal Receiving, Distribution & Reconciliation (Module 3)
 
 ## 1. Overview
 
-This document specifies the internal software components within the **Backend API Service** container that implement **Module 3: Meal Receiving, Distribution & Reconciliation** (Domain 3: Meal Operation).
+This document specifies the internal software components within the **Backend API Service** container that implement the execution and settlement stages of **Domain 3: Meal Operation** — specifically **Module 3: Meal Receiving, Distribution & Reconciliation** (`F-OPS-03`, `F-OPS-04`, `F-OPS-05`).
 
 ### Operational Objectives & Lifecycle Checkpoints
+
 - **10:30 AM — Receiving & 3-Step Quality Inspection (`F-OPS-03`)**: Validates delivered hot meal shipments from the external catering vendor, checking:
   1. Core temperature probe ($\ge 65^\circ\text{C}$).
   2. Thermal container tamper-evident seals and cleanliness.
@@ -16,41 +17,14 @@ This document specifies the internal software components within the **Backend AP
 
 ## 2. Component Diagram (C4Component)
 
-```mermaid
-C4Component
-  title Component Diagram — Module 3: Meal Receiving, Distribution & Reconciliation
-
-  Container(spa, "Single-Page Application", "HTML5/ES6/CSS", "Provides Receiving Inspection UI (/coordinator/receiving), Distribution UI, and Reconciliation Grid")
-  ContainerDb(db, "Relational Database", "PostgreSQL 15", "Persists delivery receipts, inspections, distributions, reconciliations, discrepancies, and vendor payables")
-  ContainerDb(storage, "Compliance Storage", "S3 Storage", "Stores digital scale readouts, thermometer probe readout photos, and 24-hour food retention sample photos")
-  Container(ws, "Real-time Event Broker", "WebSocket", "Broadcasts delivery arrival alerts, inspection pass clearances, and discrepancy notices")
-
-  Container_Boundary(api, "Backend API Service — Module 3") {
-    Component(opsCtrl, "Operations Controller", "Express.js Router", "Exposes REST endpoints for receiving check-in, 3-step inspection sign-off, trolley distribution, and reconciliation")
-    Component(inspectValidator, "Quality & Safety Inspection Validator", "Safety Domain Service", "Enforces food safety rules: validates core probe temp >= 65°C, seal checks, and sensory pass criteria before clearance")
-    Component(distribCoord, "Classroom Distribution Coordinator", "Domain Service", "Allocates accepted meal trays to classroom trolleys according to classroom attendance headcounts")
-    Component(reconcileEngine, "Meal Reconciliation Engine", "Domain Service", "Calculates 3-way variance: Ordered vs Delivered vs Consumed; detects shortfalls, surplus, and unserved portions")
-    Component(discrepancyMgr, "Discrepancy Resolution Manager", "Domain Service", "Enforces mandatory discrepancy reason logging and calculates adjusted payable counts for the School Accountant")
-    Component(opsRepo, "Operations Repository", "TypeORM / Data Access", "Persists deliveries, inspections, distributions, reconciliations, and auto-accrues vendor payables")
-  }
-
-  Rel(spa, opsCtrl, "Submits inspection forms, distribution checkpoints, and reconciliation adjustments", "JSON / HTTPS")
-  Rel(opsCtrl, inspectValidator, "Validates temperature and inspection payload")
-  Rel(opsCtrl, distribCoord, "Retrieves classroom trolley allocation plan")
-  Rel(opsCtrl, reconcileEngine, "Executes 3-way reconciliation calculation")
-  Rel(opsCtrl, discrepancyMgr, "Applies discrepancy adjustments and reason notes")
-  Rel(opsCtrl, opsRepo, "Persists operational records and payable accruals")
-
-  Rel(inspectValidator, storage, "Saves digital probe photos and sample photos", "S3 API")
-  Rel(opsCtrl, ws, "Emits DELIVERY_ACCEPTED and RECONCILIATION_COMPLETED", "Internal Event")
-  Rel(opsRepo, db, "Reads/writes meal_deliveries, meal_inspections, meal_distributions, meal_reconciliations", "SQL")
-```
+![Component Diagram — Module 3: Meal Receiving, Distribution & Reconciliation](images/Module3Components.png)
 
 ---
 
 ## 3. Component Details & Operational Responsibilities
 
 ### 3.1. Operations Controller
+
 - **Endpoint Definitions:**
   - `POST /api/v1/operations/receiving/checkin`: Records delivery arrival timestamp, vehicle license plate, and container count (`F-OPS-03`).
   - `POST /api/v1/operations/receiving/inspect`: Records the 3-step inspection results (temperature readings, container seal integrity, sensory check, and sample photo) (`F-OPS-03`).
@@ -60,36 +34,53 @@ C4Component
   - `POST /api/v1/operations/reconciliation/resolve`: Saves discrepancy reasons and finalizes accepted vendor billing quantities (`F-OPS-05`).
 
 ### 3.2. Quality & Safety Inspection Validator
+
 - **3-Step Inspection Protocol (at 10:30 AM):**
   1. **Core Temperature Probe**: Measures core temperature across thermal food containers.
-     $$\text{Condition: } T_{\text{core}} \ge 65^\circ\text{C}$$
+     $$
+     \text{Condition: } T_{\text{core}} \ge 65^\circ\text{C}
+     $$
+
      If $T_{\text{core}} < 65^\circ\text{C}$, the batch is flagged as high-risk, requiring secondary validation or vendor rejection.
   2. **Container Seal & Cleanliness Check**: Verifies tamper-evident seals on insulated delivery bins.
   3. **Visual & Sensory Evaluation**: Evaluates visual presentation, aroma, and texture.
 - Captures and uploads compliance artifacts: digital thermometer probe readout photo and mandatory 24-hour food retention sample photos.
 
 ### 3.3. Classroom Distribution Coordinator
+
 - Executes at **11:00 AM**:
   - Pulls verified morning attendance counts per classroom.
   - Generates trolley packing lists (e.g., Class 1A: 30 regular meal sets + 1 peanut-free tray).
   - Tracks trolley dispatch timestamps and serving confirmations across all classrooms.
 
 ### 3.4. Meal Reconciliation Engine
+
 - Executes at **13:00 PM** post-lunch:
   - Performs 3-way reconciliation:
-    $$\text{Delivery Variance} = \text{Delivered Quantity} - \text{Ordered Quantity}$$
-    $$\text{Consumption Variance} = \text{Consumed Trays} - \text{Delivered Quantity}$$
+
+    $$
+    \text{Delivery Variance} = \text{Delivered Quantity} - \text{Ordered Quantity}
+    $$
+
+    $$
+    \text{Consumption Variance} = \text{Consumed Trays} - \text{Delivered Quantity}
+    $$
   - Identifies anomalies:
+
     - *Vendor Shortfall:* Caterer delivered fewer portions than ordered.
     - *Excess Leftover:* Significantly more unconsumed food than expected buffer.
 
 ### 3.5. Discrepancy Resolution Manager
+
 - **Discrepancy Handling Rules:**
   - If $\text{Delivery Variance} \neq 0$, the system enforces a mandatory `discrepancy_reason` (e.g., `Vendor Shortfall: 10 meals missing`, `Spillage during transit`).
   - Automatically calculates the **Final Billable / Payable Quantity**:
-    $$\text{Payable Quantity} = \min(\text{Ordered Quantity}, \text{Accepted Delivered Quantity})$$
+    $$
+    \text{Payable Quantity} = \min(\text{Ordered Quantity}, \text{Accepted Delivered Quantity})
+    $$
   - Propagates reconciled payable records directly to the School Accountant's ledger (`catering_costs`, `vendor_payables`), preventing the school from being billed for unserved food.
 
 ### 3.6. Operations Repository
+
 - Wraps reconciliation and payable updates inside database transactions.
 - Enforces relational linkages connecting `catering_orders`, `meal_deliveries`, `meal_inspections`, `meal_distributions`, and `meal_reconciliations`.
