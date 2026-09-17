@@ -1,0 +1,170 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADM
+  MGR
+  ACC
+  PAR
+}
+
+enum AttendanceStatus {
+  PRESENT
+  EXCUSED_ABSENCE
+  UNEXCUSED_ABSENCE
+}
+
+enum OrderStatus {
+  DRAFT
+  DISPATCHED
+  DELIVERED
+  RECONCILED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  OVERDUE
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  fullName     String
+  phoneNumber  String?
+  role         Role
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  students     ParentStudent[]
+}
+
+model Student {
+  id           String    @id @default(uuid())
+  studentCode  String    @unique
+  fullName     String
+  className    String
+  dateOfBirth  DateTime?
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  allergies       AllergyRecord[]
+  attendance      DailyAttendance[]
+  parents         ParentStudent[]
+  invoiceLines    InvoiceLineItem[]
+}
+
+model ParentStudent {
+  parentId  String
+  studentId String
+  relation  String    @default("Parent")
+
+  parent    User      @relation(fields: [parentId], references: [id], onDelete: Cascade)
+  student   Student   @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@id([parentId, studentId])
+}
+
+model AllergyRecord {
+  id          String   @id @default(uuid())
+  studentId   String
+  allergen    String
+  severity    String   @default("HIGH")
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}
+
+model Menu {
+  id          String      @id @default(uuid())
+  serveDate   DateTime    @unique
+  title       String
+  description String?
+  dishes      MenuDish[]
+  createdAt   DateTime    @default(now())
+}
+
+model Dish {
+  id          String      @id @default(uuid())
+  name        String      @unique
+  calories    Int?
+  allergens   String[]
+  menus       MenuDish[]
+}
+
+model MenuDish {
+  menuId  String
+  dishId  String
+
+  menu    Menu @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  dish    Dish @relation(fields: [dishId], references: [id], onDelete: Cascade)
+
+  @@id([menuId, dishId])
+}
+
+model DailyAttendance {
+  id          String           @id @default(uuid())
+  studentId   String
+  date        DateTime
+  status      AttendanceStatus @default(PRESENT)
+  lockedAt    DateTime?
+  createdAt   DateTime         @default(now())
+
+  student     Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, date])
+}
+
+model VendorOrder {
+  id              String      @id @default(uuid())
+  orderDate       DateTime    @unique
+  headcount       Int
+  safetyBufferPct Float       @default(0.05)
+  totalMeals      Int
+  status          OrderStatus @default(DRAFT)
+  dispatchedAt    DateTime?
+  receivedAt      DateTime?
+  inspectedBy     String?
+  tempCelsius     Float?
+  sensoryPassed   Boolean?
+  reconciledCount Int?
+  createdAt       DateTime    @default(now())
+}
+
+model Invoice {
+  id          String            @id @default(uuid())
+  studentId   String
+  billingMonth String           // YYYY-MM
+  grossAmount Decimal           @db.Decimal(10, 2)
+  creditAmount Decimal          @default(0) @db.Decimal(10, 2)
+  netAmount   Decimal           @db.Decimal(10, 2)
+  status      InvoiceStatus     @default(PENDING)
+  vietQrUrl   String?
+  paidAt      DateTime?
+  createdAt   DateTime          @default(now())
+
+  lines       InvoiceLineItem[]
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(uuid())
+  invoiceId   String
+  studentId   String
+  description String
+  quantity    Int
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  amount      Decimal  @db.Decimal(10, 2)
+
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  student     Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+}

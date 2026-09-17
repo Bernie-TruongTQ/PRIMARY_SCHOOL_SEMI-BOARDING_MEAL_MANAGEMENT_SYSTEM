@@ -2,3 +2,6 @@
 skills-lock.json
 skills/
 AGENTS.md
+
+backend/node_modules
+frontend/node_modules
