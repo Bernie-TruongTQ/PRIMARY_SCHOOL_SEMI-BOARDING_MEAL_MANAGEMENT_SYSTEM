@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Deployment View** describes the physical and virtual infrastructure hosting the Semi-Boarding Meal Management System, illustrating how software containers mapped in Section 5 are distributed across client devices and server environments. 
+The **Deployment View** describes the physical and virtual infrastructure hosting the Semi-Boarding Meal Management System, illustrating how software containers mapped in Section 5 are distributed across client devices and server environments.
 
 The architecture supports a **School Campus On-Premises or Private Cloud Appliance** deployment model packaged as lightweight Docker containers behind an Nginx reverse proxy, ensuring high local autonomy even during external internet connection fluctuations.
 
@@ -14,16 +14,19 @@ The architecture supports a **School Campus On-Premises or Private Cloud Applian
 C4Deployment
     title Deployment View — Production Environment Topology
 
-    Deployment_Node(SchoolLAN, "School Campus Network", "WPA3 Enterprise Intranet") {
+    Deployment_Node(SchoolLAN, "School Campus & External Network Tier", "WPA3 Enterprise Intranet / 4G Mobile") {
         Deployment_Node(ClientLayer, "Client Hardware Tier") {
-            Deployment_Node(DevMobile, "Classroom Tablets / Smartphones", "iOS / Android Mobile") {
-                Container(TeacherUI, "Teacher Mobile SPA", "Browser Runtime", "390px Viewport, Touch UI")
+            Deployment_Node(DevTeacher, "Teacher Smartphones / Classroom Tablets", "iOS / Android Mobile") {
+                Container(TeacherUI, "Teacher Attendance UI", "Mobile Web Browser", "390px Viewport, Single-Hand Touch")
             }
-            Deployment_Node(DevDesktop, "Administration Workstations", "Windows / macOS PC") {
-                Container(ManagerUI, "Manager Analytical UI", "Desktop Browser", "Data-dense Table Grid")
+            Deployment_Node(DevCoord, "Coordinator Workstations / Tablets", "Windows PC / iPad") {
+                Container(CoordUI, "Coordinator Portal UI", "Web Browser", "Data-Dense Grids, Receiving Checklists")
             }
-            Deployment_Node(DevKiosk, "Kitchen Wall Kiosks", "Industrial Android / Linux 15.6 Inch") {
-                Container(KitchenUI, "Kitchen Touch Kiosk UI", "Chromium Kiosk Mode", "48px Touch Targets, IP54 Sealed")
+            Deployment_Node(DevAccountant, "Financial Workstations", "Windows 11 PC") {
+                Container(AccUI, "Accountant Portal UI", "Desktop Web Browser", "Billing Wizards, Payment Ledgers")
+            }
+            Deployment_Node(DevParent, "Parent Smartphones", "iOS / Android Mobile") {
+                Container(ParentUI, "Parent Portal UI", "Mobile Web Browser", "Responsive Views, VietQR Display")
             }
         }
 
@@ -32,18 +35,19 @@ C4Deployment
                 Container(Nginx, "Nginx Reverse Proxy & Static Host", "Nginx 1.24", "Terminates TLS 1.3, serves frontend static assets, routes API/WSS")
             }
             Deployment_Node(AppNode, "Application Tier (Docker)") {
-                Container(AppInstance, "Backend API & WS Service", "Node.js 20 LTS Alpine", "Stateless REST handlers, socket rooms, portioning engine")
+                Container(AppInstance, "Backend API & WS Service", "Node.js 20 LTS Alpine", "Stateless REST handlers, socket rooms, demand & billing engines")
             }
             Deployment_Node(DbNode, "Persistence Tier (Docker / Bare Metal)") {
                 ContainerDb(PgInstance, "Primary Relational DB", "PostgreSQL 15.4", "ACID transactions, B-Tree indexes, WAL logging")
-                Container(MediaStore, "Media Compliance Storage", "Local NVMe / MinIO Object Store", "Stores scale photos and 24h food sample pictures")
+                Container(MediaStore, "Media Compliance Storage", "Local NVMe / MinIO Object Store", "Stores thermometer probe photos and 24h food sample pictures")
             }
         }
     }
 
     Rel(TeacherUI, Nginx, "HTTPS / WSS", "Port 443")
-    Rel(ManagerUI, Nginx, "HTTPS / WSS", "Port 443")
-    Rel(KitchenUI, Nginx, "HTTPS / WSS", "Port 443")
+    Rel(CoordUI, Nginx, "HTTPS / WSS", "Port 443")
+    Rel(AccUI, Nginx, "HTTPS", "Port 443")
+    Rel(ParentUI, Nginx, "HTTPS", "Port 443")
 
     Rel(Nginx, AppInstance, "Reverse Proxy", "HTTP / WSS (Port 3000)")
     Rel(Nginx, TeacherUI, "Serves HTML/JS/CSS", "Static Assets")
@@ -58,8 +62,9 @@ C4Deployment
 | Node | Operating System & Form Factor | Hardware Specifications | Connectivity & Environmental Constraints |
 |:---|:---|:---|:---|
 | **Classroom Mobile Devices** | Android 10+ / iOS 15+ (Smartphones or 10" Tablets) | Quad-core ARM, 2GB+ RAM | Connected via Campus Wi-Fi (802.11ac/ax). Must tolerate high packet latency during morning arrival rush. |
-| **Manager Workstation** | Windows 11 / macOS (Desktop / Laptop) | Core i5 / Apple Silicon, 8GB+ RAM, 1080p+ Screen | Connected via Gigabit Ethernet or 5GHz Wi-Fi. Hosts active WebSocket connection for continuous real-time demand monitoring. |
-| **Kitchen Wall Kiosks** | Industrial Android Tablet / Linux Touch Panel | 15.6" Capacitive Touch Display, IP54 water/grease resistant enclosure | Mounted in kitchen prep areas. Connected via shielded Ethernet cable or dedicated kitchen AP. Bluetooth interface for digital kitchen scale weight readouts. |
+| **Coordinator Workstation & Tablets** | Windows 11 / iPadOS / Android Tablet | Core i5 / Apple M-series, 4GB+ RAM | Connected via Campus Wi-Fi or 4G LTE at the delivery dock. Uses camera for photo capture of 3-step inspections. |
+| **Accountant Workstation** | Windows 11 / macOS (Desktop PC) | Core i5, 8GB+ RAM, 1080p Display | Connected via Gigabit Ethernet. Optimized for high-volume ledger review and bulk invoice generation. |
+| **Parent Mobile Devices** | iOS / Android Smartphones | Standard Consumer Smartphones | Connected via 4G/5G mobile internet or home Wi-Fi. Accesses responsive parent portal screens. |
 
 ---
 
@@ -70,7 +75,7 @@ C4Deployment
 | **`gateway-proxy`** | `nginx:1.24-alpine` | 1 vCPU, 512MB RAM | Ephemeral container storage; SSL cert volume mount | Automated TLS renewal via Certbot / Local Root CA. Fast restart on failure. |
 | **`backend-api`** | `node:20-alpine` | 2 vCPU, 2GB RAM | Ephemeral; logs routed to Docker stdout / Fluentd | Health check endpoint `/api/health`. Auto-restarts on crash with Docker Compose `restart: unless-stopped`. |
 | **`postgres-db`** | `postgres:15-alpine` | 2 vCPU, 4GB RAM | Persistent Docker volume mounted on NVMe SSD (`/var/lib/postgresql/data`) | Daily automated `pg_dump` snapshot scheduled at 01:00 AM; 30-day retention with WAL archival. |
-| **`media-store`** | Local Host Directory / MinIO | 1 vCPU, 1GB RAM | Persistent mount (`/var/data/meal-media/`) | Retains 24-hour food retention sample photos and scale calibration snapshots for 90 days. |
+| **`media-store`** | Local Host Directory / MinIO | 1 vCPU, 1GB RAM | Persistent mount (`/var/data/meal-media/`) | Retains 24-hour food retention sample photos and thermometer probe photos for 90 days. |
 
 ---
 

@@ -2,36 +2,35 @@
 
 ## 3.1 Business Context
 
-The **Primary School Semi-Boarding Meal Management System** operates as the operational nexus between classroom attendance, nutrition planning, kitchen culinary execution, and school administration. It defines the exact boundaries of automated meal demand calculation and kitchen batch tracking while interfacing with adjacent school information and logistics systems.
+The **Primary School Semi-Boarding Meal Management System** operates as the central operational platform connecting school classrooms, semi-boarding coordination, financial accounting, parents, and external catering vendors. It defines the exact boundaries of automated lunch attendance, catering purchase order generation, dock food inspection, classroom trolley distribution, fee assessment, and parental transparency.
 
 ### Business Context Diagram
-
-![System Context Diagram](../c4/images/SystemContext.png)
 
 ```mermaid
 C4Context
     title System Context Diagram — Semi-Boarding Meal Management System
 
-    Person(TCH, "Homeroom Teacher (TCH)", "Conducts morning roll-calls and flags student dietary restrictions.")
-    Person(MGR, "Meal Manager (MGR)", "Oversees daily demand, sets buffer margins, and approves emergency adjustments.")
-    Person(KIT, "Kitchen Staff / Chef (KIT)", "Executes cooking batches, logs core temperatures, and reconciles dish yields.")
-    Person(ADM, "School Administrator (ADM)", "Manages user access, school session schedules, and system configurations.")
+    Person(mgr, "Semi-Boarding Coordinator", "MGR — Oversees daily lunch attendance, demand aggregation, catering orders, food receiving inspection, classroom distribution, and discrepancy reconciliation")
+    Person(acc, "School Accountant", "ACC — Configures meal fee rates, calculates monthly student chargeable meals, tracks parent fee collections, and reconciles catering vendor payables")
+    Person(par, "Parent / Guardian", "PAR — Registers student boarding participation, declares medical food allergies, inspects daily published menus, and pays monthly invoices")
+    Person(adm, "School Administrator", "ADM — Manages academic years, grade/class structures, meal eligibility policies, serving calendars, menu approvals, and staff user accounts")
 
-    System(MealSystem, "Semi-Boarding Meal System", "Central platform governing attendance, dynamic portion scaling, kitchen prep, and food safety.")
+    System(system, "Semi-Boarding Meal Management System", "Central platform governing lunch demand calculation, vendor purchase order dispatch, temperature/safety inspection, classroom distribution, billing, and parent transparency")
 
-    System_Ext(SIS, "School Information System (SIS)", "Master source for student identities, class rosters, and medical allergen profiles.")
-    System_Ext(Inventory, "Pantry Inventory System", "Manages central warehouse stock levels and fulfills ingredient requisition slips.")
-    System_Ext(ParentGateway, "Parent Notification Gateway", "Dispatches attendance push notifications and daily meal billing receipts.")
+    System_Ext(sis, "School Information System (SIS)", "Master source for student identities, class rosters, and medical allergen profiles")
+    System_Ext(caterer, "Catering Vendor Order Gateway", "External platform used by licensed catering partners to receive daily meal purchase orders by 08:45 AM and coordinate hot-delivery logistics")
+    System_Ext(payment, "Banking / Payment Gateway (VietQR)", "VietQR / Napas electronic payment network facilitating automated reconciliation of monthly meal fee payments from parents")
+    System_Ext(notifications, "Parent Notification Gateway", "Multi-channel notification service (SMS / Zalo / Push) broadcasting roster confirmations, food safety verification badges, and payment invoices")
 
-    Rel(TCH, MealSystem, "Submits classroom roll-call & dietary exceptions", "HTTPS / Mobile Web")
-    Rel(MGR, MealSystem, "Monitors demand rollups, approves changes, verifies yields", "HTTPS / Desktop Web")
-    Rel(KIT, MealSystem, "Views batch tasks, records temperatures & final weights", "HTTPS / Touch Kiosk")
-    Rel(ADM, MealSystem, "Configures academic calendar, recipes, and user permissions", "HTTPS / Admin Web")
+    Rel(mgr, system, "Records attendance, calculates demand, dispatches orders, logs receiving & reconciliation", "HTTPS / Web SPA")
+    Rel(acc, system, "Manages fee schedules, calculates billing, tracks payments, audits vendor payables", "HTTPS / Web SPA")
+    Rel(par, system, "Registers participation, declares allergies, reviews daily menus, views bills", "HTTPS / Mobile Web SPA")
+    Rel(adm, system, "Configures academic structures, calendars, reviews weekly menus, manages users", "HTTPS / Web SPA")
 
-    Rel(SIS, MealSystem, "Synchronizes student rosters & medical allergen flags", "REST API / JSON")
-    Rel(MealSystem, Inventory, "Dispatches ingredient allocation slips (weights in kg)", "REST API / Webhook")
-    Rel(Inventory, MealSystem, "Returns pantry stock availability & batch lot IDs", "REST API / JSON")
-    Rel(MealSystem, ParentGateway, "Triggers meal confirmation & absence notifications", "Queue / Webhook")
+    Rel(system, sis, "Synchronizes student rosters, class enrollments, and medical allergy notes [IF-01]", "HTTPS / REST")
+    Rel(system, caterer, "Transmits daily lunch purchase orders, portion counts, and delivery deadlines [IF-02]", "HTTPS / REST / Webhook")
+    Rel(system, payment, "Generates dynamic VietQR payment payloads and receives transaction webhooks [IF-03]", "HTTPS / REST / Webhook")
+    Rel(system, notifications, "Dispatches attendance alerts, daily inspection badges, and billing receipts [IF-04]", "HTTPS / REST")
 ```
 
 ### Business External Interfaces
@@ -39,9 +38,9 @@ C4Context
 | Interface ID | Partner Entity | What Goes In (To System) | What Goes Out (From System) | Operational Cadence |
 |:---:|:---|:---|:---|:---:|
 | **IF-01** | **School Information System (SIS)** | Student enrollments, classroom assignments, active academic term calendar, and medical dietary restrictions (peanut, seafood, lactose, gluten). | Daily student meal attendance status confirmation (Present, Absent, Excused). | Synchronized nightly at 00:00 + on-demand classroom change webhooks. |
-| **IF-02** | **Pantry Inventory System** | Raw ingredient inventory on-hand balances, expiration dates, and lot tracking numbers. | Digital ingredient allocation slips specifying dish recipe weight requirements (in kg). | Batch generated immediately upon morning cutoff lock (08:00 AM). |
-| **IF-03** | **Parent Notification Gateway** | Delivery receipts and dispatch error acknowledgments. | Event-driven notifications: student meal check-in, excused absence meal credit confirmation, emergency change notices. | Real-time push / SMS triggered upon teacher lock and manager change approvals. |
-| **IF-04** | **School Accounting / Billing** | Term billing schedules and student meal fee payment statuses. | Reconciled monthly meal consumption counts per student for fee credit / balance adjustments. | Monthly automated ledger export. |
+| **IF-02** | **Catering Vendor Order Gateway** | Order receipt acknowledgments, delivery vehicle dispatch metadata, driver contact, and arrival confirmation. | Formal electronic lunch purchase orders specifying confirmed diner counts, buffer margins, portion breakdown, and 10:30 AM arrival deadline. | Transmitted daily between 08:30 AM and 08:45 AM. |
+| **IF-03** | **Banking / Payment Gateway (VietQR / Napas)** | Asynchronous payment execution webhooks (transaction reference, amount, paid timestamp, invoice ID). | Dynamic VietQR payment requests embedded with invoice identifier and exact amount. | Real-time on parent invoice viewing & webhook callback settlement. |
+| **IF-04** | **Parent Notification Gateway** | Delivery receipts and SMS/push delivery status acknowledgments. | Event-driven parent alerts: morning attendance confirmation, published daily menu & food inspection badge, monthly billing statements. | Real-time push / Zalo ZNS / SMS triggered upon operational events. |
 
 ---
 
@@ -53,9 +52,9 @@ The technical context specifies the network boundaries, communication protocols,
 |:---:|:---|:---|:---|:---|
 | **IF-USER** | Public/Campus Intranet | HTTPS (TLS 1.3) + WSS | HTML5, JSON, WebSockets | Session Cookie + JWT Bearer, Role-Based Access Control (RBAC). |
 | **IF-01 (SIS)** | Campus VPN / Private Subnet | HTTPS REST | JSON (OpenAPI 3.0) | Mutual TLS (mTLS) + API Gateway Service Token. |
-| **IF-02 (Inventory)** | Campus Intranet / Cloud VPC | HTTPS REST / Webhook | JSON (Idempotent Event Payload) | Bearer Token + HMAC-SHA256 Payload Signature. |
-| **IF-03 (Parent Gateway)** | Public Internet | HTTPS REST | JSON | OAuth 2.0 Client Credentials with upstream SMS/Push Provider. |
-| **IF-04 (Accounting)** | Internal SFTP / File Export | SFTP / HTTPS | Encrypted CSV / JSON | Scheduled batch transfer with PGP encryption. |
+| **IF-02 (Caterer)** | Public Internet / Partner VPN | HTTPS REST / Webhook | JSON (Idempotent Event Payload) | Bearer Token + HMAC-SHA256 Payload Signature. |
+| **IF-03 (Payment)** | Public Internet (Banking Network) | HTTPS REST / Webhook | JSON | OAuth 2.0 / API Secret + SHA256 Signature Verification. |
+| **IF-04 (Notifications)** | Public Internet | HTTPS REST | JSON | API Key + Client Credentials with upstream SMS/Push Provider. |
 
 ---
 
@@ -63,7 +62,7 @@ The technical context specifies the network boundaries, communication protocols,
 
 To maintain architectural focus and prevent scope creep, the following domains are strictly excluded from this system's responsibility boundary:
 
-- **Tuition & Payment Collection:** Payment gateway processing, bank card reconciliations, and direct cash collections are handled exclusively by the School Accounting System.
-- **Supplier Sourcing & Purchasing:** Vendor contract negotiation, purchase order bidding, and outside supplier logistics remain in the Enterprise Procurement / ERP System.
-- **Academic Attendance:** School-wide class period attendance and general academic grading belong strictly to the School Information System (SIS).
-- **Physical Cooking Automation:** Smart kitchen appliance telemetry (e.g. IoT automated combi-oven controls) is out of scope; kitchen staff manually transcribe or use Bluetooth scale inputs into the kiosk.
+- **Raw Ingredient Procurement & Cooking Operations:** The school does not purchase raw bulk meat/produce or manage kitchen cooking cauldrons; food preparation is entirely performed by the contracted Catering Vendor.
+- **Breakfast, Afternoon Snacks, and Dinners:** The system exclusively governs the midday lunch program on standard school days (Monday–Friday).
+- **Tuition & Non-Meal School Fees:** Academic tuition, facility maintenance, and extracurricular activity billing remain strictly in the primary School Accounting / ERP system.
+- **General Academic Attendance:** Morning campus gate check-in and academic subject period attendance belong strictly to the School Information System (SIS).

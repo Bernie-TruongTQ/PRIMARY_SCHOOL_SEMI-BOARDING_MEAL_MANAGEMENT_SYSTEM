@@ -2,192 +2,207 @@
 
 ## Overview
 
-The **Runtime View** captures the dynamic behavioral interactions between building blocks, data stores, and human actors during critical operational milestones. The four scenarios documented below represent the essential operational backbone of the school day:
-1. **Morning Attendance Roll-Call & Roster Lock** (Happy Path — High throughput check-in).
-2. **Post-08:00 Cutoff Enforcement & Emergency Change Triage** (Exception & Boundary Guard — Reliability).
-3. **Dynamic Portion Scaling & Kitchen Shift Scheduling** (Domain Calculation — Algorithmic Scaling).
-4. **HACCP Cooking Temperature Verification & Yield Reconciliation** (Safety Gatekeeper — Food Safety).
+The **Runtime View** captures the dynamic behavioral interactions between building blocks, data stores, external gateways, and human actors during critical operational milestones. The four scenarios documented below represent the operational backbone of the school lunch service under the External Catering Vendor Operating Model:
+1. **08:30 AM Attendance Roll-Call & Roster Cutoff Lockdown** (High-concurrency check-in and temporal lock).
+2. **08:45 AM Demand Calculation & Catering Vendor Purchase Order Dispatch** (Algorithmic buffer calculation and external order dispatch).
+3. **10:30 AM Dock Receiving, 3-Step Food Safety Inspection & 11:00 AM Trolley Distribution** (Statutory food safety gatekeeper and classroom meal distribution).
+4. **13:00 PM Post-Lunch 3-Way Quantity Reconciliation & Vendor Payable Accrual** (Financial audit, discrepancy logging, and vendor payables).
 
 ---
 
-## 6.1 Scenario 1: Morning Attendance Roll-Call & Roster Lock
+## 6.1 Scenario 1: 08:30 AM Attendance Roll-Call & Roster Cutoff Lockdown
 
-**Purpose:** Demonstrates high-concurrency morning check-in and sub-second demand rollup to the central manager workstation.  
-**Trigger:** Homeroom Teacher (`TCH`) initiates classroom roll-call between 07:30 AM and 08:00 AM.  
-**Participants:** `Teacher SPA`, `ParticipationController`, `CutoffPolicyGuard`, `ParticipationService`, `PostgreSQL`, `WebSocket Broker`, `Manager SPA`.  
-**Quality Goals Illustrated:** `#efficient` (Sub-300ms p95 latency, < 1s aggregation), `#usable` (< 90s roll-call).
+**Purpose:** Demonstrates high-concurrency morning check-in, sub-second aggregation, and strict cutoff enforcement.  
+**Trigger:** Homeroom Teachers submit attendance between 08:00 AM and 08:30 AM; Coordinator locks school rosters at 08:30 AM.  
+**Participants:** `Teacher/Coordinator SPA`, `AttendanceCutoffGuard`, `ParticipationController`, `ParticipationService`, `PostgreSQL DB`, `WebSocket Broker`.  
+**Quality Goals Illustrated:** `#reliable` (Cutoff lockdown), `#efficient` (Sub-300ms p95 latency, < 1s aggregation), `#usable` (< 90s roll-call).
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor TCH as Homeroom Teacher
-    participant SPA as Teacher Mobile SPA
-    participant Guard as CutoffPolicyGuard
+    participant SPA as Web SPA (/coordinator/attendance)
+    participant Guard as AttendanceCutoffGuard
     participant Ctrl as ParticipationController
     participant Svc as ParticipationService
-    participant DB as PostgreSQL
+    participant DB as PostgreSQL DB
     participant WS as WebSocket Broker
-    actor MGR as Meal Manager
+    actor MGR as Semi-Boarding Coordinator
 
     TCH->>SPA: Open Classroom Roster (Class 3A)
-    SPA->>Ctrl: GET /api/v1/roster/3A
+    SPA->>Ctrl: GET /api/v1/classes/3A/attendance?date=today
     Ctrl->>DB: Fetch 40 students with allergy flags
     DB-->>Ctrl: Student records + diet alert tags
     Ctrl-->>SPA: JSON Roster Payload (pre-rendered)
     
-    TCH->>SPA: Toggles 2 absent students & adds notes
-    TCH->>SPA: Taps "Confirm Class Roster"
-    SPA->>Guard: POST /api/v1/participations/lock
-    Guard->>Guard: Verify Server Time < 08:00:00 AM
+    TCH->>SPA: Toggles 2 absent students & adds reasons
+    TCH->>SPA: Taps "Confirm Class Attendance"
+    SPA->>Guard: POST /api/v1/classes/3A/attendance/lock
+    Guard->>Guard: Verify Server Time < 08:30:00 AM
     Guard->>Ctrl: Forward Valid Request
     Ctrl->>Svc: lockClassRoster(classId="3A", userId="TCH-102")
     Svc->>DB: UPDATE meal_participations SET status='LOCKED'
     DB-->>Svc: Success (38 Present, 2 Absent)
-    Svc->>WS: Emit Event CLASS_ROSTER_LOCKED(classId="3A", count=38)
-    WS-->>MGR: Real-time update on Manager Dashboard (< 1s)
+    Svc->>WS: Emit Event CLASS_ATTENDANCE_LOCKED(classId="3A", count=38)
+    WS-->>MGR: Real-time update on Coordinator Dashboard (< 1s)
     Svc-->>Ctrl: Roster Locked Confirmation
     Ctrl-->>SPA: 200 OK (Roster Read-Only Badge)
-    SPA-->>TCH: Displays green success checkmark
+    SPA-->>TCH: Displays green success confirmation checkmark
 ```
 
 ### Execution Steps:
-1. Teacher loads classroom view; mobile UI loads pre-cached student list and allergy flags.
-2. Teacher marks 2 absent students with reasons (*Sick leave*, *Family matter*).
-3. Teacher taps **Confirm Class Roster** at 07:52 AM.
-4. `CutoffPolicyGuard` verifies current server time is prior to 08:00:00 AM.
+1. Teacher opens attendance screen on smartphone/tablet; mobile UI loads pre-cached student list and allergy warning chips.
+2. Teacher marks 2 absent students with valid absence reasons (*Sick leave*, *Family matter*).
+3. Teacher taps **Confirm Class Attendance** at 08:22 AM.
+4. `AttendanceCutoffGuard` verifies current server time is prior to 08:30:00 AM.
 5. `ParticipationService` executes an atomic SQL transaction updating student statuses and locking class 3A.
-6. Service triggers WebSocket event `CLASS_ROSTER_LOCKED`.
-7. Manager analytical dashboard recalculates and increments confirmed headcount live without page refresh.
+6. Service triggers WebSocket event `CLASS_ATTENDANCE_LOCKED`.
+7. Coordinator analytical dashboard recalculates and increments confirmed school headcount live without page refresh.
 
 ---
 
-## 6.2 Scenario 2: Post-08:00 Cutoff Rejection & Emergency Change Triage
+## 6.2 Scenario 2: 08:45 AM Demand Calculation & Catering Purchase Order Dispatch
 
-**Purpose:** Illustrates the temporal protection mechanism preventing unauthorized direct database modifications after kitchen prep has begun.  
-**Trigger:** Teacher attempts to mark a late-arriving student after 08:00:00 AM.  
-**Participants:** `Teacher SPA`, `CutoffPolicyGuard`, `EmergencyChangeManager`, `PostgreSQL`, `WebSocket Broker`, `Manager SPA`.  
-**Quality Goals Illustrated:** `#reliable` (Strict cutoff lockdown, 100% auditable amendments).
+**Purpose:** Translates locked attendance into final lunch portion demand with safety buffer margins and transmits the formal order to the external caterer before the 08:45 AM deadline.  
+**Trigger:** Coordinator initiates demand calculation and submits purchase order between 08:30 AM and 08:45 AM.  
+**Participants:** `Coordinator SPA`, `DemandController`, `AttendanceAggregationEngine`, `BufferCalculationEngine`, `CateringOrderDispatcher`, `Catering Vendor Gateway`.  
+**Quality Goals Illustrated:** `#reliable` (Automated calculation, immutable purchase order), `#efficient` (Sub-second rollup).
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor TCH as Homeroom Teacher
-    participant SPA as Teacher Mobile SPA
-    participant Guard as CutoffPolicyGuard
-    participant Emerg as EmergencyChangeManager
-    participant DB as PostgreSQL
-    participant WS as WebSocket Broker
-    actor MGR as Meal Manager
+    actor MGR as Semi-Boarding Coordinator
+    participant SPA as Coordinator SPA (/coordinator/demand)
+    participant Ctrl as DemandController
+    participant Agg as AttendanceAggregationEngine
+    participant Buf as BufferCalculationEngine
+    participant Disp as CateringOrderDispatcher
+    participant DB as PostgreSQL DB
+    participant Caterer as Catering Vendor Gateway
 
-    TCH->>SPA: Attempts to change Student #14 to "Present" at 08:07 AM
-    SPA->>Guard: POST /api/v1/participations/update
-    Guard->>Guard: Evaluate Server Time (08:07:15 >= 08:00:00)
-    Guard-->>SPA: 409 Conflict: CUTOFF_LOCKED
+    MGR->>SPA: Access Lunch Demand Dashboard
+    SPA->>Ctrl: POST /api/v1/demands/calculate
+    Ctrl->>Agg: Aggregate locked headcounts across all classrooms
+    Agg->>DB: Query confirmed present students & dietary tags
+    DB-->>Agg: Total Confirmed = 1,200 diners (20 vegetarian)
+    Agg-->>Ctrl: Confirmed Headcount Summary
     
-    SPA-->>TCH: Prompts "Cutoff Passed — Submit Emergency Request?"
-    TCH->>SPA: Enters reason ("Bus breakdown, student arrived late") & submits
-    SPA->>Emerg: POST /api/v1/demand/emergency-requests
-    Emerg->>DB: INSERT INTO meal_demand_changes (status='PENDING')
-    DB-->>Emerg: Created change record #9021
-    Emerg->>WS: Emit EMERGENCY_AMENDMENT_PENDING(id=9021, class="3A")
-    WS-->>MGR: Audio chime & red badge on Manager Workstation
-    
-    MGR->>Emerg: POST /api/v1/demand/emergency-requests/9021/approve
-    Emerg->>DB: BEGIN TX: Update demand count (+1) & set change status='APPROVED'
-    DB-->>Emerg: TX Committed
-    Emerg->>WS: Emit DEMAND_ADJUSTED(delta=+1)
-    WS-->>SPA: Notification to Teacher: "Approved by Manager"
+    Ctrl->>Buf: Calculate buffer (e.g. 5% buffer margin)
+    Buf-->>Ctrl: Net Headcount: 1,200 + Buffer (60) = 1,260 portions
+    Ctrl-->>SPA: Render Final Order Preview (1,260 portions)
+
+    MGR->>SPA: Inspects summary & clicks "Dispatch Order to Caterer"
+    SPA->>Ctrl: POST /api/v1/demands/dispatch-order
+    Ctrl->>DB: INSERT INTO catering_orders (order_code, portions, status='DISPATCHED')
+    Ctrl->>Disp: transmitPurchaseOrder(orderPayload)
+    Disp->>Caterer: POST /api/v1/caterer/orders (HTTPS REST / Webhook)
+    Caterer-->>Disp: 201 Created (Order Received Acknowledgment + Delivery Tracking ID)
+    Disp-->>Ctrl: Dispatch Success Confirmed
+    Ctrl-->>SPA: 200 OK (Displays "Order Dispatched to Caterer" banner)
 ```
 
 ### Execution Steps:
-1. Teacher attempts a late change at 08:07 AM; `CutoffPolicyGuard` intercepts and blocks the write with `409 Conflict`.
-2. Mobile UI displays the Emergency Amendment form modal (`SCR-TCH-04`).
-3. Teacher submits the late arrival note; request is written to `meal_demand_changes` in `PENDING` state.
-4. WebSocket broker immediately pushes an emergency alert to the Meal Manager's active session.
-5. Meal Manager reviews current kitchen capacity and clicks **Approve**.
-6. System atomically updates the aggregated demand count and sends notification receipts to both teacher and kitchen kiosk.
+1. Immediately post-08:30 AM cutoff, Coordinator accesses `/coordinator/demand`.
+2. `AttendanceAggregationEngine` queries all locked classroom rosters, counting 1,200 confirmed student diners.
+3. `BufferCalculationEngine` applies the configured 5% safety buffer, establishing a final order target of 1,260 portions.
+4. Coordinator reviews the dish breakdown and clicks **Dispatch Order to Caterer** at 08:38 AM.
+5. System inserts an immutable order record into `catering_orders` and dispatches the payload to the external Catering Vendor Gateway.
+6. The caterer acknowledges order receipt with an automated delivery tracking reference.
 
 ---
 
-## 6.3 Scenario 3: Dynamic Portion Scaling & Kitchen Shift Scheduling
+## 6.3 Scenario 3: 10:30 AM Dock Receiving, 3-Step Inspection & 11:00 AM Trolley Distribution
 
-**Purpose:** Demonstrates how confirmed student headcounts dynamically scale into exact raw ingredient weights with safety buffers.  
-**Trigger:** Central cutoff time reached (08:00:00 AM) or Manager clicks "Generate Kitchen Shift Plans".  
-**Participants:** `DemandController`, `PortionCalculationEngine`, `BufferPolicyManager`, `IngredientAllocationEngine`, `PostgreSQL`.  
-**Quality Goals Illustrated:** `#efficient`, Cost Transparency.
+**Purpose:** Enforces statutory 3-step food safety inspection (Decision 1246/QĐ-BYT) upon hot delivery arrival, requiring core temperature verification ($\ge 65^\circ\text{C}$), seal checks, and 24-hour food retention sample logging before clearing meals for classroom distribution.  
+**Trigger:** Catering delivery truck arrives at the school delivery dock at 10:30 AM.  
+**Participants:** `Coordinator SPA`, `OperationsController`, `QualityInspectionValidator`, `Compliance Storage (S3)`, `PostgreSQL DB`, `Parent Notification Gateway`.  
+**Quality Goals Illustrated:** `#safe` (HACCP temperature check $\ge 65^\circ\text{C}$, sample preservation), `#usable` (< 3 min dock inspection).
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor MGR as Meal Manager
-    participant Ctrl as DemandController
-    participant Engine as PortionCalculationEngine
-    participant Buffer as BufferPolicyManager
-    participant Alloc as IngredientAllocationEngine
-    participant DB as PostgreSQL
-    actor KIT as Kitchen Staff
+    actor MGR as Semi-Boarding Coordinator
+    participant SPA as Mobile SPA (/coordinator/receiving)
+    participant Ctrl as OperationsController
+    participant Validator as QualityInspectionValidator
+    participant S3 as Compliance Storage (S3)
+    participant DB as PostgreSQL DB
+    participant Notif as Parent Notification Gateway
+    actor PAR as Parents
 
-    MGR->>Ctrl: POST /api/v1/demand/generate-daily-plans (Date: Today)
-    Ctrl->>DB: Query confirmed headcounts (e.g. 742 Standard + 18 Special)
-    DB-->>Ctrl: Aggregated student count = 760
-    
-    Ctrl->>Engine: calculateRawWeights(headcount=760, recipeId="REC-LUNCH-01")
-    Engine->>DB: Fetch base recipe ratios (e.g. 110g Pork/student, 150g Rice/student)
-    DB-->>Engine: Standard nutrient baselines
-    Engine-->>Ctrl: Net Base Weight = 83.6 kg Pork, 114.0 kg Rice
-    
-    Ctrl->>Buffer: applySafetyBuffer(netWeight=83.6kg, bufferRate=0.05)
-    Buffer-->>Ctrl: Target Gross Cooking Weight = 87.78 kg Pork (Rounded to 88.0 kg)
-    
-    Ctrl->>Alloc: generatePantryRequisitions(finalWeights)
-    Alloc->>DB: INSERT INTO ingredient_allocations & meal_preparation_plans
-    DB-->>Alloc: Plan Created (#MPP-401)
-    Alloc-->>KIT: Shift tasks appear on Kitchen Kiosk displays
-    Ctrl-->>MGR: 200 OK (Summary of total kg and pantry pull slips)
+    MGR->>SPA: Dock Check-In (Vehicle Plate, Arrival Time 10:28 AM)
+    SPA->>Ctrl: POST /api/v1/operations/receiving/checkin
+    Ctrl->>DB: INSERT INTO meal_deliveries (arrival_time, container_count=42)
+
+    MGR->>SPA: Enters Probe Temp (72°C), Seal OK, Sensory PASS, Uploads Sample Photo
+    SPA->>Ctrl: POST /api/v1/operations/receiving/inspect
+    Ctrl->>Validator: Validate food safety parameters
+    Validator->>Validator: Verify Temp >= 65°C & Sample Photo Attached
+    Validator->>S3: Upload 24h sample jar & probe photo
+    S3-->>Validator: Photo URLs returned
+    Validator->>DB: INSERT INTO meal_inspections (temp=72.0, status='PASSED')
+    Validator-->>Ctrl: Inspection Cleared
+    Ctrl->>Notif: Publish Food Safety Badge to Parent Portal [IF-04]
+    Notif-->>PAR: Mobile Notification ("Lunch Passed 3-Step Safety Inspection")
+    Ctrl-->>SPA: 200 OK ("Inspection Passed — Ready for Trolley Distribution")
+
+    MGR->>SPA: Access Classroom Trolley Plan at 11:00 AM (/coordinator/distribution)
+    SPA->>Ctrl: GET /api/v1/operations/distribution/plan
+    Ctrl-->>SPA: Return portion breakdown per classroom trolley
+    MGR->>SPA: Taps "Confirm Distribution to Classrooms"
 ```
+
+### Execution Steps:
+1. Delivery truck arrives at 10:28 AM; Coordinator logs arrival and verifies thermal container counts.
+2. Coordinator inserts calibrated digital probe thermometer into main soup and protein containers, recording $72.0^\circ\text{C}$ ($\ge 65^\circ\text{C}$).
+3. Coordinator verifies container tamper seals, takes sensory notes, snaps a photo of the 24-hour retention sample jars, and submits the inspection sheet.
+4. `QualityInspectionValidator` verifies temperature meets legal thresholds and uploads compliance photos to S3.
+5. System publishes the verified daily food safety badge to the Parent Portal.
+6. At 11:00 AM, food service staff load meal trays onto classroom trolleys according to the distribution checklist.
 
 ---
 
-## 6.4 Scenario 4: HACCP Temperature Verification & Yield Reconciliation
+## 6.4 Scenario 4: 13:00 PM Post-Lunch 3-Way Quantity Reconciliation & Payables Accrual
 
-**Purpose:** Demonstrates food safety compliance gatekeeping and variance audit logging before meals leave the kitchen.  
-**Trigger:** Chef completes cooking Batch #2 of Braised Pork at 10:45 AM.  
-**Participants:** `Kitchen Kiosk`, `PreparationController`, `HACCPTemperatureValidator`, `YieldReconciliationEngine`, `PostgreSQL`, `Media Store`.  
-**Quality Goals Illustrated:** `#safe` (Mandatory $\ge 75^\circ\text{C}$ check), Regulatory Compliance.
+**Purpose:** Executes 3-way quantity reconciliation (Ordered vs. Delivered vs. Consumed), requires mandatory discrepancy reason logging, and settles vendor payables for the School Accountant.  
+**Trigger:** Coordinator opens reconciliation screen at 13:00 PM following lunch service.  
+**Participants:** `Coordinator SPA`, `OperationsController`, `MealReconciliationEngine`, `DiscrepancyResolutionManager`, `PostgreSQL DB`, `Accountant SPA`.  
+**Quality Goals Illustrated:** `#reliable` (Zero financial discrepancy opacity, automated payable accrual).
 
 ```mermaid
 sequenceDiagram
     autonumber
-    actor Chef as Kitchen Head Chef
-    participant Kiosk as Kitchen Touch Kiosk
-    participant Ctrl as PreparationController
-    participant HACCP as HACCPTemperatureValidator
-    participant Yield as YieldReconciliationEngine
-    participant Media as Media Store
-    participant DB as PostgreSQL
+    actor MGR as Semi-Boarding Coordinator
+    participant SPA as Coordinator SPA (/coordinator/reconciliation)
+    participant Ctrl as OperationsController
+    participant Engine as MealReconciliationEngine
+    participant Discrep as DiscrepancyResolutionManager
+    participant DB as PostgreSQL DB
+    actor ACC as School Accountant
 
-    Chef->>Kiosk: Taps "Mark Batch Complete" on Station 2
-    Kiosk-->>Chef: Prompts mandatory Probe Temperature (°C) & Weight (kg)
-    
-    Chef->>Kiosk: Enters Temp: 78.5°C, Weight: 87.2 kg, uploads scale photo
-    Kiosk->>Ctrl: POST /api/v1/prep/batches/B-202/complete
-    Ctrl->>Media: Save scale display snapshot (B-202-scale.jpg)
-    Media-->>Ctrl: Media URI saved
-    
-    Ctrl->>HACCP: validateCookingTemperature(temp=78.5, itemType="POULTRY_MEAT")
-    HACCP->>HACCP: Verify 78.5°C >= 75.0°C (PASS)
-    HACCP-->>Ctrl: Validation Passed
-    
-    Ctrl->>Yield: reconcileYield(planned=88.0kg, actual=87.2kg)
-    Yield->>Yield: Variance = -0.91% (Within acceptable ±3.0% threshold)
-    Yield-->>Ctrl: Yield Approved
-    
-    Ctrl->>DB: UPDATE meal_preparations SET status='READY_FOR_SERVING', core_temp=78.5, yield_kg=87.2
-    DB-->>Ctrl: Success
-    Ctrl-->>Kiosk: 200 OK — Green "Ready for Serving" status
-    Kiosk-->>Chef: Displays serving release badge with stamp
+    MGR->>SPA: Open Post-Lunch Reconciliation (Date = Today)
+    SPA->>Ctrl: POST /api/v1/operations/reconciliation/calculate
+    Ctrl->>Engine: Run 3-Way Reconciliation Calculation
+    Engine->>DB: Query (Ordered: 1,260, Delivered: 1,260, Consumed: 1,202, Leftover Buffer: 58)
+    DB-->>Engine: Raw Headcount & Delivery Ledger
+    Engine-->>Ctrl: Reconciliation Variance Summary
+    Ctrl-->>SPA: Render 3-Way Comparison Grid
+
+    MGR->>SPA: Logs Discrepancy Note ("58 buffer meals retained for staff / discarded")
+    SPA->>Ctrl: POST /api/v1/operations/reconciliation/resolve
+    Ctrl->>Discrep: Finalize Accepted Billable Portions (1,260 delivered & accepted)
+    Discrep->>DB: INSERT INTO meal_reconciliations & update vendor payable ledger
+    DB-->>Discrep: Updated Ledger Balance
+    Discrep-->>Ctrl: Reconciliation Closed
+    Ctrl-->>SPA: 200 OK ("Reconciliation Finalized")
+
+    ACC->>DB: Access Accountant Portal (/accountant/vendor-payables)
+    DB-->>ACC: View Reconciled Vendor Payables with Verified Acceptance Receipt
 ```
 
-### Failure / Guard Path:
-- If temperature entered is $< 75.0^\circ\text{C}$, `HACCPTemperatureValidator` **rejects** state transition (`422 Unprocessable Entity: HACCP_TEMPERATURE_VIOLATION`), forcing the chef to continue cooking until temperature threshold is met.
-- If yield variance exceeds $\pm 3\%$, the kiosk blocks sign-off until a mandatory discrepancy root-cause note is provided.
+### Execution Steps:
+1. At 13:00 PM, Coordinator accesses `/coordinator/reconciliation`.
+2. `MealReconciliationEngine` compares the 1,260 ordered portions against 1,260 delivered portions and 1,202 actual consumed portions.
+3. Coordinator logs the variance note explaining the unconsumed 58 buffer portions.
+4. System finalizes the daily reconciliation record in `meal_reconciliations` and auto-accrues the accepted payable count in the vendor ledger.
+5. School Accountant immediately views the reconciled delivery voucher on `/accountant/vendor-payables` for monthly settlement.

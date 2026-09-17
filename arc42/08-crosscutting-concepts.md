@@ -2,13 +2,13 @@
 
 ## Overview
 
-Crosscutting concepts govern rules, mechanisms, and patterns applied uniformly across multiple building blocks. In the **Semi-Boarding Meal Management System**, these overarching concepts ensure data consistency, legal food safety compliance, tamper-evident auditability, and role-based operational ergonomics across all 3 active MVP modules.
+Crosscutting concepts govern rules, mechanisms, and patterns applied uniformly across multiple building blocks. In the **Semi-Boarding Meal Management System**, these overarching concepts ensure data consistency, legal food safety compliance, tamper-evident auditability, financial accuracy, and role-based operational ergonomics across all 8 business domains under the External Catering Vendor Operating Model.
 
 ---
 
 ## 8.1 Unified Domain Model
 
-The system's core business entities span across classroom participation, kitchen preparation, and nutritional planning. All operations are anchored to a common daily schedule dimension (`meal_schedules`).
+The system's core business entities span across classroom participation, demand calculations, catering purchase orders, receiving inspections, distributions, reconciliations, fee schedules, and parental billing:
 
 ```mermaid
 classDiagram
@@ -26,8 +26,8 @@ classDiagram
     class MealSchedule {
         +id: SERIAL
         +date: DATE
-        +meal_type: ENUM
-        +cutoff_time: TIME
+        +meal_type: ENUM (LUNCH)
+        +cutoff_time: TIME (08:30:00)
         +status: ENUM
     }
 
@@ -35,7 +35,7 @@ classDiagram
         +id: SERIAL
         +student_id: INTEGER
         +meal_schedule_id: INTEGER
-        +status: ENUM
+        +status: ENUM (PRESENT, ABSENT_EXCUSED, ABSENT_UNEXCUSED)
         +is_locked: BOOLEAN
     }
 
@@ -46,146 +46,127 @@ classDiagram
         +new_status: ENUM
         +reason: VARCHAR
         +changed_by: INTEGER
+        +changed_at: TIMESTAMP
     }
 
     class MealDemand {
         +id: SERIAL
         +meal_schedule_id: INTEGER
-        +total_headcount: INTEGER
-        +buffer_rate: DECIMAL
+        +confirmed_attendance: INTEGER
+        +buffer_rate: DECIMAL (0.00 - 0.10)
+        +final_demand_count: INTEGER
         +status: ENUM
     }
 
-    class MealDemandDish {
+    class CateringOrder {
         +id: SERIAL
-        +meal_demand_id: INTEGER
-        +dish_id: INTEGER
-        +portion_weight_grams: DECIMAL
-        +calculated_weight_kg: DECIMAL
-        +target_buffer_weight_kg: DECIMAL
+        +order_code: VARCHAR
+        +demand_id: INTEGER
+        +total_portions: INTEGER
+        +dispatched_at: TIMESTAMP
+        +deadline_time: TIME (10:30:00)
+        +status: ENUM (DISPATCHED, ACKNOWLEDGED, DELIVERED)
     }
 
-    class MealPreparation {
+    class MealDelivery {
         +id: SERIAL
-        +meal_demand_dish_id: INTEGER
-        +station_name: VARCHAR
-        +batch_number: INTEGER
-        +core_temperature_celsius: DECIMAL
-        +yield_actual_kg: DECIMAL
-        +yield_variance_percent: DECIMAL
+        +catering_order_id: INTEGER
+        +arrival_time: TIMESTAMP
+        +vehicle_plate: VARCHAR
+        +container_count: INTEGER
         +status: ENUM
     }
 
-    Student "1" -- "0..*" MealParticipation : registers
-    MealSchedule "1" -- "0..*" MealParticipation : schedules
-    MealParticipation "1" -- "0..*" MealParticipationChange : audits
-    MealSchedule "1" -- "1" MealDemand : drives
-    MealDemand "1" -- "1..*" MealDemandDish : itemizes
-    MealDemandDish "1" -- "1..*" MealPreparation : executes
-```
-
----
-
-## 8.2 Security & Role-Based Access Control (RBAC)
-
-The system enforces strict boundary isolation based on user personas, adhering to the principle of least privilege:
-
-```mermaid
-graph LR
-    subgraph Roles ["Authenticated User Roles"]
-        TCH["Homeroom Teacher"]
-        MGR["Meal / Nutrition Manager"]
-        KIT["Kitchen Staff / Chef"]
-        ADM["School Administrator"]
-    end
-
-    subgraph Boundaries ["Domain Boundary Scopes"]
-        Scope1["Classroom Attendance Scope<br/>(Limited to assigned class)"]
-        Scope2["Central Demand & Buffer Scope<br/>(School-wide read/write & approval)"]
-        Scope3["Kitchen Execution & HACCP Scope<br/>(Station tasks, temp & scale readouts)"]
-        Scope4["System Admin Scope<br/>(User credentials & recipe master data)"]
-    end
-
-    TCH -->|"Read / Write"| Scope1
-    MGR -->|"Full Control"| Scope2
-    MGR -->|"Read Only"| Scope1
-    KIT -->|"Read / Write"| Scope3
-    ADM -->|"Full Admin"| Scope4
-```
-
-| Security Dimension | Architectural Mechanism | Technical Implementation |
-|:---|:---|:---|
-| **Authentication** | JWT Bearer tokens + HTTP-only Secure Cookies | Token payload contains `userId`, `role`, and assigned `classId`. Tokens expire after 8 hours (standard school shift). |
-| **Authorization Guards** | Route-level middleware (`requireRole`, `requireClassroomOwnership`) | Teacher token cannot read or mutate rosters belonging to other classrooms. Kitchen staff tokens cannot access financial demand tables. |
-| **Data Privacy (PII)** | Encrypted in-transit, restricted read access | Student medical notes and dietary flags are transmitted strictly over TLS 1.3 and masked in external notification payloads. |
-
----
-
-## 8.3 Temporal Cutoff Enforcement & Transactional Consistency
-
-The 08:00 AM cutoff policy is the central operational boundary separating classroom check-in from kitchen production.
-
-```mermaid
-stateDiagram-v2
-    [*] --> PRE_CUTOFF: Prior to 08:00 AM
-    
-    state PRE_CUTOFF {
-        [*] --> Editable
-        Editable --> Editable: Teacher marks present/absent
-        Editable --> Confirmed: Teacher locks classroom roster
+    class MealInspection {
+        +id: SERIAL
+        +delivery_id: INTEGER
+        +core_temperature: DECIMAL (>= 65.0)
+        +container_seals_intact: BOOLEAN
+        +sensory_eval_pass: BOOLEAN
+        +sample_photo_url: VARCHAR
+        +inspector_id: INTEGER
+        +status: ENUM (PASSED, REJECTED)
     }
 
-    PRE_CUTOFF --> POST_CUTOFF: Server Clock >= 08:00:00 AM
-    
-    state POST_CUTOFF {
-        [*] --> Locked
-        Locked --> Rejection: Direct Edit Attempted (409 Conflict)
-        Locked --> EmergencyPending: Teacher Submits Emergency Request (SCR-TCH-04)
-        EmergencyPending --> Approved: Manager Approves (+1 Dish Target)
-        EmergencyPending --> Rejected: Manager Rejects
+    class MealDistribution {
+        +id: SERIAL
+        +delivery_id: INTEGER
+        +class_id: INTEGER
+        +allocated_portions: INTEGER
+        +distributed_at: TIMESTAMP
     }
+
+    class MealReconciliation {
+        +id: SERIAL
+        +catering_order_id: INTEGER
+        +ordered_quantity: INTEGER
+        +delivered_quantity: INTEGER
+        +consumed_quantity: INTEGER
+        +discrepancy_count: INTEGER
+        +discrepancy_reason: VARCHAR
+        +accepted_payable_quantity: INTEGER
+        +reconciled_at: TIMESTAMP
+    }
+
+    class StudentInvoice {
+        +id: SERIAL
+        +student_id: INTEGER
+        +billing_month: VARCHAR
+        +billable_meals: INTEGER
+        +credited_meals: INTEGER
+        +total_amount: DECIMAL
+        +payment_status: ENUM (UNPAID, PARTIAL, PAID)
+        +vietqr_payload: VARCHAR
+    }
+
+    Student --> MealParticipation
+    MealSchedule --> MealParticipation
+    MealParticipation --> MealParticipationChange
+    MealSchedule --> MealDemand
+    MealDemand --> CateringOrder
+    CateringOrder --> MealDelivery
+    MealDelivery --> MealInspection
+    MealDelivery --> MealDistribution
+    CateringOrder --> MealReconciliation
+    Student --> StudentInvoice
 ```
 
-- **NTP Server Clock Synchronization:** All container hosts synchronize time via Network Time Protocol (NTP). Client device clock timestamps are ignored; the server clock is the authoritative single source of truth.
-- **ACID Transaction Isolation:** Roster locking and demand recalculation are wrapped in PostgreSQL `READ COMMITTED` transactions to prevent dirty reads during peak morning submission bursts.
+---
+
+## 8.2 Security, Identity & Fixed 4-Role RBAC
+
+The system enforces a strict **Fixed 4-Role RBAC Model** without runtime custom permissions:
+1. **ADM (School Administrator):** Academic structure setup, serving calendars, 1-level menu reviews, user management.
+2. **MGR (Semi-Boarding Coordinator):** Morning attendance monitoring, demand aggregation, order dispatch, receiving inspection, trolley distribution, post-lunch reconciliation.
+3. **ACC (School Accountant):** Fee schedule configuration, monthly billing batch runs, payment recording (VietQR), vendor payables accrual.
+4. **PAR (Parent / Guardian):** Boarding registration, medical allergy declaration, daily published menus & inspection badges, monthly bill payments.
+
+All HTTP requests carry an HTTP-only JWT session cookie. Route handlers pass through `RBACMiddleware(roleCode)`, which verifies role claims before delegating execution to the domain controller.
 
 ---
 
-## 8.4 Food Allergen Safety & HACCP Gatekeeping
+## 8.3 Food Safety & Regulatory Compliance (Decision 1246/QĐ-BYT)
 
-Food safety is governed by automated software checks that prevent human oversight from causing allergic reactions or microbial contamination:
-
-1. **Persistent Allergen Red Flags:**
-   - Medical allergy indicators (`has_severe_allergy = TRUE`) retrieved from the SIS are persistently attached to student models.
-   - Frontend components render prominent visual badges (red border, allergy alert icon, dietary restriction chip) that cannot be collapsed or dismissed by teachers or kitchen portioning servers.
-2. **Two-Phase Cooking Temperature Gatekeeper:**
-   - Decision 1246/QĐ-BYT mandates core temperatures $\ge 75^\circ\text{C}$ for cooked animal proteins.
-   - The backend enforces a hard state transition barrier: the API endpoint `POST /api/v1/prep/batches/{id}/complete` explicitly validates `core_temperature_celsius >= 75.0`. Requests with lower readings are rejected with `422 UNPROCESSABLE ENTITY`.
+To fulfill the statutory requirements of the Vietnamese Ministry of Health:
+- **3-Step Food Inspection (*Kiểm thực 3 bước*):**
+  1. *Step 1 (Dock Receiving):* Recorded when external catering truck arrives. Digital thermometer reading must be $\ge 65.0^\circ\text{C}$ for cooked hot dishes. Container seals must be verified intact.
+  2. *Step 2 (Pre-Serving & Distribution):* Visual sensory check (odor, color, consistency) before meals are loaded onto classroom trolleys at 11:00 AM.
+  3. *Step 3 (Food Retention Sampling):* Mandatory preservation of 24-hour food retention samples (*Lưu mẫu 24h*) in standardized sterile jars labeled with dish name, batch timestamp, and inspector signature.
+- **Enforcement Mechanism:** `QualityInspectionValidator` intercepts inspection submissions. If core temperature $< 65^\circ\text{C}$, the system blocks delivery acceptance with `422 UNPROCESSABLE ENTITY: HACCP_TEMP_DEFICIT`.
 
 ---
 
-## 8.5 Audit Logging & Immutability
+## 8.4 Medical Allergy & Dietary Protection Concept
 
-To guarantee complete financial and operational accountability, data modifications post-roster-lock are handled via dedicated append-only audit ledgers:
-
-| Ledger Table | Trigger Event | Captured Fields | Immutability Guarantee |
-|:---|:---|:---|:---|
-| **`meal_participation_changes`** | Pre-cutoff edits to confirmed student attendance | `participation_id`, `previous_status`, `new_status`, `reason`, `changed_by_user_id`, `created_at` | Database triggers prohibit `UPDATE` or `DELETE` operations on this table. |
-| **`meal_demand_changes`** | Post-cutoff emergency additions or cancellations | `demand_id`, `student_id`, `change_type`, `reason`, `delta_count`, `approved_by_user_id`, `timestamps` | Append-only ledger; financial auditors can trace every meal charge variance back to the approving manager. |
+- **Data Capture:** Parents declare severe medical allergies (peanuts, seafood, gluten, dairy) during intake registration (`F-PAR-02`).
+- **Safety Interception:** The `AllergyAlertInterceptor` scans daily scheduled menu ingredients against registered student allergy flags.
+- **Non-Blocking Visual Decorators:** Instead of hard-blocking catering orders (which could cause operational deadlock), the system renders prominent, un-dismissible amber/red warning badges (`ALLERGY_ALERT: PEANUT`) directly adjacent to the student's name on teacher roll-call screens and classroom trolley portion sheets.
 
 ---
 
-## 8.6 Standardized Error Handling & Resilience
+## 8.5 Auditability & Tamper-Evident Ledgers
 
-1. **Uniform API Error Envelope:** All REST endpoints return consistent JSON error structures:
-   ```json
-   {
-     "error": {
-       "code": "CUTOFF_LOCKED",
-       "message": "Classroom roster locked at 08:00 AM cutoff. Direct updates are prohibited.",
-       "action": "SUBMIT_EMERGENCY_REQUEST",
-       "timestamp": "2026-09-14T08:04:12Z"
-     }
-   }
-   ```
-2. **Client-Side Optimistic UI with Network Rollback:** The Teacher mobile SPA updates UI attendance toggles instantaneously in browser memory. If the backend returns a network error or HTTP 409, the UI rolls back the toggle and alerts the teacher with a toast notification.
+Financial and operational accountability requires immutable tracking:
+- Attendance modifications occurring after pre-cutoff roll-call are logged in `meal_participation_changes` with previous status, new status, change reason, user ID, and timestamp.
+- Discrepancies between ordered catering portions, delivered portions, and consumed portions require mandatory textual explanation notes in `meal_reconciliations` before vendor payables can be accrued.
+- Audit tables are configured with append-only permissions (`INSERT` and `SELECT` only; `UPDATE` and `DELETE` revoked).
