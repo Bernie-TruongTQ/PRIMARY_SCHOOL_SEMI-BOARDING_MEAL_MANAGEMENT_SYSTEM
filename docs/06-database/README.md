@@ -18,13 +18,17 @@ PostgreSQL DDL (`PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.sql`)
 
 ## Implemented Modules & Entity Mapping
 
-The current implementation focuses on three high-impact operational modules:
+The database schema is comprehensively structured around the **8 Business Domains** and the daily **Lunch-Only** lifecycle under the **External Catering Vendor Operating Model**:
 
-| Module | Core Functional Scope | Primary & Audit Entities | Reference Entities |
+| Domain / Value Chain Stage | Core Functional Scope | Primary & Audit Entities | Reference Entities |
 |---|---|---|---|
-| **Module 1: Meal Participation Management** | Record participation, track change history, confirm meal participation | `meal_participations`<br>`meal_participation_changes` | `students`<br>`meal_schedules`<br>`meal_registrations`<br>`users` |
-| **Module 2: Meal Demand & Quantity Management** | Aggregate/determine meal demand, calculate dish expected quantities, manage demand adjustments | `meal_demands`<br>`meal_demand_dish_quantities`<br>`meal_demand_changes` | `meal_schedules`<br>`dishes`<br>`users` |
-| **Module 3: Meal Preparation** | Create meal preparation plans, allocate ingredients, record actual cooking progress, confirm prepared quantities & discrepancies | `meal_preparation_plans`<br>`meal_preparation_plan_dishes`<br>`ingredient_allocations`<br>`meal_preparations`<br>`meal_preparation_dish_records`<br>`prepared_quantity_confirmations` | `meal_demands`<br>`meal_schedules`<br>`dishes`<br>`ingredients`<br>`users` |
+| **Domain 8: Master Data & Academic Setup** (`F-MST`) | School structure, terms, grades, classrooms, academic calendars, holidays | `school_years`, `semesters`, `grades`, `classes`, `students`, `meal_calendars`, `holidays` | — |
+| **Domain 6: User & Access Management** (`F-USR`) | Fixed 4-Role RBAC accounts (`ADM`, `MGR`, `ACC`, `PAR`), parent-child bindings | `roles`, `users`, `parent_student_associations` | `students` |
+| **Domain 7: Nutrition & Food Allergies** (`F-NUT`) | Medical food allergies, recipe-allergen detection, non-blocking warning flags | `student_allergies`, `ingredients`, `dish_ingredients` | `students`, `dishes` |
+| **Domain 2: Meal Planning & Menu** (`F-PLN`) | Dish catalog, weekly menus, single-level approval, calendar schedule bindings | `dishes`, `menus`, `menu_dishes`, `meal_schedules` | `school_years`, `users` |
+| **Domain 1: Student Meal & Attendance** (`F-PAR`) | Intake eligibility, registrations, 08:30 AM locked roll-call, change audit trail | `meal_eligibility_criteria`, `student_meal_eligibilities`, `meal_registrations`, `meal_participations`, `meal_participation_changes` | `students`, `meal_schedules`, `classes`, `users` |
+| **Domain 3: Meal Operations (Catering Workflow)** (`F-OPS`) | 08:30 AM demand rollup (+buffer), 08:45 AM PO dispatch, 10:30 AM receiving inspection (QĐ 1246), 11:00 AM distribution, 13:00 PM 3-way reconciliation | `meal_demands`, `meal_demand_dish_quantities`, `meal_demand_changes`, `catering_orders`, `meal_deliveries`, `meal_inspections`, `meal_distributions`, `meal_reconciliations`, `meal_discrepancies` | `meal_schedules`, `dishes`, `classes`, `users` |
+| **Domain 4: Meal Fee & Cost Management** (`F-FEE`) | Meal fee rate schedules, monthly student billing with excused absence credit, VietQR collections, caterer payables | `meal_fee_configs`, `student_meal_bills`, `student_billing_items`, `meal_payments`, `vendor_payables` | `school_years`, `students`, `meal_schedules`, `catering_orders`, `users` |
 
 ## Interactive Documentation
 
