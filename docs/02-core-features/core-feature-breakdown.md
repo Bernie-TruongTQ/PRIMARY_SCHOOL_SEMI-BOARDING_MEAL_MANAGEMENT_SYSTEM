@@ -5,7 +5,7 @@
 Phase 02 translates the top-down decomposition defined in [Phase 01 — Top-Down Decomposition](../01-top-down/README.md) into concrete, engineering-ready feature specifications.
 
 Based on the [Functional Decomposition Mind Map](../01-top-down/PRIMARY%20SCHOOL%20SEMI-BOARDINGMEAL%20MANAGEMENT%20SYSTEM.png) and the approved [MVP Scope Baseline](../01-top-down/MVP.md), the system operates across **8 Business Domains**. The baseline scope is organized into:
-1. **The Primary Operational Value Chain (Active Core)**: 3 tightly integrated operational modules executing the daily meal cycle:
+1. **The Primary Operational Value Chain (Active Core)**: 3 tightly integrated operational modules executing the daily **Lunch** cycle (**Lunch-Only Scope**, operating strictly on standard school days with Cutoff at 08:30 AM, Catering Receiving & Inspection at 10:30 AM, and Lunch Tray Distribution at 11:00 AM; breakfast and dinner are excluded):
    - **Module 1: Student Meal & Participation Management** (from Domain 1)
    - **Module 2: Meal Demand & Vendor Order Management** (from Domains 2 & 3)
    - **Module 3: Meal Receiving, Distribution & Reconciliation** (from Domain 3)
@@ -110,30 +110,30 @@ Standardized Feature IDs (Phase 02)
 
 ---
 
-## 4. Operational Value Chain Integration
+## 4. Operational Value Chain Integration (Daily Lunch Lifecycle)
 
-The core features above execute the continuous daily lifecycle of primary school semi-boarding meals:
+The core features above execute the continuous daily **Lunch-Only** operational lifecycle of primary school semi-boarding meals (excluding breakfast and dinner):
 
 ```
-[F-MST: School Year, Classes, Serving Calendar Setup]
+[F-MST: School Year, Classes, Lunch Serving Calendar Setup (Mon-Fri)]
                           ↓
-[F-PAR: Eligibility & Term Registration]
+[F-PAR: Eligibility & Term Lunch Registration]
                           ↓
-[F-PLN: Dish Catalog & Approved Weekly Menu Schedule] ← [F-NUT: Allergy Conflict Alerts]
+[F-PLN: Lunch Dish Catalog & Approved Weekly Lunch Menu] ← [F-NUT: Allergy Conflict Alerts]
                           ↓
-[F-PAR-03: Daily 08:30 AM Morning Class Attendance & Lock]
+[F-PAR-03: Daily 08:30 AM Morning Class Lunch Attendance & Lock]
                           ↓
-[F-OPS-01: Session Demand Aggregation & Dish Quantities (+Buffer)]
+[F-OPS-01: Session Lunch Demand Aggregation & Dish Quantities (+Buffer)]
                           ↓
-[F-OPS-02: Purchase Order Dispatched to Catering Vendor]
+[F-OPS-02: Purchase Order Dispatched to Catering Vendor by 08:45 AM]
                           ↓
-[F-OPS-03: 10:30 AM Meal Receiving, Temp/Quality Inspection & Sign-off]
+[F-OPS-03: 10:30 AM Lunch Meal Receiving, Temp/Quality Inspection & Sign-off]
                           ↓
-[F-OPS-04: 11:00 AM Classroom Tray Distribution Logging]
+[F-OPS-04: 11:00 AM Classroom Lunch Tray Distribution Logging]
                           ↓
-[F-OPS-05: 13:00 PM Quantity Reconciliation (Ordered vs Delivered vs Consumed)]
+[F-OPS-05: 13:00 PM Post-Lunch Quantity Reconciliation (Ordered vs Delivered vs Consumed)]
                           ↓
-[F-FEE: Chargeable Fee Assessment & Caterer Payable Accrual]
+[F-FEE: Chargeable Lunch Fee Assessment & Caterer Payable Accrual]
                           ↓
 [F-REP: Daily Ops Report, Vendor Reconciliation Report & Parent Transparency View]
 ```

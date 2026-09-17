@@ -3,6 +3,16 @@
 ## System Context
 
 This document outlines the comprehensive Use Case catalog and system architecture for the Primary School Semi-Boarding Meal Management System across all **8 Business Domains** defined in [Phase 01 — MVP Baseline (MVP.md)](../01-top-down/MVP.md) and [Phase 02 — Core Features Breakdown](../02-core-features/core-feature-breakdown.md).
+ 
+> [!IMPORTANT]
+> **Lunch-Only Scope & Operational Timeline Constraint:**  
+> The system operates exclusively for **Daily Lunch Service** on standard school days (Monday–Friday). Breakfast, snacks, and dinner are strictly out of scope.  
+> The daily operational lifecycle is anchored to fixed standard cutoff checkpoints:
+> - **08:30 AM**: Classroom Lunch Attendance Cutoff & Roster Locking
+> - **08:45 AM**: Aggregate Lunch Demand Calculation & Caterer Order Dispatch
+> - **10:30 AM**: Caterer Lunch Delivery Receiving, Temperature & Quality Inspection
+> - **11:00 AM – 11:45 AM**: Classroom Lunch Tray Distribution & Serving Window
+> - **13:00 PM**: Post-Lunch Consumption Reconciliation & Discrepancy Resolution
 
 In strict alignment with institutional operational constraints, the system enforces a **Fixed 4-Role Model**:
 1. **MGR — Semi-Boarding Coordinator / Meal Manager**

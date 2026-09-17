@@ -1,6 +1,9 @@
 # Traceability Chain
 
 This document proves that **every artifact in this repository was derived top-down from the layer above it**. Nothing was built ad-hoc. Every database table has a screen. Every screen has a task flow. Every task flow has a use case. Every use case has an actor and core feature. Every core feature derives from an active operational module.
+ 
+> [!NOTE]
+> **Operational Scope Note:** The primary operational value chain is strictly bounded to the **Daily Lunch Service** (Lunch-Only Scope), governed by fixed morning cutoff deadlines (08:30 AM attendance lock, 10:30 AM delivery inspection, 11:00 AM distribution). Breakfast, snack, and dinner operations are excluded by design.
 
 ---
 

@@ -3,8 +3,9 @@
 ## System
 
 **Primary School Semi-Boarding Meal Management System**
+*(Scope Constraint: Dedicated **Lunch-Only** Operational Service — breakfast, afternoon snacks, and dinner are strictly out of scope).*
 
-A system that manages the end-to-end meal lifecycle for primary school semi-boarding programs: from student eligibility and meal registration, menu planning, demand forecasting, catering vendor coordination, meal receiving and distribution, through fee assessment, operational reporting, user access control, allergen monitoring, and master data management.
+A system that manages the end-to-end lunch meal lifecycle for primary school semi-boarding programs: from student eligibility and lunch registration, nutritional lunch menu planning, morning demand forecasting, catering vendor coordination, lunch meal receiving and classroom distribution, through monthly lunch fee assessment, operational reporting, user access control, allergen monitoring, and master academic calendar management.
 
 ---
 
