@@ -1,71 +1,49 @@
 # C4 Architecture Documentation — Primary School Semi-Boarding Meal Management System
 
-This directory documents the software architecture of the **Primary School Semi-Boarding Meal Management System** using the complete 4-level **C4 Model** (Context, Containers, Components, Code) following standard architectural practices.
+This directory documents the comprehensive software architecture of the **Primary School Semi-Boarding Meal Management System** using the **C4 Model** (Context, Containers, Components) across all **8 Business Domains** defined in the top-down decomposition.
 
 ---
 
-## 1. Documentation Index
+## 1. Complete Documentation Index
 
-The C4 documentation is organized into modular files tailored for specific stakeholder audiences (Executive Leadership, Nutrition Managers, Software Engineers, and Backend Developers):
-
-| Level | Document | Target Audience | Primary Focus | Status |
+| Level | Document | Domain / Focus | Primary Operational Scope | Status |
 |:---|:---|:---|:---|:---:|
-| **Index** | [README.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/README.md) | All Stakeholders | Navigation map, methodology mapping, and C4 conventions | ✅ Complete |
-| **Level 1** | [c4-context.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-context.md) | Everyone | System boundary, human actors (`TCH`, `MGR`, `KIT`, `ADM`), and external systems | ✅ Complete |
-| **Level 2** | [c4-containers.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-containers.md) | Technical Architects, Engineers | Independently deployable units (SPA Portal, Backend API, PostgreSQL DB, WebSocket) | ✅ Complete |
-| **Level 3** | [c4-components-participation.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-participation.md) | Developers (Module 1) | Internal components for Student Meal Participation & Attendance Management | ✅ Complete |
-| **Level 3** | [c4-components-demand.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-demand.md) | Developers (Module 2) | Internal components for Meal Demand Aggregation & Dish Quantity Calculation | ✅ Complete |
-| **Level 3** | [c4-components-preparation.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-preparation.md) | Developers (Module 3) | Internal components for Kitchen Cooking Execution, Batching & Yield Reconciliation | ✅ Complete |
-| **Level 4** | [c4-code-participation.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-code-participation.md) | Developers (Module 1) | UML Class Diagram & Interfaces: `ParticipationController`, `CutoffPolicyGuard`, `MealParticipation` | ✅ Complete |
-| **Level 4** | [c4-code-demand.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-code-demand.md) | Developers (Module 2) | UML Class Diagram & Interfaces: `DemandController`, `PortionCalculationEngine`, `MealDemand` | ✅ Complete |
-| **Level 4** | [c4-code-preparation.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-code-preparation.md) | Developers (Module 3) | UML Class Diagram & Interfaces: `PreparationController`, `YieldReconciliationEngine`, `MealPrep` | ✅ Complete |
+| **Index** | [README.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/README.md) | All Domains | Navigation map, methodology mapping, and C4 conventions | ✅ Complete |
+| **Level 1** | [c4-context.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-context.md) | System Context | System boundary, 4 fixed human actors (`MGR`, `ACC`, `PAR`, `ADM`), and 4 external system gateways | ✅ Complete |
+| **Level 2** | [c4-containers.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-containers.md) | System Containers | 5 independently deployable units: Web SPA (4 role portals), Backend API, WebSocket Broker, PostgreSQL DB, S3 Storage | ✅ Complete |
+| **Level 3** | [c4-components-participation.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-participation.md) | **Domain 1**: Student Meal Management | Eligibility, term registration, roll calls, 08:30 AM cutoff guard, and audit change logs (`F-PAR`) | ✅ Complete |
+| **Level 3** | [c4-components-planning.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-planning.md) | **Domain 2**: Meal Planning & Menu Management | Standard dish catalog, weekly menu composer, 1-level menu approval, calendar binding (`F-PLN`) | ✅ Complete |
+| **Level 3** | [c4-components-demand.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-demand.md) | **Domain 3**: Meal Demand & Order Dispatch | Attendance aggregation, safety buffer engine ($0\%\text{--}10\%$), dish math, 08:45 AM caterer order dispatch (`F-OPS-01/02`) | ✅ Complete |
+| **Level 3** | [c4-components-preparation.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-preparation.md) | **Domain 3**: Receiving, Distribution & Reconciliation | 10:30 AM 3-step inspection ($\ge 65^\circ\text{C}$), 11:00 AM trolley distribution, 13:00 PM 3-way reconciliation & payables (`F-OPS-03/04/05`) | ✅ Complete |
+| **Level 3** | [c4-components-fee-cost.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-fee-cost.md) | **Domain 4**: Meal Fee & Cost Management | Fee rate setup, monthly billing batch, excused absence credits, 3-state payments (VietQR), caterer cost accruals (`F-FEE`) | ✅ Complete |
+| **Level 3** | [c4-components-reporting.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-reporting.md) | **Domain 5**: Reporting & Transparency | Daily operational summaries, vendor reconciliation reports, financial/debt aging reports, parent transparency portal (`F-REP`) | ✅ Complete |
+| **Level 3** | [c4-components-users-rbac.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-users-rbac.md) | **Domain 6**: User & Access Management | User profile management, authentication service, fixed 4-role RBAC enforcement (`ADM`, `ACC`, `MGR`, `PAR`) (`F-USR`) | ✅ Complete |
+| **Level 3** | [c4-components-nutrition.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-nutrition.md) | **Domain 7**: Nutrition & Health Management | Medical allergy declarations, restricted ingredient scanning, non-blocking visual conflict alerts (`F-NUT`) | ✅ Complete |
+| **Level 3** | [c4-components-master-data.md](file:///d:/WORKSPACE/Top-Down-Approach/c4/c4-components-master-data.md) | **Domain 8**: Master Data & System Config | School years, semesters, grades, classes, student directory, lunch serving days, and holiday calendar (`F-MST`) | ✅ Complete |
 
 ---
 
-## 2. Top-Down Methodology to C4 Mapping
+## 2. Business Domain to C4 Component Architecture Mapping
 
-This repository enforces a strict **Top-Down Decomposition Methodology**. Every C4 architectural artifact is directly anchored to its upstream business requirement and downstream database entity:
+The architecture maps directly to the **8 Business Domains** defined in [Phase 01 — Top-Down Decomposition](file:///d:/WORKSPACE/Top-Down-Approach/docs/01-top-down) and [Phase 02 — Core Features Breakdown](file:///d:/WORKSPACE/Top-Down-Approach/docs/02-core-features):
 
 ```
-Phase 01: Top-Down Mind Map & Domain Classification
-   └─► C4 Level 1: System Context (System Boundary, Actors, External Systems)
-
-Phase 02 & 03: Core Features, Actor Roles & Use Cases
-   └─► C4 Level 2: Containers & Role Portals (Web SPA, Backend API, Database)
-
-Phase 04 & 05: Information Architecture & UI/UX Portals
-   └─► C4 Level 3: Components (UI Controllers, Business Domain Services, Guard Rules)
-
-Phase 06: Relational Database Architecture (DDL & ERD) & Implementation
-   └─► C4 Level 4: Code Diagrams (Entities, Interfaces, Repositories, Domain Services)
+├── Domain 1: Student Meal Management               ──► c4-components-participation.md
+├── Domain 2: Meal Planning & Menu Management       ──► c4-components-planning.md
+├── Domain 3: Meal Operation                        ──► c4-components-demand.md & c4-components-preparation.md
+├── Domain 4: Meal Fee & Cost Management            ──► c4-components-fee-cost.md
+├── Domain 5: Reporting & Transparency              ──► c4-components-reporting.md
+├── Domain 6: User & Access Management              ──► c4-components-users-rbac.md
+├── Domain 7: Nutrition & Health Management         ──► c4-components-nutrition.md
+└── Domain 8: Master Data & System Configuration    ──► c4-components-master-data.md
 ```
 
 ---
 
-## 3. Core Operational Modules Overview (MVP Scope)
+## 3. Operational Standards & Modeling Conventions
 
-1. **Module 1 — Meal Participation Management:**
-   - **Operational Objective:** Eliminate manual paper roster discrepancies and ensure accurate daily meal registration.
-   - **Primary Actors:** Homeroom Teacher (`TCH`), Class Supervisor.
-   - **Core Features:** Record daily student meal participation (`F-PAR-01`), track amendments with mandatory audit trails (`F-PAR-02`), and verify & lock the class roster before the morning cutoff (`F-PAR-03`).
-   - **Key Entities & Classes:** `MealParticipation`, `MealParticipationChange`, `ParticipationService`, `CutoffPolicyGuard`, `IParticipationRepository`.
-
-2. **Module 2 — Meal Demand & Quantity Management:**
-   - **Operational Objective:** Dynamically scale confirmed student headcounts into exact dish recipe weights with configurable safety buffer margins.
-   - **Primary Actors:** Meal / Nutrition Manager (`MGR`).
-   - **Core Features:** Determine aggregated demand headcount (`F-DMD-01`), compute expected dish cooking quantities (`F-DMD-02`), and process post-lock emergency change requests (`F-DMD-03`).
-   - **Key Entities & Classes:** `MealDemand`, `MealDemandDishQuantity`, `MealDemandChange`, `PortionCalculationEngine`, `BufferPolicyManager`.
-
-3. **Module 3 — Meal Preparation:**
-   - **Operational Objective:** Convert approved dish targets into kitchen station shift plans, monitor batch cooking, and reconcile yields.
-   - **Primary Actors:** Kitchen Staff / Head Chef (`KIT`), Meal Manager (`MGR`).
-   - **Core Features:** Create & schedule kitchen preparation plans (`F-PRP-01`), allocate pantry ingredients (`F-PRP-02`), record cooking batch executions and temperatures (`F-PRP-03`), and verify prepared yields with mandatory discrepancy logging (`F-PRP-04`).
-   - **Key Entities & Classes:** `MealPreparationPlan`, `IngredientAllocation`, `MealPreparation`, `PreparedQuantityConfirmation`, `YieldReconciliationEngine`.
-
----
-
-## 4. Modeling Conventions & Quality Standards
-
-All diagrams in this directory adhere to official **C4 and UML standards**:
-- **Levels 1 to 3:** System Context, Containers, and Components modeled using Mermaid C4 syntax and high-fidelity rendered visual artifacts.
-- **Level 4 (Code):** UML Class Diagrams modeled using Mermaid `classDiagram` with TypeScript / DDD typing conventions (`UUID`, `Date`, strong types, clear interfaces, and explicit method signatures).
+- **Dedicated Lunch-Only Scope**: Standard school days (Mon–Fri). Breakfast, afternoon snacks, and dinner are out of scope.
+- **External Catering Operating Model**: Hot meal deliveries, 3-step quality inspection ($\ge 65^\circ\text{C}$), classroom trolley distribution, and 3-way quantity reconciliation.
+- **Fixed 4-Role RBAC**: `ADM` (Admin), `ACC` (Accountant), `MGR` (Coordinator), `PAR` (Parent).
+- **Mermaid C4 Standard**: Modeled using native `C4Context`, `C4Container`, and `C4Component` blocks.
+- **Language**: Standardized in technical English across all documents.

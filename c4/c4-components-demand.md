@@ -1,48 +1,92 @@
-# C4 Level 3 — Component Diagram: Meal Demand & Quantity Management (Module 2)
+# C4 Level 3 — Component Diagram: Meal Demand & Catering Order Management (Module 2)
 
 ## 1. Overview
 
-This document specifies the internal components within the `Backend API Service` container that implement **Module 2: Meal Demand & Quantity Management**. Serving as the mathematical engine of the system, this module aggregates classroom-level attendance into whole-school meal counts, computes exact dish cooking weights with safety buffer margins, and orchestrates post-cutoff emergency adjustments.
+This document specifies the internal software components within the **Backend API Service** container that implement **Module 2: Meal Demand & Catering Order Management** (Domain 2: Meal Planning & Menu Management & Domain 3: Meal Operation).
+
+### Operational Objectives
+- Aggregate locked classroom attendance records across the entire school after the 08:30 AM cutoff (`F-OPS-01`).
+- Apply an administrator-configurable safety buffer margin ($0\%\text{--}10\%$, standard default $3\%\text{--}5\%$) to compute final meal demand counts (`F-OPS-01`).
+- Translate the final headcount into planned dish portion requirements according to the approved daily menu (`F-PLN-01`, `F-PLN-02`, `F-OPS-01`).
+- Format and dispatch a formal electronic meal purchase order to the external Catering Vendor before the **08:45 AM Order Deadline** (`F-OPS-02`).
 
 ---
 
 ## 2. Component Diagram (C4Component)
 
-![](.\images\DemandManagementComponents.png)
-![](.\images\DemandManagementComponents-key.png)
+```mermaid
+C4Component
+  title Component Diagram — Module 2: Meal Demand & Catering Order Management
+
+  Container(spa, "Single-Page Application", "HTML5/ES6/CSS", "Provides Coordinator Demand Screen (/coordinator/demand) and Menu Planning UI (/coordinator/menus)")
+  ContainerDb(db, "Relational Database", "PostgreSQL 15", "Persists meal schedules, menus, dishes, demand records, dish quantities, and catering orders")
+  Container(ws, "Real-time Event Broker", "WebSocket", "Broadcasts demand calculation results and catering order dispatch confirmations")
+  System_Ext(caterer, "Catering Vendor Gateway", "External System", "Receives daily electronic purchase orders and delivery deadlines")
+
+  Container_Boundary(api, "Backend API Service — Module 2") {
+    Component(demandCtrl, "Demand Controller", "Express.js Router", "Exposes REST endpoints for session demand aggregation, buffer calculation, and order dispatch")
+    Component(aggEngine, "Attendance Aggregation Engine", "Domain Service", "Scans locked classroom attendance records to compute total confirmed diner headcount")
+    Component(bufferEngine, "Buffer Calculation Engine", "Domain Service", "Applies safety buffer formulas to determine final required meal portion counts")
+    Component(dishCalc, "Menu Dish Quantity Calculator", "Domain Service", "Scales standard recipe portion parameters into target cooking/packaging weights")
+    Component(orderDispatcher, "Catering Order Dispatcher", "Integration Adapter", "Constructs formal electronic purchase order and transmits payload to external vendor gateway by 08:45 AM")
+    Component(menuManager, "Menu Planning Service", "Domain Service", "Manages dish catalog, weekly menu compositions, and single-level administrative approvals")
+    Component(demandRepo, "Demand Repository", "TypeORM / Data Access", "Maintains database records with row-level locking (SELECT...FOR UPDATE) during calculations")
+  }
+
+  Rel(spa, demandCtrl, "Triggers demand calculation and submits catering order", "JSON / HTTPS")
+  Rel(demandCtrl, menuManager, "Retrieves active approved daily menu and dish specs")
+  Rel(demandCtrl, aggEngine, "Queries locked attendance headcounts")
+  Rel(demandCtrl, bufferEngine, "Computes final demand with configured buffer %")
+  Rel(demandCtrl, dishCalc, "Computes dish-by-dish portion allocations")
+  Rel(demandCtrl, orderDispatcher, "Triggers order dispatch before 08:45 AM")
+  Rel(demandCtrl, demandRepo, "Saves meal_demands and catering_orders")
+
+  Rel(orderDispatcher, caterer, "Transmits purchase order payload", "HTTPS / REST / Webhook")
+  Rel(demandCtrl, ws, "Publishes DEMAND_CALCULATED and ORDER_DISPATCHED", "Internal Event")
+  Rel(demandRepo, db, "Reads/writes meal_demands, meal_demand_dish_quantities, catering_orders", "SQL")
+```
+
+---
 
 ## 3. Component Details & Operational Responsibilities
 
 ### 3.1. Demand Controller
 - **Endpoint Definitions:**
-  - `GET /api/v1/demands/today`: Retrieves active demand status (`draft`, `calculated`, `confirmed`, `revised`).
-  - `POST /api/v1/demands/aggregate`: Scans all locked class attendance records to calculate total attendance (`F-DMD-01`).
-  - `POST /api/v1/demands/calculate-dishes`: Derives planned cooking weights for every scheduled menu dish (`F-DMD-02`).
-  - `POST /api/v1/demands/emergency-adjust`: Reviews, approves, or rejects post-cutoff classroom requests (`F-DMD-03`).
+  - `GET /api/v1/demands/today`: Retrieves active demand calculation and catering order state (`draft`, `calculated`, `ordered`, `dispatched`).
+  - `POST /api/v1/demands/calculate`: Aggregates confirmed attendance and calculates expected dish quantities (`F-OPS-01`).
+  - `POST /api/v1/demands/dispatch-order`: Generates and transmits the formal catering purchase order (`F-OPS-02`).
+  - `GET /api/v1/menus/active?date=:date`: Retrieves the approved menu and dish list for a given serving date (`F-PLN-03`).
 
-### 3.2. Roster Aggregation Engine
-- Aggregates confirmed roll calls across all active school classes:
-  - Total confirmed student diners.
-  - Number of students requiring separate non-allergen or vegetarian meal preparation trays.
-  - Tracking class submission progress (e.g., 29 out of 30 classes submitted by 08:05 AM).
+### 3.2. Attendance Aggregation Engine
+- Executes immediately upon the 08:30 AM attendance lock:
+  - Aggregates verified student headcounts across all active classrooms.
+  - Separates general meal counts from special dietary counts (e.g., vegetarian, gluten-free, peanut-free trays).
+  - Flags any unconfirmed classrooms to prevent under-ordering.
 
-### 3.3. Portion Calculation Engine & Buffer Policy Manager
-- **Formula Specification:**
-  $$\text{Planned Quantity} = \text{Final Headcount} \times \text{Standard Portion Size} \times (1 + \text{Buffer\%})$$
-- *Demonstration Example:*
-  - Dish: *Braised Pork with Quail Eggs*
-  - Baseline standard portion: $75\text{ g}$ cooked meat per student.
-  - Total confirmed diners: $850$ students.
-  - Safety buffer margin: $4\%$.
-  - Target production weight = $850 \times 75\text{ g} \times 1.04 = 66.3\text{ kg}$ finished yield.
-- Detailed results are recorded in `meal_demand_dish_quantities` with appropriate metric units (`kg`, `liters`, `portions`).
+### 3.3. Buffer Calculation Engine
+- **Mathematical Formula:**
+  $$\text{Final Demand Count} = \text{round}\Big(\text{Total Confirmed Attendance} \times (1 + \text{Buffer\%})\Big)$$
+- *Operational Rule:*
+  - Allows coordinators to fine-tune the safety buffer margin ($0\%\text{--}10\%$, default $3\%\text{--}5\%$).
+  - Example: For 600 confirmed diners and a $5\%$ safety buffer:
+    $$\text{Final Demand} = \text{round}(600 \times 1.05) = 630\text{ meals}$$
+  - The extra 30 portions act as insurance against unexpected late arrivals, dropped trays, or extra helpings.
 
-### 3.4. Emergency Amendment Handler
-- Manages exceptional change requests submitted after the morning cutoff:
-  1. Compares requested change against current kitchen progress (whether cooking has started).
-  2. If approved, inserts an audit entry into `meal_demand_changes`.
-  3. Updates parent `meal_demands.status` to `revised` and broadcasts an immediate alert to the kitchen kiosk.
+### 3.4. Menu Dish Quantity Calculator
+- Multiplies the final demand count by the standard portion weights defined in the dish catalog:
+  - *Main Entree:* $630 \times 100\text{g} = 63.0\text{ kg}$ finished braised pork.
+  - *Staple (Rice):* $630 \times 120\text{g} = 75.6\text{ kg}$ steamed rice.
+  - *Soup:* $630 \times 150\text{ml} = 94.5\text{ liters}$ vegetable soup.
+- Stores breakdown in `meal_demand_dish_quantities`.
 
-### 3.5. Demand Repository
-- Employs database row-level locking (`SELECT ... FOR UPDATE`) during recalculations to prevent race conditions during high-volume morning updates.
-- Maintains strict foreign key references connecting demands with corresponding `meal_schedules` and `dishes`.
+### 3.5. Catering Order Dispatcher
+- **Timely Execution Constraint:**
+  - Must execute prior to **08:45 AM** so external commercial kitchens can package and dispatch heated thermal containers.
+  - Payload attributes:
+    - Order ID, delivery date, target arrival time (**10:30 AM**), delivery dock location.
+    - Total portion count, safety buffer count, itemized dish requirements, and allergy-safe tray specifications.
+  - Records order status as `dispatched` in `catering_orders` and creates an audit snapshot.
+
+### 3.6. Demand Repository
+- Employs database row-level locking (`SELECT ... FOR UPDATE`) during recalculations to prevent race conditions during peak morning operations.
+- Enforces relational consistency across `meal_schedules`, `menus`, `meal_demands`, and `catering_orders`.
