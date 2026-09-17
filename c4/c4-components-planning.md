@@ -1,4 +1,4 @@
-# C4 Level 3 — Component Diagram: Meal Planning & Menu Management (Domain 2)
+# C4 Level 3 — Component Diagram: Domain 2 — Meal Planning & Menu Management
 
 ## 1. Overview
 
