@@ -2,60 +2,56 @@
 
 ## Overview
 
-Information Architecture (IA) establishes the structural backbone of the **Primary School Semi-Boarding Meal Management System**. It bridges the high-level business specifications and INVEST requirements ([Phase 02](../02-core-features/invest-requirements.md)) and actor use cases ([Phase 03](../03-roles-usecases/README.md)) to the visual UI/UX wireframes ([Phase 05](../05-ui-ux/README.md)) and the underlying relational database architecture ([Phase 06](../06-database/README.md)).
+Information Architecture (IA) establishes the structural backbone of the **Primary School Semi-Boarding Meal Management System**. It directly translates the top-down decomposition ([Phase 01 — Top-Down](../01-top-down/README.md)), core feature breakdown and INVEST criteria ([Phase 02 — Core Features](../02-core-features/README.md)), and actor role specifications ([Phase 03 — Roles & Use Cases](../03-roles-usecases/README.md)) into an intuitive, high-performance structural hierarchy for frontend and database implementation.
 
 ```
-INVEST User Stories (Phase 02) & Role Use Cases (Phase 03)
-                           ↓
-        Information Architecture (Phase 04)
- ├── INFORMATION_ARCHITECTURE.md  → Master canonical specification
- ├── sitemap.md                   → Role-based navigation maps (Mermaid C4)
- ├── screen-hierarchy.md          → View nesting & modal depth limits
- ├── screen-inventory.md          → 17 active screens mapped to DB entities
- └── task-flows.md                → 5 end-to-end Mermaid decision task flows
-                           ↓
-        UI/UX Design & Frontend Prototype (Phase 05 / frontend)
-                           ↓
-        Relational Database Schema & Entities (Phase 06)
+Phase 01: Top-Down Mindmap & MVP Scope Baseline (MVP.md)
+                         ↓
+Phase 02: 8 Business Domains & 24 Core Features (core-feature-breakdown.md, invest-requirements.md)
+                         ↓
+Phase 03: Fixed 4-Role RBAC Model (MGR, ACC, PAR, ADM) & 27 Use Cases (roles.md, usecase-overview.md)
+                         ↓
+Phase 04: Information Architecture (This Suite)
+ ├── INFORMATION_ARCHITECTURE.md  → Master canonical specification (Sitemap, Nav, Hierarchy, Glossary, Growth, URL)
+ └── screen-hierarchy.md          → View nesting, Level 1 & 2 portals, and Layer 2.5 modal depth limits
+                         ↓
+Phase 05: UI/UX Wireframes & Interaction Design
+                         ↓
+Phase 06: Relational Database Schema & Entities (DDL)
 ```
 
 ---
 
-## Architecture Objectives
+## Core System Architecture Principles
 
-1. **Role Separation & Autonomy**: Decouple operational workflows into 4 dedicated portals:
-   - **Teacher Portal (`/teacher`)**: Optimized for mobile devices (390px viewport), fast morning student attendance toggles, allergy warnings, and cutoff roster locking.
-   - **Manager Portal (`/manager`)**: Analytical dashboard for demand aggregation, buffer calculation, raw dish quantities, and post-lock emergency request triage.
-   - **Kitchen Kiosk Portal (`/kitchen`)**: High-contrast, wall-mounted kiosk interface with large touch targets, live station countdown timers, and offline-resilient batch logging.
-   - **Admin Portal (`/admin`)**: Master catalog management for students, classrooms, meal calendars, recipes, and user permissions.
-2. **Strict Navigation Depth (Max 2 Levels)**: Ensure users never navigate deeper than `/portal/screen`. Complex secondary interactions (e.g., amendment reasons, emergency request forms, discrepancy justifications) are presented via non-destructive contextual slide-up sheets or modal dialogs.
-3. **Operational State Synchronization**: Enable real-time state handoffs across operational boundaries:
-   - Classroom Attendance Confirmed (`08:30 AM`) $\rightarrow$ Demand Aggregated & Locked $\rightarrow$ Kitchen Prep Plan Published $\rightarrow$ Cooking Executed $\rightarrow$ Yield Verified (`10:45 AM`).
-4. **Resiliency Against Edge Cases**: Native handling of the 5 core operational friction points defined in `invest-requirements.md`:
-   - Concurrency race conditions at daily cutoff.
-   - Discrete unit vs continuous weight buffer rounding.
-   - Post-lock emergency delta reconciliation.
-   - Thermal yield cooking loss (Gross Raw vs Net Cooked).
-   - Kitchen offline-first network resiliency.
+1. **Fixed 4-Role Autonomy & RBAC Isolation**:
+   - In strict compliance with [MVP.md](../01-top-down/MVP.md) and [roles.md](../03-roles-usecases/roles.md), the system provides **4 dedicated portals**:
+     - **Semi-Boarding Coordinator Portal (`/coordinator`) [MGR]**: Daily attendance locking, attendance progress monitoring, demand calculation with safety buffer, catering PO dispatch, 3-step food temperature/quality inspection, classroom tray distribution, and post-lunch reconciliation.
+     - **School Accountant Portal (`/accountant`) [ACC]**: Meal fee configuration, monthly chargeable meal calculation & parent invoicing, 3-state payment tracking (`unpaid`, `partial`, `paid`), catering vendor payable accrual, and financial reports.
+     - **Parent Portal (`/parent`) [PAR]**: Semester meal program registration, child allergy profiles, daily published menus with food safety verification badges, and monthly invoices with dynamic VietQR payment codes.
+     - **School Administrator Portal (`/admin`) [ADM]**: Academic master data (years, terms, classes, students), meal eligibility criteria, Mon–Fri serving calendars & holiday exclusions, 1-level weekly menu approval, and user account management.
+2. **Dedicated Lunch-Only Scope**:
+   - The system operates strictly for **Daily Lunch Service** on standard school days (Mon–Fri). Breakfast, afternoon snacks, and dinner are strictly out of scope.
+3. **External Catering Vendor Workflow (No In-House Cooking)**:
+   - Meals are cooked off-site by an accredited catering partner. The school team governs morning demand forecasting (08:30–08:45 AM), food delivery inspection at 10:30 AM (core temperature $\ge 65^\circ\text{C}$), classroom tray distribution at 11:00 AM, and post-service discrepancy reconciliation at 13:00 PM.
+4. **Strict Navigation Depth ($\le 2$ Levels)**:
+   - Direct access to any primary view within 1 click (`/:portal/:screen`). Secondary forms (absence reasons, temperature logs, discrepancy justification, allergy edits) use non-destructive **Layer 2.5 Contextual Sheets / Modals**.
 
 ---
 
 ## Documentation Suite in this Directory
 
-| Document | Description | Key Stakeholders |
+| Document | Description | Target Stakeholders |
 |---|---|---|
-| [**INFORMATION_ARCHITECTURE.md**](INFORMATION_ARCHITECTURE.md) | **Canonical Master IA Document** covering sitemap, navigation model, content hierarchy, naming conventions, component reuse map, content growth plan, and URL strategy. | System Architects, Lead Engineers, Product Managers |
-| [**sitemap.md**](sitemap.md) | Hierarchical sitemap of all 4 role portals, route definitions, access control policies, and visual Mermaid navigation tree. | Frontend Engineers, UI/UX Designers |
-| [**screen-hierarchy.md**](screen-hierarchy.md) | Structural layout hierarchy, parent-child view relationships, modal bottom-sheet layers, and navigation depth constraints. | UI/UX Designers, Mobile Developers |
-| [**screen-inventory.md**](screen-inventory.md) | Exhaustive catalog of all 17 operational screens (`SCR-TCH-01..04`, `SCR-MGR-01..05`, `SCR-KIT-01..04`, `SCR-ADM-01..04`), mapped to INVEST User Stories and DB entities. | QA Engineers, Backend Developers |
-| [**task-flows.md**](task-flows.md) | 5 end-to-end Mermaid decision task flows tracing the entire operational lifecycle from morning attendance to kitchen yield sign-off. | Business Analysts, QA Engineers |
+| [**INFORMATION_ARCHITECTURE.md**](INFORMATION_ARCHITECTURE.md) | **Canonical Master IA Specification** covering sitemap, navigation model, content hierarchy, naming conventions & domain glossary, component reuse map, content growth plan, and URL strategy. | System Architects, Lead Engineers, Product Managers |
+| [**screen-hierarchy.md**](screen-hierarchy.md) | Structural layout hierarchy, parent-child view relationships, modal bottom-sheet layers, and navigation depth constraints across the 4 fixed roles. | UI/UX Designers, Frontend Developers, Mobile Developers |
 
 ---
 
 ## Upstream & Downstream Traceability
 
-- **Upstream Requirements**: [docs/02-core-features/invest-requirements.md](../02-core-features/invest-requirements.md)
-- **Role & RACI Definitions**: [docs/03-roles-usecases/role-feature-mapping.md](../03-roles-usecases/role-feature-mapping.md)
-- **Design System & UI Specs**: [docs/05-ui-ux/design-system.md](../05-ui-ux/design-system.md)
-- **Interactive Reference Implementation**: [frontend/README.md](../../frontend/README.md)
-- **Database Architecture & ERD**: [docs/06-database/data-dictionary.md](../06-database/data-dictionary.md)
+- **Top-Down Decomposition & Scope**: [docs/01-top-down/MVP.md](../01-top-down/MVP.md) | [docs/01-top-down/business-domains.md](../01-top-down/business-domains.md)
+- **Core Features & INVEST Stories**: [docs/02-core-features/core-feature-breakdown.md](../02-core-features/core-feature-breakdown.md) | [docs/02-core-features/invest-requirements.md](../02-core-features/invest-requirements.md)
+- **Role Specifications & RACI**: [docs/03-roles-usecases/roles.md](../03-roles-usecases/roles.md) | [docs/03-roles-usecases/role-feature-mapping.md](../03-roles-usecases/role-feature-mapping.md) | [docs/03-roles-usecases/usecase-overview.md](../03-roles-usecases/usecase-overview.md)
+- **UI/UX Design**: [docs/05-ui-ux/README.md](../05-ui-ux/README.md)
+- **Relational Database**: [docs/06-database/README.md](../06-database/README.md)

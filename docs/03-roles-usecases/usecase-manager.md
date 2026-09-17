@@ -156,7 +156,7 @@ flowchart LR
 2. System aggregates confirmed attendance across all classrooms (`total_headcount` = 600 students).
 3. Coordinator verifies or adjusts the safety buffer percentage (`buffer_percentage` = 5.0%).
 4. System computes final production demand:
-   $$\text{final\_demand\_count} = \text{round}(600 \times 1.05) = 630 \text{ portions}$$
+   - $\text{Final Demand} = \text{round}(600 \times 1.05) = 630 \text{ portions}$ (hoặc `final_demand_count = round(total_headcount * (1 + buffer_percentage)) = 630`).
 5. System calculates scaled portion quantities for all scheduled menu dishes and populates `meal_demand_dish_quantities`.
 6. Coordinator clicks **Confirm Demand**. System updates `meal_demands` to status `confirmed`.
 

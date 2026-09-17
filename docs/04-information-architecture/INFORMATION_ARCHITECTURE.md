@@ -2,193 +2,279 @@
 
 ## 1. Site Map
 
-A hierarchical map of every page and view across the 4 autonomous role portals, including their respective URL patterns:
+A hierarchical map of every page and view organized strictly across the **4 Autonomous Portals** corresponding to the **Fixed 4-Role RBAC Model** (`MGR`, `ACC`, `PAR`, `ADM`) defined in [Phase 01 — MVP Baseline](../01-top-down/MVP.md), [Phase 02 — Core Features Breakdown](../02-core-features/core-feature-breakdown.md), and [Phase 03 — Roles & Use Cases](../03-roles-usecases/README.md).
 
-- **Global Entry** `/`
-  - Auth & Role Redirection `/login`
-- **Teacher Portal** `/teacher`
-  - Classroom Attendance Roster `/teacher/roster`
-    - Class Filter `?class_id=:classId&session_date=:date`
-    - Attendance Amendment Bottom Sheet `/teacher/roster/amend` (Modal context)
-    - Roster Lock & Handover Summary `/teacher/roster/confirm`
-  - Post-Lock Emergency Request Sheet `/teacher/emergency-request`
-- **Manager Portal** `/manager`
-  - Demand Determination Dashboard `/manager/demand`
-    - Date & Session Filter `?date=:date&session=:sessionId`
-  - Expected Raw Dish Quantities `/manager/quantities`
-  - Post-Lock Emergency Review Queue `/manager/changes`
-    - Request Detail Modal `?request_id=:requestId`
-  - Kitchen Shift Plan Authoring `/manager/prep-plans`
-    - Plan Detail & Station Schedule `/manager/prep-plans/:planId`
-  - Daily Preparation Reconciliation & Audit `/manager/reconciliation`
-- **Kitchen Kiosk Portal** `/kitchen` (Touch Kiosk Mode)
-  - Active Prep Shift Board `/kitchen/shift`
-  - Storage Ingredient Receiving Checklist `/kitchen/ingredients`
-  - Station Cooking Timers & Batch Logger `/kitchen/cooking`
-    - Station Filter `?station=:stationId`
-  - Prepared Yield Verification Gate `/kitchen/verification`
-- **Admin Portal** `/admin`
-  - Student & Classroom Directory `/admin/students`
-    - Student Profile & Dietary Notes `/admin/students/:studentId`
-  - Meal Schedules & Cutoff Parameters `/admin/schedules`
-  - Dish & Recipe Master Catalog `/admin/catalog`
-    - Recipe Detail & Thermal Yield Factors `/admin/catalog/:dishId`
-  - User Accounts & Access Control `/admin/users`
+> [!IMPORTANT]
+> **Operational Scope & Context:**
+> - **Lunch-Only Scope**: The system strictly operates for daily lunch service on standard school days (Mon–Fri). Breakfast, afternoon snacks, and dinner are out of scope.
+> - **External Catering Vendor Workflow**: Meals are prepared by a licensed catering vendor and delivered hot to school. The school team manages demand, dispatches orders, inspects delivery, distributes trays, and reconciles counts (no internal kitchen cooking batches/burners).
+
+```
+- Global Entry /
+  - Authentication & Role Landing /login
+- Semi-Boarding Coordinator Portal /coordinator (MGR)
+  - Daily Attendance & Roster Lock /coordinator/attendance
+    - Filter: ?class_id=:classId&date=:date
+    - Absence Reason Context Modal (Layer 2.5)
+  - Classroom Attendance Monitor /coordinator/attendance-monitor
+  - Lunch Demand Aggregation & Order Dispatch /coordinator/demand
+    - Buffer Configuration Drawer (Layer 2.5)
+    - Vendor Purchase Order Preview /coordinator/demand/order
+  - Food Receiving & 3-Step Safety Inspection /coordinator/receiving
+    - Inspection Sheet (Temp >= 65°C, Seals, Sensory) (Layer 2.5)
+  - Classroom Tray Distribution Logging /coordinator/distribution
+  - Post-Lunch Quantity Reconciliation & Discrepancies /coordinator/reconciliation
+    - Discrepancy Adjustment Modal (Layer 2.5)
+  - Dish & Recipe Nutritional Catalog /coordinator/dishes
+    - Dish Detail & Allergen Linkage /coordinator/dishes/:dishId
+  - Weekly Menu Planning & Submission /coordinator/menus
+    - Menu Composer & Nutrient Summary /coordinator/menus/:menuId
+    - Serving Calendar Assignment /coordinator/menus/schedule
+  - Daily Operational Reports /coordinator/reports
+- School Accountant Portal /accountant (ACC)
+  - Financial Dashboard & Overview /accountant/dashboard
+  - Meal Fee Schedule Configuration /accountant/fee-rates
+    - Fee Rate Detail & Validity Period /accountant/fee-rates/:configId
+  - Monthly Chargeable Meal Assessment & Invoicing /accountant/billing
+    - Batch Calculation Wizard /accountant/billing/generate
+    - Student Invoice Detail & Absence Credits /accountant/billing/:invoiceId
+  - Meal Fee Payment Collections & 3-State Tracking /accountant/payments
+    - Payment Entry Modal (Layer 2.5)
+  - Catering Vendor Cost Tracking & Payables /accountant/vendor-payables
+    - Reconciliation Batch Accrual /accountant/vendor-payables/:orderId
+  - Financial & Debt Aging Reports /accountant/reports
+- Parent Portal /parent (PAR)
+  - Home & Child Daily Dashboard /parent/dashboard
+  - Semester Meal Program Registration /parent/registration
+    - Registration Form & Dietary Preferences /parent/registration/apply
+  - Child Medical Allergy & Health Profile /parent/allergies
+    - Add/Edit Allergy Modal (Layer 2.5)
+  - Daily Lunch Menu & Delivery Transparency /parent/menu-transparency
+    - Daily Inspection Badge & Nutrition /parent/menu-transparency/:date
+  - Monthly Meal Invoices & Electronic Receipts /parent/billing
+    - Invoice Detail & Bank Transfer QR Code /parent/billing/:invoiceId
+- School Administrator Portal /admin (ADM)
+  - School Setup & Academic Hierarchy /admin/academic
+    - School Years & Semesters /admin/academic/terms
+    - Grades & Classrooms /admin/academic/classes
+    - Student Directory & Profiles /admin/academic/students
+  - Meal Program Eligibility Criteria /admin/eligibility
+  - Serving Days & Institutional Holiday Calendar /admin/calendar
+  - Weekly Menu Approval Hub (1-Level Review) /admin/menu-approvals
+    - Menu Review & Approval Sheet /admin/menu-approvals/:menuId
+  - Staff & Parent User Accounts /admin/users
+    - User Account Detail & Fixed Role Assignment /admin/users/:userId
+```
 
 ---
 
 ## 2. Navigation Model
 
 ### Primary Navigation
-- **Portal Switcher / Role Selector**: Persistent top bar component allowing authorized staff to transition between their operational role views (`Giáo Viên (M1)`, `Quản Lý Bếp (M2 & M3)`, `Kiosk Nhà Bếp (M3)`).
-- **Portal Tab Bar**: Role-specific sub-navigation bar:
-  - **Teacher**: Single-screen focused navigation with contextual slide-up sheets (keeps homeroom teachers 100% focused on student attendance).
-  - **Manager**: Horizontal analytical tab bar (`Nhu Cầu & Suất Ăn`, `Định Lượng Nguyên Liệu`, `Duyệt Yêu Cầu Phát Sinh`, `Kế Hoạch Bếp`, `Đối Soát Sản Lượng`).
-  - **Kitchen**: Giant touch tabs optimized for grease-resistant gloves (`Bảng Ca Trực`, `Nhận Thực Phẩm`, `Đang Nấu & Mẻ`, `Nghiệm Thu Suất`).
+- **Portal Switcher / Top Header**: Persistent header displaying system branding, authenticated user identity, assigned role badge (`Quản Trị Viên`, `Kế Toán`, `Phụ Trách Bán Trú`, `Phụ Huynh`), and session cutoff indicators.
+- **Role-Based Primary Navbars**:
+  - **MGR Portal Navbar**: Horizontal analytical and operational tabs:
+    `[Điểm Danh & Khóa Sổ]` | `[Giám Sát Tiến Độ]` | `[Nhu Cầu & Đặt Suất]` | `[Nhận & Kiểm Nghiệm]` | `[Chia Suất Về Lớp]` | `[Đối Soát Sản Lượng]` | `[Thực Đơn & Món Ăn]` | `[Báo Cáo Vận Hành]`
+  - **ACC Portal Navbar**: Financial management tabs:
+    `[Tổng Quan Tài Chính]` | `[Biểu Phí Suất Ăn]` | `[Tính Phí & Phát Hành Hóa Đơn]` | `[Thu Phí & Công Nợ]` | `[Chi Phí & Công Nợ Catering]` | `[Báo Cáo Kế Toán]`
+  - **PAR Portal Navbar**: Mobile-first parent tabs (bottom tab-bar on mobile, top bar on desktop):
+    `[Trang Chủ]` | `[Đăng Ký Ăn]` | `[Hồ Sơ Dị Ứng]` | `[Thực Đơn & Minh Bạch]` | `[Hóa Đơn & Thanh Toán]`
+  - **ADM Portal Navbar**: Master administration tabs:
+    `[Cơ Cấu Năm Học]` | `[Tiêu Chuẩn Xét Duyệt]` | `[Lịch Ăn & Ngày Nghỉ]` | `[Duyệt Thực Đơn]` | `[Tài Khoản & Phân Quyền]`
 
 ### Secondary Navigation
-- **Classroom Selector Ribbon** (Teacher Portal): Horizontal scroll chip list (`Lớp 1A`, `Lớp 1B`, `Lớp 2A`...) allowing rapid switching between assigned homerooms.
-- **Station Filter Tabs** (Kitchen Portal): Station-level grouping (`Tất cả`, `Chảo Xào`, `Tủ Cơm`, `Nồi Canh`).
-- **Date & Session Ribbon** (Manager Portal): Fast switching between morning session types (`Bữa Sáng`, `Bữa Trưa`, `Bữa Xế`).
+- **Classroom Selector Ribbon** (`/coordinator/attendance`, `/coordinator/distribution`): Horizontal scroll chip list (`Lớp 1A`, `Lớp 1B`, `Lớp 2A`...) allowing rapid switching between classrooms.
+- **Academic Term & Month Selector** (`/accountant/billing`, `/accountant/reports`): Dropdown filter by School Year (e.g. `2026-2027`), Semester (`HK1`), and Billing Month.
+- **Child Selector Switcher** (`/parent/*`): Pill switcher for parents having multiple children enrolled in the school.
 
 ### Utility Navigation
-- **Cutoff Countdown Indicator**: Real-time persistent countdown pill (`08:30 AM Cutoff • 42 min remaining`), shifting from Green $\rightarrow$ Amber (15m remaining) $\rightarrow$ Crimson Red (`Locked`).
-- **Data Reset Action**: Secondary utility button (`↺ Khôi phục Dữ liệu`) providing deterministic demonstration state reset.
-- **Device Viewport Toggle**: Top simulator bar (`Xem điện thoại di động` vs `Toàn màn hình desktop`) for developer and stakeholder testing.
+- **Cutoff Countdown Banner**: Persistent dynamic notification pill in the operational portal:
+  - `08:30 AM Cutoff`: Classroom attendance lock deadline.
+  - `08:45 AM Cutoff`: Vendor purchase order dispatch deadline.
+  - `10:30 AM Checkpoint`: Food receiving and temperature verification window.
+  - `11:00 AM Checkpoint`: Classroom trolley distribution start.
+  - `13:00 PM Checkpoint`: Post-lunch quantity reconciliation.
+- **User Account & Session Controls**: Quick links to user profile, password change, and logout.
 
-### Mobile Navigation
-- **One-Handed Thumb Zone**: All primary mobile actions for teachers (present/absent toggle, save draft, lock roster) sit within the bottom 60% of the viewport.
-- **Slide-Up Bottom Sheet**: Modals on mobile slide upwards from the bottom edge with a draggable handle, preserving context of the underlying classroom list.
+### Mobile & Responsive Navigation
+- **Mobile Thumb Zone**: On mobile viewports (e.g., Parent portal or Coordinator inspecting docking bay on phone/tablet), critical actions (Attendance switch, Receiving Pass/Fail, Pay bill) are anchored in the lower 60% of the screen.
+- **Contextual Slide-Up Bottom Sheets (Layer 2.5)**: Secondary interactions (entering absence reasons, logging food temperature, adding an allergy) slide up from the bottom edge without losing underlying page state.
 
 ---
 
 ## 3. Content Hierarchy
 
-### Screen: Classroom Attendance Roster (`/teacher/roster`)
-1. **Cutoff Clock & Class Metric Ribbon** — Highest priority: Shows remaining time before 08:30 AM lock and current headcount tally (`Sĩ số: 32 | Ăn: 30 | Vắng: 2`).
-2. **Student Attendance Card List** — Core work area: Alphabetical student roster cards with large tactile "Ăn" (Green) vs "Vắng" (Red) toggle pills.
-3. **Medical Dietary Alert Badges** — Safety critical: Bright orange warning chips immediately adjacent to student names (`Dị ứng lạc`, `Không ăn hải sản`).
-4. **Primary Floating Action Bar** — Bottom pinned: Quick Mark All Present shortcut and primary "Khóa sổ điểm danh" CTA.
+### Screen: Daily Attendance & Roster Lock (`/coordinator/attendance`)
+1. **Cutoff Timer & Class Progress Ribbon** — Highest priority: Displays remaining time to 08:30 AM and live headcount (`Sĩ số: 32 | Ăn: 30 | Vắng: 2`).
+2. **Classroom Roster Card List** — Core operational view: Alphabetical student roster cards with tactile toggle pills (`Ăn` [Green] vs `Vắng` [Red]).
+3. **Dietary & Allergy Warning Badges** — Safety critical: Prominent orange warning chips immediately adjacent to student names (`Dị ứng: Lạc`, `Kiêng: Hải sản`).
+4. **Bottom Floating Action Bar** — Pinned primary action: Quick "Đánh dấu tất cả có mặt" and primary "Khóa sổ điểm danh" CTA.
 
-### Screen: Demand Determination Dashboard (`/manager/demand`)
-1. **School-wide Rollup Metric Cards** — Highest priority: Total Base Registered, Confirmed Attendance, Absent Headcount, and Calculated Final Demand.
-2. **Classroom Submission Progress Grid** — Operational oversight: 20-card status board showing which classes have confirmed (`20/20 Lớp đã nộp`).
-3. **Forecasting Method & Safety Buffer Steppers** — Decision control: Radio selectors for formula type and `[-]` / `[+]` buffer % stepper ($0\%\text{--}10\%$).
-4. **Demand Lock CTA** — Bottom action: Primary "Chốt Nhu Cầu & Sinh Kế Hoạch Bếp" button.
+### Screen: Lunch Demand Aggregation & Order Dispatch (`/coordinator/demand`)
+1. **School-Wide Attendance Rollup Metric Cards** — Highest priority: Total registered students, confirmed attendees, excused absences, and unsubmitted classes.
+2. **Safety Buffer Configuration & Final Demand** — Decision control: Configurable buffer percentage stepper ($0\%\text{--}10\%$, default $3\%\text{--}5\%$) and calculated final portion demand:
+   $$\text{Final Demand} = \text{round}(\text{Confirmed Attendance} \times (1 + \text{Buffer\%}))$$
+3. **Menu Dish Portion Breakdown** — Operational detail: Expected dish quantities translated from active weekly menu.
+4. **Order Dispatch CTA** — Bottom action: Primary "Chốt Nhu Cầu & Gửi Đơn Cho Catering (trước 08:45 AM)" button.
 
-### Screen: Active Shift Kiosk Board (`/kitchen/shift`)
-1. **Shift Countdown Banner & Target Headcount** — Highest priority: Oversized readout (`630 Suất • Hoàn thành trước 10:45 AM`).
-2. **Station Progress Cards** — Live status: 4 high-contrast cards (Rice, Sauté, Soup, Vegetables) showing planned quantities and active batch status.
-3. **Direct Action Buttons** — Station entry: Touch targets (`Vào Nấu`, `Xem Nguyên Liệu`, `Nghiệm Thu`).
+### Screen: Food Receiving & 3-Step Inspection (`/coordinator/receiving`)
+1. **Delivery Header & Container Count Verification** — Highest priority: Catering PO match (`Đã đặt: 630 suất | Thực giao: 630 hộp/khay`).
+2. **3-Step Safety Inspection Form** — Mandatory compliance gate:
+   - Step 1: Core food probe temperature reading ($\ge 65^\circ\text{C}$).
+   - Step 2: Container seal integrity check (Pass / Fail).
+   - Step 3: Sensory evaluation (Odor, color, texture: Pass / Fail).
+3. **Acceptance Decision CTA** — Primary action: "Ký Nhận Đủ & Đạt Chuẩn" or "Từ Chối / Lập Biên Bản Bất Thường".
 
-### Screen: Prepared Yield Verification Gate (`/kitchen/verification`)
-1. **Variance & Tolerance Indicator** — Highest priority: High-visibility comparison badge showing percentage discrepancy ($\Delta\%$) against $\pm 3\%$ window.
-2. **Dish Weighed Yield Entry Rows** — Core input: Target planned weight vs actual scale reading.
-3. **Mandatory Discrepancy Textarea** — Gated condition: Only unlocks when variance exceeds $3\%$.
-4. **Release Gate CTA** — Final action: "Ký Duyệt & Xuất Khay Về Lớp".
+### Screen: Monthly Billing & Invoicing (`/accountant/billing`)
+1. **Monthly Financial Summary Cards** — Highest priority: Total billed amount, total collected, outstanding receivables, and caterer payables accrued.
+2. **Student Billing Grid** — Core financial table: Student name, class, attended meals, excused absence credits, unit rate (35,000 VND), net invoice amount, and payment status (`unpaid`, `partial`, `paid`).
+3. **Action Controls** — Batch operations: "Chạy tính phí tháng", "Xuất hóa đơn", "Gửi thông báo phụ huynh".
+
+### Screen: Daily Menu & Transparency Portal (`/parent/menu-transparency`)
+1. **Today's Lunch Menu Hero Card** — Highest priority: Meal photos, dish names (Main, Soup, Side, Dessert), nutritional values (Kcal, protein, carbs).
+2. **Food Safety Verification Badge** — Trust & compliance: Real-time badge showing:
+   - "Đã giao lúc 10:25 AM — Nhiệt độ kiểm tra: 72°C (Đạt chuẩn an toàn)".
+   - Sample meal photo preserved at school clinic.
+3. **Allergen & Ingredient Transparency Sheet** — Ingredient list with highlighted common allergens.
 
 ---
 
 ## 4. Critical User Flows
 
-### Flow 1: Morning Attendance & Cutoff Lock (Teacher)
-1. Teacher opens `/teacher/roster` at 07:45 AM on classroom smartphone.
-2. Teacher views classroom roster pre-populated with default "Eating" status.
-3. Teacher toggles 2 absent students to "Absent".
-   - If student has recorded food allergies, teacher verifies the allergy badge is acknowledged.
-4. Teacher taps "Confirm & Lock Roster" at 08:25 AM.
-   - If before 08:30 AM $\rightarrow$ System persists records as `confirmed` and locks interface to Read-Only.
-   - If after 08:30 AM $\rightarrow$ System alerts teacher that cutoff passed and auto-diverts delta into an Emergency Request sheet (`SCR-TCH-04`).
-5. Teacher receives confirmation toast: "Lớp 1A đã khóa sổ thành công".
+### Flow 1: Morning Attendance Recording & Cutoff Lock (MGR / Classroom Coordinator)
+1. User logs into `/coordinator/attendance` at 07:50 AM.
+2. Selects assigned classroom (e.g. `Lớp 1A`).
+3. System loads active enrolled meal roster defaulting to `Ăn`.
+4. User toggles absent students to `Vắng` and enters reason (e.g., "Sốt xuất huyết, phụ huynh xin nghỉ").
+5. User reviews allergy warning chips (`F-NUT-02`) to ensure dietary safety.
+6. User taps "Khóa sổ điểm danh" at 08:25 AM:
+   - If time $\le$ 08:30 AM $\rightarrow$ System persists records as `confirmed` and locks interface to Read-Only (`F-PAR-03`).
+   - If time $>$ 08:30 AM $\rightarrow$ System alerts cutoff passed; changes require administrative override.
 
-### Flow 2: Demand Calculation & Shift Publishing (Nutrition Manager)
-1. Manager accesses `/manager/demand` at 08:30 AM.
-2. Manager confirms 20/20 classrooms have completed roster freeze (Total: 600 students).
-3. Manager selects `participation_based` calculation method and applies a $+5\%$ safety buffer.
-4. System computes: Base $600 \times 1.05 = 630$ final portions.
-5. Manager navigates to `/manager/quantities` to review raw ingredient translations (e.g. 63.0 kg pork, 70 kg rice).
-6. Manager clicks "Chốt Nhu Cầu & Sinh Kế Hoạch"; demand status transitions to `confirmed` and is instantly broadcast to kitchen kiosks.
+### Flow 2: Session Demand Calculation & Catering PO Dispatch (MGR)
+1. Coordinator accesses `/coordinator/demand` at 08:31 AM.
+2. Verifies that 100% of classrooms have finalized rosters (`F-PAR-04`).
+3. Evaluates total confirmed attendance (e.g. 600 students).
+4. Sets safety buffer to $+5\%$; system calculates $600 \times 1.05 = 630$ portions (`F-OPS-01`).
+5. Coordinator reviews scaled raw dish portions and clicks "Gửi Đơn Cho Đơn Vị Nấu (Catering)" at 08:40 AM.
+6. System generates purchase order record in `catering_orders` with status `dispatched` (`F-OPS-02`).
 
-### Flow 3: Post-Lock Emergency Change Triage (Teacher $\rightarrow$ Manager $\rightarrow$ Kitchen)
-1. Teacher receives late arrival at 09:15 AM; opens Emergency Sheet (`SCR-TCH-04`).
-2. Teacher enters $+1$ lunch portion with reason "Học sinh đến trễ do khám bệnh".
-3. Manager receives urgent banner on `/manager/changes` with pending $+1$ delta.
-4. Manager evaluates kitchen cooking capacity:
-   - If Approved $\rightarrow$ `meal_demands` updates to `revised` (631 meals), kitchen kiosk receives audio chime, and push notice confirms to teacher.
-   - If Rejected $\rightarrow$ Reason note entered and teacher receives rejection notice.
+### Flow 3: Food Receiving, Temperature Inspection & Classroom Distribution (MGR)
+1. Catering delivery truck arrives at school staging dock at 10:25 AM.
+2. Coordinator accesses `/coordinator/receiving` (`F-OPS-03`).
+3. Verifies 630 meal containers delivered against order.
+4. Uses calibrated food probe thermometer to measure temperature ($72^\circ\text{C} \ge 65^\circ\text{C}$).
+5. Verifies container tamper seals and visual smell/color as "Pass".
+6. Clicks "Chấp Thuận & Ký Nhận"; delivery status transitions to `accepted`.
+7. At 11:00 AM, coordinator opens `/coordinator/distribution` (`F-OPS-04`), supervises trolley loading per class count, and logs distribution completion.
 
-### Flow 4: Kitchen Cooking Execution & Scale Verification (Kitchen)
-1. Station cook checks `/kitchen/shift` at 08:50 AM and opens Steamer Station (`SCR-KIT-03`).
-2. Cook loads rice cabinet and taps "Bắt đầu mẻ #1"; live timer counts down 45 minutes.
-3. Timer alarms at 09:35 AM; cook unloads steamer and places pan on floor scale.
-4. Cook enters 70.0 kg on oversized touch numpad and taps "Hoàn thành mẻ".
-5. At 10:45 AM, Head Chef opens `/kitchen/verification` (`SCR-KIT-04`).
-   - If yield is within $\pm 3\%$ of target $\rightarrow$ Chef taps "Ký Duyệt & Xuất Khay" (Status: `matched`).
-   - If yield discrepancy $> 3\%$ $\rightarrow$ Primary CTA disables until chef logs explanation note (Status: `discrepancy`).
+### Flow 4: Post-Lunch Quantity Reconciliation & Discrepancy Resolution (MGR $\rightarrow$ ACC)
+1. Lunch service concludes at 13:00 PM; Coordinator accesses `/coordinator/reconciliation` (`F-OPS-05`).
+2. System loads daily figures:
+   - Ordered: 630 portions.
+   - Delivered & Accepted: 630 portions.
+   - Consumed in Classrooms: 600 portions.
+   - Surplus Reserve: 30 portions.
+3. If vendor had a delivery shortfall (e.g. delivered 620 portions), Coordinator enters discrepancy reason and logs actual delivered count.
+4. Coordinator clicks "Xác Nhận Đối Soát Ngày". Data is finalized and synced with Accountant Portal (`F-FEE-04`) for caterer payable settlement.
+
+### Flow 5: Monthly Fee Invoicing & Payment Tracking (ACC $\rightarrow$ PAR)
+1. At month-end, Accountant accesses `/accountant/billing` (`F-FEE-02`).
+2. Selects billing month and clicks "Chạy Tính Phí Suất Ăn".
+3. System calculates chargeable meals for each student:
+   $$\text{Chargeable Meals} = \text{Attended Days} - \text{Valid Excused Absence Credits}$$
+4. Invoices are generated in `student_meal_bills` with status `unpaid`.
+5. Parents receive invoice on `/parent/billing` (`F-FEE-03`) with itemized attendance dates and dynamic VietQR code.
+6. Once parent pays via bank transfer, Accountant logs payment on `/accountant/payments`; bill status transitions to `paid`.
 
 ---
 
 ## 5. UI Naming Conventions & Domain Glossary
 
-| Concept | Label in UI | Operational Definition & System Role |
+Consistent terminology strictly aligned with [Phase 01](../01-top-down/business-domains.md), [Phase 02](../02-core-features/core-feature-breakdown.md), and [Phase 03](../03-roles-usecases/roles.md):
+
+| Domain Concept | UI Display Label (Vietnamese) | English Definition & Functional Role |
 |---|---|---|
-| Student Meal Attendance | **Điểm danh suất ăn** | Daily recording of student presence for scheduled meal sessions (`F-PAR-01`). |
-| Participation Status | **Trạng thái ăn (Ăn / Vắng)** | Binary state (`recorded`, `cancelled`, `confirmed`) determining meal delivery. |
-| Cutoff Deadline | **Giờ chốt sổ (08:30 AM)** | Hard time limit after which classroom rosters freeze into read-only mode (`F-PAR-03`). |
-| Attendance Amendment | **Điều chỉnh điểm danh** | Modifying attendance post-initial entry with mandatory justification audit trail (`F-PAR-02`). |
-| Post-Lock Emergency Change | **Yêu cầu phát sinh khẩn cấp** | Request for headcount adjustment submitted after daily cutoff (`F-DMD-03`). |
-| Demand Headcount | **Tổng nhu cầu suất ăn** | Aggregated school-wide headcount derived from attendance plus safety buffer (`F-DMD-01`). |
-| Safety Buffer | **Hệ số dự phòng (%)** | Configurable multiplier ($0\%\text{--}10\%$) applied to absorb sudden overflow. |
-| Expected Raw Quantity | **Định lượng nguyên liệu thô** | Calculated weight of raw storage ingredients required for the menu (`F-DMD-02`). |
-| Kitchen Preparation Plan | **Kế hoạch ca nấu** | Published schedule assigning quantities and target completion times to stations (`F-PRP-01`). |
-| Cooking Batch | **Mẻ chế biến** | Single operational cooking cycle tracked by station timers and scale weigh-in (`F-PRP-03`). |
-| Prepared Yield Verification | **Nghiệm thu sản lượng** | Final inspection comparing cooked weight against target with $\pm 3\%$ tolerance check (`F-PRP-04`). |
+| **Student Meal Eligibility** | **Tiêu chuẩn ăn bán trú** | Institutional criteria determining boarding intake qualification (`F-PAR-01`). |
+| **Meal Registration** | **Đăng ký suất ăn bán trú** | Term-level participation agreement signed by parents (`F-PAR-02`). |
+| **Daily Attendance** | **Điểm danh suất ăn** | Daily recording of student presence for lunch (`F-PAR-03`). |
+| **Attendance Cutoff** | **Giờ chốt sổ điểm danh (08:30)** | Strict deadline after which classroom rosters freeze to Read-Only (`F-PAR-03`). |
+| **Attendance Progress** | **Giám sát tiến độ điểm danh** | School-wide monitoring board tracking completed vs pending class rosters (`F-PAR-04`). |
+| **Nutritional Dish** | **Món ăn & Dinh dưỡng** | Recipe catalog item with portion standards and constituent ingredients (`F-PLN-01`). |
+| **Weekly Menu** | **Thực đơn tuần** | Scheduled meal plan composed of dishes across Monday–Friday (`F-PLN-02`). |
+| **1-Level Menu Approval** | **Phê duyệt thực đơn (1 cấp)** | Streamlined administrative sign-off by Principal (`F-PLN-02`). |
+| **Serving Calendar** | **Lịch ăn & Ngày nghỉ** | Calendar binding approved menus to school days and excluding holidays (`F-PLN-03`, `F-MST-02`). |
+| **Session Demand** | **Tổng nhu cầu suất ăn** | Headcount aggregated from confirmed attendance plus safety buffer (`F-OPS-01`). |
+| **Safety Buffer (%)** | **Hệ số dự phòng (%)** | Configurable multiplier ($0\%\text{--}10\%$) to absorb unforeseen overflow (`F-OPS-01`). |
+| **Catering Order** | **Đơn đặt suất ăn Catering** | Formal daily purchase order dispatched to catering vendor before 08:45 AM (`F-OPS-02`). |
+| **Delivery Receiving & Inspection** | **Giao nhận & Kiểm nghiệm suất ăn** | 3-step safety verification (temperature $\ge 65^\circ\text{C}$, seals, sensory) at 10:30 AM (`F-OPS-03`). |
+| **Classroom Distribution** | **Chia suất ăn về lớp** | Logging meal trolley dispatch to classrooms at 11:00 AM (`F-OPS-04`). |
+| **Quantity Reconciliation** | **Đối soát số lượng suất ăn** | Daily reconciliation of Ordered vs Delivered vs Consumed counts at 13:00 PM (`F-OPS-05`). |
+| **Discrepancy Resolution** | **Xử lý chênh lệch suất ăn** | Recording shortfall/excess reasons and adjusting caterer payables (`F-OPS-05`). |
+| **Meal Fee Schedule** | **Biểu phí suất ăn** | Configured unit rate (e.g. 35,000 VND / meal) and semester validity period (`F-FEE-01`). |
+| **Chargeable Meals** | **Số suất ăn tính phí** | Net meals billed after deducting excused absences (`F-FEE-02`). |
+| **Meal Bill / Invoice** | **Hóa đơn tiền ăn bán trú** | Monthly itemized parent invoice (`F-FEE-02`). |
+| **3-State Payment Tracking** | **Trạng thái thu phí** | Streamlined payment lifecycle: `Chưa thu (unpaid)`, `Thu một phần (partial)`, `Đã thu đủ (paid)` (`F-FEE-03`). |
+| **Catering Payable** | **Công nợ đơn vị Catering** | Accrued vendor liability based on reconciled accepted deliveries (`F-FEE-04`). |
+| **Daily Operations Report** | **Báo cáo vận hành hàng ngày** | Executive summary of attendance, orders, inspection, and surplus (`F-REP-01`). |
+| **Financial Report** | **Báo cáo tài chính bán trú** | Monthly fee collection, debt aging, and vendor payable audit (`F-REP-02`). |
+| **Parent Transparency Portal** | **Cổng thông tin bán trú phụ huynh** | Public/parent view showing daily menus, ingredients, and delivery verification badges (`F-REP-03`). |
+| **Fixed 4-Role RBAC** | **Phân quyền 4 vai trò cố định** | Fixed roles (`ADM`, `ACC`, `MGR`, `PAR`) without runtime custom overrides (`F-USR-02`). |
+| **Allergy Profile** | **Hồ sơ dị ứng học sinh** | Medical allergen declarations recorded by parents (`F-NUT-01`). |
+| **Dietary Conflict Alert** | **Cảnh báo dị ứng thực đơn** | Visual warning chips highlighting menu conflicts with student allergies (`F-NUT-02`). |
 
 ---
 
 ## 6. Component Reuse Map
 
-| Component Token | Base Element / Markup | Used Across Views | Behavior & Responsive Differences |
+| Component Token | Base Element / Markup | Used Across Portals | Behavior & Responsive Adjustments |
 |---|---|---|---|
-| **App Shell Header** | `<header class="app-header">` | All Portals (`/teacher`, `/manager`, `/kitchen`, `/admin`) | Desktop shows full role switcher; Mobile compresses into icon dropdown; Kitchen displays high-contrast shift clock. |
-| **Cutoff Status Chip** | `<div class="cutoff-badge">` | `SCR-TCH-01`, `SCR-MGR-01`, `SCR-KIT-01` | Displays countdown; switches to pulsating red when $< 15\text{m}$; displays locked icon post-08:30. |
-| **Tactile Status Pill** | `<button class="status-pill">` | `SCR-TCH-01`, `SCR-KIT-02`, `SCR-KIT-03` | Oversized on Mobile (44px min touch target) and Kitchen Kiosk (56px touch target); hover/focus ring on desktop. |
-| **Metric Summary Card** | `<div class="metric-card">` | `SCR-TCH-01`, `SCR-MGR-01`, `SCR-MGR-05` | Displays key integer values and progress percentage; 1-column on mobile, 4-column flex grid on desktop. |
-| **Contextual Bottom Sheet / Modal** | `<div class="modal-sheet">` | `SCR-TCH-02`, `SCR-TCH-04`, `SCR-MGR-03`, `SCR-KIT-04` | Renders as slide-up bottom sheet on mobile ($< 768\text{px}$) with swipe-to-dismiss; centered modal on desktop ($> 768\text{px}$). |
-| **Oversized Numpad** | `<div class="kiosk-numpad">` | `SCR-KIT-03`, `SCR-KIT-04` | High-contrast touch keypad for kiosk touchscreens; suppressed on desktop in favor of native keyboard input. |
+| **App Header Shell** | `<header class="app-header">` | Coordinator, Accountant, Parent, Admin | Desktop shows full role menu & cutoff pills; Mobile condenses into hamburger/compact bar. |
+| **Cutoff Countdown Pill** | `<div class="cutoff-pill">` | Coordinator (`attendance`, `demand`, `receiving`) | Live countdown; turns yellow at 15m remaining; turns red and locks when cutoff expires. |
+| **Tactile Toggle Button** | `<button class="toggle-pill">` | Coordinator (`attendance`), Parent (`allergies`) | Oversized touch targets (minimum 44px) for rapid mobile/tablet finger toggling. |
+| **Metric KPI Card** | `<div class="kpi-card">` | Coordinator (`demand`), Accountant (`billing`, `dashboard`) | Highlights key totals (Headcount, Billed VND, Collected VND); stacks vertically on mobile. |
+| **Slide-Up Context Sheet (Layer 2.5)**| `<div class="slide-sheet">` | All Portals | Slides up from bottom on mobile; renders as centered modal on desktop (> 768px). Never stacked. |
+| **Status Badge Component** | `<span class="badge status-{type}">` | All Portals | Unified color semantics: Green (`confirmed`, `paid`, `accepted`), Red (`unpaid`, `rejected`, `absent`), Yellow (`pending`, `partial`), Orange (`allergy-alert`). |
+| **QR Invoice Card** | `<div class="vietqr-card">` | Parent (`billing`), Accountant (`payments`) | Renders standard VietQR code for instant banking app scanning with embedded reference code. |
 
 ---
 
 ## 7. Content Growth & Archival Plan
 
-1. **Daily Operational Partitions**:
-   - High-velocity transactional entities (`meal_participations`, `meal_demands`, `meal_preparations`, `meal_participation_changes`) generate $\sim 600\text{--}800$ records daily.
-   - The UI defaults strictly to the **Current Operational Date (`session_date = TODAY`)**.
-2. **Archival & Historic Inspection**:
-   - Historical records older than 30 days are indexed by academic month for parent billing reconciliation and auditor export.
-   - The UI provides a date-picker dropdown (`Lịch sử theo ngày`) with server-side pagination (50 records per page) to prevent client memory bloat.
-3. **Static & Slow-Growing Catalogs**:
-   - Student rosters (`students`), Classrooms (`classes`), and Recipes (`dishes`) change infrequently (term-based or annual). These are cached in client storage and updated via background revalidation.
+1. **Daily High-Velocity Partitions**:
+   - Transactional entities (`meal_participations`, `catering_orders`, `meal_deliveries`, `meal_inspections`, `meal_distributions`, `meal_reconciliations`) generate records every school day.
+   - All operational views default strictly to **Current Operational Date (`session_date = TODAY`)**.
+2. **Monthly Financial Billing Windows**:
+   - Monthly billing records (`student_meal_bills`, `student_billing_items`, `meal_payments`) are partitioned by School Year and Academic Month.
+   - Historical billing queries utilize indexed month dropdowns with paginated results (50 items/page).
+3. **Master Catalog Revalidation**:
+   - Dish catalog (`dishes`), classrooms (`classes`), and student rosters (`students`) change infrequently (term-based). These are cached in client state and invalidated via background fetch.
+4. **Historical Audit & Archival**:
+   - Prior academic years are archived into read-only storage at the conclusion of the summer term, preserving immutable financial and reconciliation audit trails.
 
 ---
 
 ## 8. URL Strategy
 
-### URL Construction Rules
-- **Pattern:** `/:portal/:resource[/:id][/:action]`
-- **Examples:**
-  - `/teacher/roster` — Default classroom view
-  - `/manager/prep-plans/2026-09-15` — Daily preparation plan detail
-  - `/kitchen/cooking?station=saute` — Sauté station filtered kiosk view
+### Structural Pattern
+`/:portal/:resource[/:id][/:action]`
+
+### Portal Routes
+- `/coordinator/*` — Semi-Boarding Coordinator / Meal Manager Portal (`MGR`)
+- `/accountant/*` — School Accountant Financial Portal (`ACC`)
+- `/parent/*` — Student Parent / Guardian Portal (`PAR`)
+- `/admin/*` — School Administrator Master Data Portal (`ADM`)
 
 ### Dynamic Segments
-- `:portal` $\rightarrow$ `teacher` | `manager` | `kitchen` | `admin`
-- `:classId` $\rightarrow$ Unique class code (e.g. `1A`, `2B`)
-- `:planId` $\rightarrow$ Unique shift plan ID (e.g. `PLN-20260915-LUNCH`)
-- `:dishId` $\rightarrow$ Unique catalog dish ID (e.g. `DSH-001`)
+- `:classId` $\rightarrow$ Standard classroom code (e.g. `1A`, `2B`, `5C`).
+- `:date` $\rightarrow$ ISO 8601 Date (`YYYY-MM-DD`).
+- `:menuId` $\rightarrow$ Unique weekly menu identifier (e.g. `MNU-2026-W42`).
+- `:invoiceId` $\rightarrow$ Monthly student billing identifier (e.g. `INV-202610-STU1024`).
+- `:dishId` $\rightarrow$ Master dish catalog identifier (e.g. `DSH-042`).
+- `:userId` $\rightarrow$ System user account identifier.
 
 ### Query Parameters
-- `date` $\rightarrow$ ISO Date format `YYYY-MM-DD` (Defaults to current system date)
-- `session` $\rightarrow$ Meal session code (`breakfast`, `lunch`, `snack`)
-- `station` $\rightarrow$ Kitchen cooking line (`all`, `rice`, `saute`, `soup`)
-- `status` $\rightarrow$ Filter state for requests (`all`, `pending`, `approved`, `rejected`)
+- `date` $\rightarrow$ Filter operational views by date (defaults to `TODAY`).
+- `class_id` $\rightarrow$ Filter attendance and distribution by classroom.
+- `status` $\rightarrow$ Filter state lists (`all`, `unpaid`, `partial`, `paid`, `confirmed`, `discrepancy`).
+- `month` $\rightarrow$ Financial billing month filter (`YYYY-MM`).
