@@ -1,0 +1,241 @@
+/* ==========================================================================
+   Apple Design System Tokens & Anti-Slop Styles (DESIGN.md)
+   ========================================================================== */
+
+:root {
+  --apple-action-blue: #0066cc;
+  --apple-action-blue-hover: #0071e3;
+  --apple-ink: #1d1d1f;
+  --apple-ink-muted: #7a7a7a;
+  --apple-canvas: #ffffff;
+  --apple-canvas-parchment: #f5f5f7;
+  --apple-hairline: #e0e0e0;
+  --apple-divider: #f0f0f0;
+  --apple-danger: #e02424;
+  --apple-success: #0e8345;
+  --apple-warning: #f59e0b;
+}
+
+/* Base Page Wrapper */
+.semi-boarding-page {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  color: var(--apple-ink);
+  letter-spacing: -0.015em;
+  position: relative;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Apple Pill Buttons */
+.btn-apple-primary {
+  background-color: var(--apple-action-blue) !important;
+  color: #ffffff !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  padding: 8px 20px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease-in-out !important;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+}
+
+.btn-apple-primary:hover {
+  background-color: var(--apple-action-blue-hover) !important;
+}
+
+.btn-apple-primary:active, .btn-apple-secondary:active, .btn-apple-ghost:active {
+  transform: scale(0.96) !important;
+}
+
+.btn-apple-secondary {
+  background-color: var(--apple-canvas-parchment) !important;
+  color: var(--apple-ink) !important;
+  border: 1px solid var(--apple-hairline) !important;
+  border-radius: 9999px !important;
+  padding: 8px 18px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  transition: all 0.15s ease-in-out !important;
+}
+
+.btn-apple-secondary:hover {
+  background-color: #eaeaea !important;
+}
+
+.btn-apple-ghost {
+  background-color: transparent !important;
+  color: var(--apple-action-blue) !important;
+  border: none !important;
+  border-radius: 9999px !important;
+  padding: 6px 14px !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+}
+
+.btn-apple-ghost:hover {
+  background-color: rgba(0, 102, 204, 0.06) !important;
+}
+
+/* Clean Cards */
+.apple-card {
+  background: var(--apple-canvas) !important;
+  border: 1px solid var(--apple-hairline) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02) !important;
+  transition: box-shadow 0.2s ease !important;
+}
+
+.apple-card-parchment {
+  background: var(--apple-canvas-parchment) !important;
+  border: 1px solid var(--apple-divider) !important;
+  border-radius: 14px !important;
+}
+
+/* Metric KPI Tile */
+.metric-tile {
+  background: var(--apple-canvas);
+  border: 1px solid var(--apple-hairline);
+  border-radius: 12px;
+  padding: 16px 20px;
+}
+
+.metric-tile-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: var(--apple-ink-muted);
+  letter-spacing: 0.03em;
+  margin-bottom: 6px;
+}
+
+.metric-tile-value {
+  font-size: 28px;
+  font-weight: 600;
+  color: var(--apple-ink);
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+}
+
+.metric-tile-sub {
+  font-size: 12px;
+  color: var(--apple-ink-muted);
+  margin-top: 4px;
+}
+
+/* Apple Status Segmented Control (Pills) */
+.segmented-pills {
+  display: inline-flex;
+  background: var(--apple-canvas-parchment);
+  padding: 3px;
+  border-radius: 9999px;
+  border: 1px solid var(--apple-hairline);
+}
+
+.segmented-pill-btn {
+  border: none;
+  background: transparent;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 9999px;
+  color: var(--apple-ink-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.segmented-pill-btn.active-eating {
+  background: #ffffff;
+  color: var(--apple-success);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.segmented-pill-btn.active-absent {
+  background: #ffffff;
+  color: var(--apple-danger);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Clean Table */
+.apple-table th {
+  font-size: 12px !important;
+  font-weight: 600 !important;
+  color: var(--apple-ink-muted) !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.04em !important;
+  border-bottom: 1px solid var(--apple-hairline) !important;
+  padding: 12px 16px !important;
+  background: #fafafc !important;
+}
+
+.apple-table td {
+  padding: 14px 16px !important;
+  font-size: 14px !important;
+  color: var(--apple-ink) !important;
+  border-bottom: 1px solid var(--apple-divider) !important;
+}
+
+.apple-table tr:hover td {
+  background-color: #f9f9fb !important;
+}
+
+/* ==========================================================================
+   Modal Z-Index & Backdrop Fix (Clean & Robust)
+   ========================================================================== */
+.modal-backdrop {
+  z-index: 1040 !important;
+  opacity: 0.4 !important;
+  background-color: #000000 !important;
+}
+
+.modal {
+  z-index: 1050 !important;
+  background: transparent !important;
+}
+
+.modal-dialog {
+  z-index: 1060 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+  margin: 1.75rem auto !important;
+}
+
+.modal-dialog-centered {
+  display: flex !important;
+  align-items: center !important;
+  min-height: calc(100% - 3.5rem) !important;
+}
+
+.modal-content {
+  background-color: #ffffff !important;
+  border: 1px solid var(--apple-hairline) !important;
+  border-radius: 16px !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.18) !important;
+  position: relative !important;
+  z-index: 1070 !important;
+  overflow: hidden !important;
+}
+
+.modal-header {
+  background-color: #fafafc !important;
+  border-bottom: 1px solid var(--apple-hairline) !important;
+  padding: 16px 20px !important;
+}
+
+.modal-footer {
+  background-color: #fafafc !important;
+  border-top: 1px solid var(--apple-hairline) !important;
+  padding: 14px 20px !important;
+}
+
+/* Fix brand logo when sidebar is collapsed */
+.closed-sidebar .app-header__logo {
+  padding: 0 10px !important;
+}
+
+.closed-sidebar .brand-text {
+  display: none !important;
+}
+
