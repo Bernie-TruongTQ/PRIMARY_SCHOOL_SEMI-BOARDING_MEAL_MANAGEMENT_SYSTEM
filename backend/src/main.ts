@@ -9,6 +9,13 @@ async function bootstrap() {
   // Global prefix: /api/v1
   app.setGlobalPrefix('api/v1');
 
+  // Enable CORS for frontend
+  app.enableCors({
+    origin: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  });
+
   // Global validation pipe
   app.useGlobalPipes(
     new ValidationPipe({
