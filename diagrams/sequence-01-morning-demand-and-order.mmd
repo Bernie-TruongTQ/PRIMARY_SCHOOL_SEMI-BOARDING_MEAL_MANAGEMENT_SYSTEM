@@ -1,0 +1,51 @@
+sequenceDiagram
+    autonumber
+    actor Coordinator as 👤 Semi-Boarding Coordinator (MGR)
+    participant WebApp as 🌐 Web SPA (/coordinator/demand)
+    participant CutoffGuard as 🛡️ AttendanceCutoffGuard
+    participant DemandCtrl as ⚙️ DemandController (/api/v1/demands)
+    participant DemandSvc as ⚙️ DemandService
+    participant BufferEng as 🧮 BufferCalculationEngine
+    participant PrismaDB as 💾 PostgreSQL (Prisma DBML)
+    participant CatererAPI as 🏢 Catering Vendor Order Gateway
+    participant WSBroker as 📡 WebSocket Broker (Events)
+
+    Note over Coordinator,WSBroker: Milestone 1: 08:30:00 AM — Attendance Lockdown & Rollup
+    Coordinator->>WebApp: View confirmed classroom rosters
+    WebApp->>DemandCtrl: POST /api/v1/demands/calculate {serving_date: "2026-09-18", buffer_percentage: 0.05}
+    DemandCtrl->>CutoffGuard: canModifyAttendance("2026-09-18")
+    CutoffGuard-->>DemandCtrl: true (Past 08:30:00 AM lock enabled)
+
+    DemandCtrl->>DemandSvc: calculateTotalDemand("2026-09-18", 0.05)
+    DemandSvc->>PrismaDB: SELECT count(*) FROM meal_participations WHERE date='2026-09-18' AND status='present'
+    PrismaDB-->>DemandSvc: Total Present = 600 students
+
+    DemandSvc->>BufferEng: computeDemandCount(600, 0.05)
+    Note over BufferEng: round(600 * (1 + 0.05)) = 630 portions (+30 buffer)
+    BufferEng-->>DemandSvc: Final Demand = 630 meals
+
+    DemandSvc->>PrismaDB: INSERT INTO meal_demands (serving_date, attendance_count, buffer_count, final_demand_count, status) VALUES ('2026-09-18', 600, 30, 630, 'calculated')
+    PrismaDB-->>DemandSvc: meal_demand_id = "dem_01HPX"
+    DemandSvc-->>DemandCtrl: DemandCalculationResult (Total: 630)
+    DemandCtrl-->>WebApp: 200 OK {demand_id: "dem_01HPX", final_count: 630, buffer: 30}
+    WebApp-->>Coordinator: Render Demand Rollup Summary & Dispatch Button
+
+    Note over Coordinator,CatererAPI: Milestone 2: 08:45:00 AM — Statutory Catering PO Dispatch Deadline
+    Coordinator->>WebApp: Click "Dispatch PO to Caterer"
+    WebApp->>DemandCtrl: POST /api/v1/demands/dispatch-order {demand_id: "dem_01HPX", target_delivery: "10:30:00"}
+    DemandCtrl->>DemandSvc: dispatchOrder("dem_01HPX")
+    DemandSvc->>PrismaDB: SELECT * FROM meal_demands JOIN meal_demand_dish_quantities WHERE id="dem_01HPX"
+    PrismaDB-->>DemandSvc: Demand & Dish breakdown data
+
+    DemandSvc->>CatererAPI: POST /api/v1/external/orders (Payload: OrderCode, 630 meals, ETA: 10:30 AM, dock: Gate B)
+    CatererAPI-->>DemandSvc: 201 Created {vendor_order_id: "PO-CAT-20260918-01", ack: true}
+
+    DemandSvc->>PrismaDB: INSERT INTO catering_orders (demand_id, order_code, total_portions, status, dispatched_at) VALUES ('dem_01HPX', 'PO-CAT-20260918-01', 630, 'dispatched', NOW())
+    DemandSvc->>PrismaDB: UPDATE meal_demands SET status='confirmed' WHERE id='dem_01HPX'
+    PrismaDB-->>DemandSvc: Order saved successfully
+
+    DemandSvc->>WSBroker: broadcast("CATERER_ORDER_ACKNOWLEDGED", {order_code: "PO-CAT-20260918-01"})
+    WSBroker-->>WebApp: Emit Order Dispatched Live Alert
+    DemandSvc-->>DemandCtrl: CateringOrderEntity
+    DemandCtrl-->>WebApp: 201 Created {order_code: "PO-CAT-20260918-01", status: "dispatched"}
+    WebApp-->>Coordinator: Display Green Badge "PO Dispatched (630 Meals) — Awaiting Delivery at 10:30 AM"

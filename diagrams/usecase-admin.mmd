@@ -1,0 +1,20 @@
+flowchart LR
+    ADM(["👤 School Administrator\n(ADM)"])
+
+    subgraph SYSTEM["System Administration & Master Data Subsystem (Domains 1, 2, 6, 8)"]
+        UC1(["UC-ADM-01\nDefine & Evaluate Student Meal Eligibility"])
+        UC2(["UC-ADM-02\nApprove Weekly Menu (1-Level Review)"])
+        UC3(["UC-ADM-03\nManage Staff Accounts & User Profiles"])
+        UC4(["UC-ADM-04\nEnforce Fixed 4-Role RBAC Permissions"])
+        UC5(["UC-ADM-05\nManage Academic Structure (Years, Classes, Students)"])
+        UC6(["UC-ADM-06\nConfigure Lunch Serving Days & Holiday Calendar"])
+    end
+
+    ADM --- UC1
+    ADM --- UC2
+    ADM --- UC3
+    ADM --- UC4
+    ADM --- UC5
+    ADM --- UC6
+
+    UC4 -.->|include| UC3

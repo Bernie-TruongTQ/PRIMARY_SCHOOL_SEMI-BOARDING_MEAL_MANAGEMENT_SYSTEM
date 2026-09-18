@@ -10,24 +10,8 @@
 
 ## Use Case Diagram — Student Parent / Guardian
 
-```mermaid
-flowchart LR
-    PAR(["👤 Parent / Guardian\n(PAR)"])
+![Use Case Diagram — Student Parent / Guardian](../../diagrams/usecase-parent.png)
 
-    subgraph SYSTEM["Parent Portal Subsystem"]
-        UC1(["UC-PAR-01\nRegister & Cancel Meal Program"])
-        UC2(["UC-PAR-02\nView Monthly Bill & Payment Tracking"])
-        UC3(["UC-PAR-03\nView Parent Portal & Daily Published Menus"])
-        UC4(["UC-PAR-04\nRecord Student Allergy & Dietary Restrictions"])
-    end
-
-    PAR --- UC1
-    PAR --- UC2
-    PAR --- UC3
-    PAR --- UC4
-
-    UC1 -.->|extend| UC4
-```
 
 ---
 

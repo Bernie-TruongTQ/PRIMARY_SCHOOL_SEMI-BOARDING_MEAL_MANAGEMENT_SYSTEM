@@ -1,0 +1,21 @@
+flowchart LR
+    ACC(["👤 School Accountant\n(ACC)"])
+
+    subgraph SYSTEM["Semi-Boarding Financial Management Subsystem (Domain 4 & 5)"]
+        UC1(["UC-ACC-01\nConfigure Meal Fee Rates & Periods"])
+        UC2(["UC-ACC-02\nCalculate Monthly Chargeable Meals & Invoices"])
+        UC3(["UC-ACC-03\nRecord Fee Payments & Track 3-State Status"])
+        UC4(["UC-ACC-04\nRecord Catering Unit Costs & Accrue Payables"])
+        UC5(["UC-ACC-05\nGenerate Monthly Fee, Payment & Debt Reports"])
+    end
+
+    ACC --- UC1
+    ACC --- UC2
+    ACC --- UC3
+    ACC --- UC4
+    ACC --- UC5
+
+    UC2 -.->|include| UC1
+    UC3 -.->|include| UC2
+    UC5 -.->|include| UC3
+    UC5 -.->|include| UC4

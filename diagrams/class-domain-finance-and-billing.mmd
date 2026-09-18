@@ -1,0 +1,177 @@
+classDiagram
+    direction TB
+
+    %% =========================================================================
+    %% ENUMS
+    %% =========================================================================
+    class BillStatus {
+        <<enumeration>>
+        UNPAID
+        PARTIAL
+        PAID
+        CANCELLED
+    }
+
+    class PaymentMethod {
+        <<enumeration>>
+        VIETQR_BANK_TRANSFER
+        CASH
+        ONLINE_GATEWAY
+    }
+
+    class PaymentStatus {
+        <<enumeration>>
+        PENDING
+        COMPLETED
+        FAILED
+        REFUNDED
+    }
+
+    class PayableStatus {
+        <<enumeration>>
+        PENDING_INVOICE
+        APPROVED
+        PAID
+    }
+
+    %% =========================================================================
+    %% CONTROLLERS (PRESENTATION TIER)
+    %% =========================================================================
+    class FinanceController {
+        -FeeScheduleService feeScheduleService
+        -BillingBatchService billingBatchService
+        -VietQRService qrService
+        -PaymentService paymentService
+        -VendorPayableService payableService
+        +getFeeRates(string schoolYearId) FeeConfigResponseDto
+        +createFeeRate(CreateFeeConfigDto dto) FeeConfigResponseDto
+        +generateMonthlyBills(GenerateBillingBatchDto dto) BillingBatchResultDto
+        +getStudentInvoice(string billId) StudentInvoiceResponseDto
+        +generateVietQR(string billId) VietQRCodeResponseDto
+        +handlePaymentWebhook(PaymentWebhookDto webhookPayload) WebhookAckDto
+        +getVendorPayables(string monthYear) ListVendorPayableDto
+        +approveVendorPayable(string payableId) VendorPayableResponseDto
+    }
+
+    %% =========================================================================
+    %% SERVICES & BUSINESS ENGINES (BUSINESS LOGIC TIER)
+    %% =========================================================================
+    class FeeScheduleService {
+        -FeeConfigRepository feeRepo
+        +getActiveLunchRate(string schoolYearId, Date servingDate) number
+        +configureSemesterRate(FeeScheduleDto dto) MealFeeConfigEntity
+    }
+
+    class BillingBatchService {
+        -StudentRepository studentRepo
+        -AttendanceRepository attendanceRepo
+        -FeeConfigRepository feeRepo
+        -BillRepository billRepo
+        +calculateMonthlyStudentBill(string studentId, number month, number year) StudentMealBillEntity
+        +calculateExcusedAbsenceCredit(string studentId, number month, number year) number
+        +executeBatchGeneration(string semesterId, number month, number year) BatchExecutionSummary
+    }
+
+    class VietQRService {
+        -string BANK_BIN
+        -string ACCOUNT_NO
+        -string TEMPLATE_ID
+        +buildDynamicQRCode(string billId, string studentCode, number amount) string
+        +verifyPaymentTransaction(string transactionRef, number expectedAmount) boolean
+    }
+
+    class PaymentService {
+        -PaymentRepository paymentRepo
+        -BillRepository billRepo
+        -AuditLogService auditService
+        +recordIncomingPayment(ProcessPaymentDto dto) MealPaymentEntity
+        +reconcileInvoiceStatus(string billId) BillStatus
+    }
+
+    class VendorPayableService {
+        -ReconciliationRepository reconciliationRepo
+        -PayableRepository payableRepo
+        +createPayableFromReconciliation(MealReconciliationEntity recon) VendorPayableEntity
+        +settleCateringInvoice(string payableId, string paymentRef) VendorPayableEntity
+    }
+
+    %% =========================================================================
+    %% DOMAIN ENTITIES (DATA ACCESS / PRISMA DBML PERSISTENCE)
+    %% =========================================================================
+    class MealFeeConfigEntity {
+        +string id
+        +string school_year_id
+        +string fee_name
+        +number unit_price_per_meal
+        +Date effective_from
+        +Date effective_to
+        +boolean is_active
+    }
+
+    class StudentMealBillEntity {
+        +string id
+        +string student_id
+        +number billing_month
+        +number billing_year
+        +number planned_meals_count
+        +number excused_absence_count
+        +number billable_meals_count
+        +number unit_price
+        +number total_amount
+        +number credited_amount
+        +number final_payable_amount
+        +number paid_amount
+        +BillStatus status
+        +string payment_qr_payload
+    }
+
+    class StudentBillingItemEntity {
+        +string id
+        +string bill_id
+        +Date serving_date
+        +string item_description
+        +number amount
+        +boolean is_credited
+    }
+
+    class MealPaymentEntity {
+        +string id
+        +string bill_id
+        +string transaction_code
+        +number payment_amount
+        +PaymentMethod payment_method
+        +PaymentStatus payment_status
+        +Date payment_time
+        +string recorded_by_user_id
+    }
+
+    class VendorPayableEntity {
+        +string id
+        +string catering_order_id
+        +string reconciliation_id
+        +number contracted_portions
+        +number accepted_portions
+        +number negotiated_rate
+        +number total_payable_amount
+        +PayableStatus payable_status
+        +Date invoice_received_date
+    }
+
+    %% =========================================================================
+    %% RELATIONSHIPS & DEPENDENCIES
+    %% =========================================================================
+    FinanceController ..> FeeScheduleService : delegates
+    FinanceController ..> BillingBatchService : delegates
+    FinanceController ..> VietQRService : delegates
+    FinanceController ..> PaymentService : delegates
+    FinanceController ..> VendorPayableService : delegates
+
+    BillingBatchService --> FeeScheduleService : retrieves active rate
+    BillingBatchService ..> StudentMealBillEntity : generates
+    StudentMealBillEntity "1" *-- "many" StudentBillingItemEntity : details
+
+    PaymentService --> VietQRService : verifies QR payload
+    PaymentService ..> MealPaymentEntity : registers
+    StudentMealBillEntity "1" <-- "many" MealPaymentEntity : settles
+
+    VendorPayableService ..> VendorPayableEntity : tracks accruals

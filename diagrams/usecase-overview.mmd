@@ -1,0 +1,102 @@
+flowchart LR
+    %% Actors
+    MGR(["👤 Semi-Boarding Coordinator\n(MGR)"])
+    ACC(["👤 School Accountant\n(ACC)"])
+    PAR(["👤 Parent / Guardian\n(PAR)"])
+    ADM(["👤 School Administrator\n(ADM)"])
+
+    subgraph SYS["System Boundary: Primary School Semi-Boarding Meal Management System"]
+        subgraph DOM1["1. Student Meal Management"]
+            UC_PAR_01(["UC-PAR-01\nRegister & Cancel Meal Program"])
+            UC_MGR_01(["UC-MGR-01\nRecord Daily Attendance & Lock Roster"])
+            UC_MGR_02(["UC-MGR-02\nMonitor Classroom Attendance Progress"])
+            UC_ADM_01(["UC-ADM-01\nDefine & Evaluate Meal Eligibility"])
+        end
+
+        subgraph DOM2["2. Meal Planning & Menu Management"]
+            UC_MGR_03(["UC-MGR-03\nDefine Dishes & Recipe Catalog"])
+            UC_MGR_04(["UC-MGR-04\nCreate Weekly Menu & Submit Approval"])
+            UC_MGR_05(["UC-MGR-05\nAssign Menu to Serving Calendar"])
+            UC_ADM_02(["UC-ADM-02\nApprove Weekly Menu (1-Level)"])
+        end
+
+        subgraph DOM3["3. Meal Operation (Catering Vendor Workflow)"]
+            UC_MGR_06(["UC-MGR-06\nDetermine Session Demand & Buffer Qty"])
+            UC_MGR_07(["UC-MGR-07\nDispatch Order to Catering Vendor"])
+            UC_MGR_08(["UC-MGR-08\nInspect Delivery & Confirm Received Qty"])
+            UC_MGR_09(["UC-MGR-09\nLog Classroom Meal Tray Distribution"])
+            UC_MGR_10(["UC-MGR-10\nReconcile Quantities & Resolve Discrepancies"])
+        end
+
+        subgraph DOM4["4. Meal Fee & Cost Management"]
+            UC_ACC_01(["UC-ACC-01\nConfigure Meal Fee Rates & Periods"])
+            UC_ACC_02(["UC-ACC-02\nCalculate Monthly Chargeable Meals & Invoices"])
+            UC_ACC_03(["UC-ACC-03\nRecord Payments & Track 3-State Status"])
+            UC_ACC_04(["UC-ACC-04\nTrack Caterer Costs & Accrue Payables"])
+            UC_PAR_02(["UC-PAR-02\nView Monthly Bill & Payment Status"])
+        end
+
+        subgraph DOM5["5. Reporting & Transparency"]
+            UC_MGR_11(["UC-MGR-11\nGenerate Daily Ops & Vendor Reports"])
+            UC_ACC_05(["UC-ACC-05\nGenerate Monthly Financial Reports"])
+            UC_PAR_03(["UC-PAR-03\nView Parent Portal & Daily Published Menu"])
+        end
+
+        subgraph DOM6["6. User & Access Management"]
+            UC_ADM_03(["UC-ADM-03\nManage User Accounts & Staff Profiles"])
+            UC_ADM_04(["UC-ADM-04\nEnforce Fixed 4-Role RBAC"])
+        end
+
+        subgraph DOM7["7. Nutrition & Health Management"]
+            UC_PAR_04(["UC-PAR-04\nRecord Student Allergy & Dietary Restrictions"])
+            UC_MGR_12(["UC-MGR-12\nReview Menu Restricted Ingredient Alerts"])
+        end
+
+        subgraph DOM8["8. Master Data & System Configuration"]
+            UC_ADM_05(["UC-ADM-05\nManage Academic Structure (Years, Classes, Students)"])
+            UC_ADM_06(["UC-ADM-06\nConfigure Lunch Serving Days & Holiday Calendar"])
+        end
+    end
+
+    %% Actor Associations
+    MGR --- UC_MGR_01
+    MGR --- UC_MGR_02
+    MGR --- UC_MGR_03
+    MGR --- UC_MGR_04
+    MGR --- UC_MGR_05
+    MGR --- UC_MGR_06
+    MGR --- UC_MGR_07
+    MGR --- UC_MGR_08
+    MGR --- UC_MGR_09
+    MGR --- UC_MGR_10
+    MGR --- UC_MGR_11
+    MGR --- UC_MGR_12
+
+    ACC --- UC_ACC_01
+    ACC --- UC_ACC_02
+    ACC --- UC_ACC_03
+    ACC --- UC_ACC_04
+    ACC --- UC_ACC_05
+
+    PAR --- UC_PAR_01
+    PAR --- UC_PAR_02
+    PAR --- UC_PAR_03
+    PAR --- UC_PAR_04
+
+    ADM --- UC_ADM_01
+    ADM --- UC_ADM_02
+    ADM --- UC_ADM_03
+    ADM --- UC_ADM_04
+    ADM --- UC_ADM_05
+    ADM --- UC_ADM_06
+
+    %% UML Relationships (Explicit include & extend)
+    UC_MGR_06 -.->|include| UC_MGR_01
+    UC_MGR_07 -.->|include| UC_MGR_06
+    UC_MGR_08 -.->|include| UC_MGR_07
+    UC_MGR_10 -.->|extend| UC_MGR_08
+    UC_MGR_04 -.->|include| UC_MGR_03
+    UC_ADM_02 -.->|include| UC_MGR_04
+    UC_ACC_02 -.->|include| UC_MGR_01
+    UC_ACC_04 -.->|include| UC_MGR_10
+    UC_MGR_12 -.->|extend| UC_MGR_04

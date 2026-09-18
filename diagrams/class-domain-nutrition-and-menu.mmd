@@ -1,0 +1,163 @@
+classDiagram
+    direction TB
+
+    %% =========================================================================
+    %% ENUMS
+    %% =========================================================================
+    class MenuApprovalStatus {
+        <<enumeration>>
+        DRAFT
+        SUBMITTED
+        APPROVED
+        REJECTED
+    }
+
+    class DishCourseType {
+        <<enumeration>>
+        MAIN_ENTREE
+        SIDE_DISH
+        SOUP
+        DESSERT
+    }
+
+    class AllergenType {
+        <<enumeration>>
+        PEANUT
+        TREE_NUT
+        SEAFOOD
+        SHELLFISH
+        EGG
+        COW_MILK
+        SOY
+        WHEAT_GLUTEN
+        OTHER
+    }
+
+    class AllergySeverity {
+        <<enumeration>>
+        MILD
+        MODERATE
+        SEVERE_ANAPHYLAXIS
+    }
+
+    %% =========================================================================
+    %% CONTROLLERS (PRESENTATION TIER)
+    %% =========================================================================
+    class MenuPlanningController {
+        -MenuService menuService
+        -DishService dishService
+        +getDishes(string courseType) ListDishResponseDto
+        +createDish(CreateDishDto dto) DishResponseDto
+        +getWeeklyMenu(string weekStart) WeeklyMenuResponseDto
+        +submitMenuForApproval(string menuId) MenuResponseDto
+        +approveMenu(string menuId, ApproveMenuDto dto) MenuResponseDto
+    }
+
+    class NutritionAllergyController {
+        -AllergyService allergyService
+        -NutritionInspectionEngine nutritionEngine
+        +declareStudentAllergy(string studentId, CreateAllergyDto dto) AllergyResponseDto
+        +getStudentAllergies(string studentId) ListAllergyResponseDto
+        +scanMenuAllergyConflicts(string menuId, string classId) AllergyConflictReportDto
+    }
+
+    %% =========================================================================
+    %% SERVICES & BUSINESS ENGINES (BUSINESS LOGIC TIER)
+    %% =========================================================================
+    class MenuService {
+        -MenuRepository menuRepo
+        -DishRepository dishRepo
+        -AuditLogService auditService
+        +createWeeklyMenu(CreateMenuDto dto) MenuEntity
+        +assignDishToMenu(string menuId, string dishId, DishCourseType course) MenuDishEntity
+        +validateMenuCompleteness(string menuId) boolean
+        +updateApprovalState(string menuId, MenuApprovalStatus status, string reviewerId) MenuEntity
+    }
+
+    class DishService {
+        -DishRepository dishRepo
+        -IngredientRepository ingredientRepo
+        +registerDish(CreateDishDto dto) DishEntity
+        +attachIngredients(string dishId, ListIngredientLink ingredients) void
+    }
+
+    class AllergyService {
+        -StudentAllergyRepository allergyRepo
+        -StudentRepository studentRepo
+        +recordAllergyProfile(string studentId, AllergenType allergen, AllergySeverity severity) StudentAllergyEntity
+        +getClassroomAllergyRoster(string classId) ListStudentAllergyDto
+    }
+
+    class NutritionInspectionEngine {
+        -MenuRepository menuRepo
+        -StudentAllergyRepository allergyRepo
+        +detectPotentialConflicts(string menuId, string classId) ListAllergyConflict
+        +generateNonBlockingVisualChips(string studentId, string mealDate) ListAllergyBadge
+    }
+
+    %% =========================================================================
+    %% DOMAIN ENTITIES (DATA ACCESS / PRISMA DBML PERSISTENCE)
+    %% =========================================================================
+    class DishEntity {
+        +string id
+        +string dish_code
+        +string dish_name
+        +DishCourseType course_type
+        +number standard_portion_weight_g
+        +number calorie_estimate_kcal
+        +boolean is_active
+    }
+
+    class IngredientEntity {
+        +string id
+        +string ingredient_name
+        +boolean is_common_allergen
+        +AllergenType allergen_category
+    }
+
+    class MenuEntity {
+        +string id
+        +string school_year_id
+        +string menu_code
+        +string week_title
+        +Date start_date
+        +Date end_date
+        +MenuApprovalStatus approval_status
+        +string approved_by_user_id
+        +Date approved_at
+    }
+
+    class MenuDishEntity {
+        +string id
+        +string menu_id
+        +string dish_id
+        +Date serving_date
+        +DishCourseType meal_course
+    }
+
+    class StudentAllergyEntity {
+        +string id
+        +string student_id
+        +AllergenType allergen_type
+        +AllergySeverity severity
+        +string reaction_description
+        +string emergency_contact_note
+        +boolean is_active
+        +Date declared_at
+    }
+
+    %% =========================================================================
+    %% RELATIONSHIPS & DEPENDENCIES
+    %% =========================================================================
+    MenuPlanningController ..> MenuService : delegates
+    MenuPlanningController ..> DishService : delegates
+    NutritionAllergyController ..> AllergyService : delegates
+    NutritionAllergyController ..> NutritionInspectionEngine : delegates
+
+    NutritionInspectionEngine --> MenuService : queries planned dishes
+    NutritionInspectionEngine --> AllergyService : queries declared allergies
+
+    MenuEntity "1" *-- "many" MenuDishEntity : contains
+    DishEntity "1" <-- "many" MenuDishEntity : refers to
+    DishEntity "many" -- "many" IngredientEntity : composed of
+    StudentAllergyEntity "many" --> "1" IngredientEntity : matches allergen

@@ -1,0 +1,63 @@
+sequenceDiagram
+    autonumber
+    actor Accountant as 👤 School Accountant (ACC)
+    participant WebApp as 🌐 Web SPA (/accountant/billing & /parent/bills)
+    participant FinanceCtrl as ⚙️ FinanceController (/api/v1/finance)
+    participant BatchSvc as ⚙️ BillingBatchService
+    participant FeeSvc as ⚙️ FeeScheduleService
+    participant VietQRSvc as 📱 VietQRService
+    participant PrismaDB as 💾 PostgreSQL (Prisma DBML)
+    actor Parent as 👤 Parent (PAR)
+    participant BankApp as 🏦 Banking App (Mobile)
+    participant BankGateway as 💳 Napas / VietQR Webhook Gateway
+
+    Note over Accountant,PrismaDB: Monthly Step 1: Batch Student Invoice Calculation with Excused Absence Credit
+    Accountant->>WebApp: Trigger Monthly Billing Batch (Month: 9, Year: 2026)
+    WebApp->>FinanceCtrl: POST /api/v1/finance/invoices/batch-generate {month: 9, year: 2026}
+    FinanceCtrl->>BatchSvc: executeBatchGeneration("sem_01", 9, 2026)
+
+    BatchSvc->>FeeSvc: getActiveLunchRate("year_2026_2027")
+    FeeSvc->>PrismaDB: SELECT unit_price_per_meal FROM meal_fee_configs WHERE is_active = true
+    PrismaDB-->>FeeSvc: Rate = 35,000 VND / meal
+    FeeSvc-->>BatchSvc: 35,000 VND
+
+    loop For each enrolled student (e.g. Student Nguyễn Văn A)
+        BatchSvc->>PrismaDB: Count total school lunch days in Month 9
+        PrismaDB-->>BatchSvc: 22 planned meal days
+        BatchSvc->>PrismaDB: Count excused absences in month 9 (status='absent_excused')
+        PrismaDB-->>BatchSvc: 2 excused absence days
+
+        Note over BatchSvc: Planned: 22 days * 35,000 = 770,000 VND<br/>Credit: 2 days * 35,000 = 70,000 VND<br/>Final Payable: 770,000 - 70,000 = 700,000 VND (20 meals)
+
+        BatchSvc->>VietQRSvc: buildDynamicQRCode("bill_1001", "HS00123", 700000)
+        VietQRSvc-->>BatchSvc: "vietqr://pay?bin=970422&acc=123456&amt=700000&msg=BILL1001"
+
+        BatchSvc->>PrismaDB: INSERT INTO student_meal_bills (student_id, billing_month, billing_year, planned_meals_count, excused_absence_count, billable_meals_count, unit_price, total_amount, credited_amount, final_payable_amount, status, payment_qr_payload) VALUES ('std_101', 9, 2026, 22, 2, 20, 35000, 770000, 70000, 700000, 'unpaid', 'vietqr://...')
+    end
+
+    BatchSvc-->>FinanceCtrl: Batch Summary (Generated 600 bills)
+    FinanceCtrl-->>WebApp: 201 Created {generated_count: 600, total_amount: 420000000}
+    WebApp-->>Accountant: Display Generated Billing Batch & Send Notifications CTA
+
+    Note over Parent,BankGateway: Monthly Step 2: Parent QR Scan & Automatic Webhook Reconciliation
+    Parent->>WebApp: Open Parent Portal /parent/bills on Smartphone
+    WebApp->>FinanceCtrl: GET /api/v1/finance/invoices/student/std_101
+    FinanceCtrl-->>WebApp: Invoice Details + VietQR Image
+    WebApp-->>Parent: Display 700,000 VND (Credited 2 days absent) + VietQR code
+
+    Parent->>BankApp: Scan VietQR with Vietcombank/MBBank App
+    BankApp->>BankGateway: Transfer 700,000 VND with Content "BILL1001"
+    BankGateway-->>BankApp: Transfer Successful
+
+    Note over BankGateway,PrismaDB: Asynchronous Webhook Notification
+    BankGateway->>FinanceCtrl: POST /api/v1/finance/payments/webhook {transaction_id: "TXN998877", content: "BILL1001", amount: 700000, bank: "VCB"}
+    FinanceCtrl->>FinanceCtrl: handlePaymentWebhook(...)
+    FinanceCtrl->>VietQRSvc: verifyPaymentTransaction("BILL1001", 700000)
+    VietQRSvc-->>FinanceCtrl: true (Matches bill_1001)
+
+    FinanceCtrl->>PrismaDB: INSERT INTO meal_payments (bill_id, transaction_code, payment_amount, payment_method, payment_status) VALUES ('bill_1001', 'TXN998877', 700000, 'VIETQR_BANK_TRANSFER', 'COMPLETED')
+    FinanceCtrl->>PrismaDB: UPDATE student_meal_bills SET paid_amount = 700000, status = 'paid' WHERE id = 'bill_1001'
+    PrismaDB-->>FinanceCtrl: Invoice marked as PAID
+
+    FinanceCtrl-->>BankGateway: 200 OK {received: true}
+    FinanceCtrl-->>WebApp: Push WebSocket / Notification to Parent: "Payment Received! Status: PAID"

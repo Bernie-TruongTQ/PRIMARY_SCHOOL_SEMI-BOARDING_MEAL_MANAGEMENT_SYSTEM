@@ -23,6 +23,10 @@
   - [Level 2: Container Diagram](#level-2--container-diagram)
   - [Level 3: Component Architecture (All 8 Business Domains)](#level-3--component-architecture-all-8-business-domains)
 - [arc42 Architecture Documentation Suite](#arc42-architecture-documentation-suite)
+- [Complete System Architecture & Operational Diagrams](#complete-system-architecture--operational-diagrams)
+  - [1. System-Level & Role Use Case Diagrams](#1-system-level--role-use-case-diagrams)
+  - [2. UML Class Diagrams (3-Tier & Domain Entities)](#2-uml-class-diagrams-3-tier--domain-entities)
+  - [3. UML Sequence Diagrams (Operational Milestones)](#3-uml-sequence-diagrams-operational-milestones)
 - [Relational Database Architecture (3NF Schema &amp; ERD)](#relational-database-architecture-3nf-schema--erd)
 - [RESTful API Specification &amp; OpenAPI 3.0.3](#restful-api-specification--openapi-303)
   - [Swagger UI Visual Showcase](#swagger-ui-visual-showcase)
@@ -277,6 +281,82 @@ The complete architecture is documented according to the internationally recogni
 | **10** | [Quality Requirements](arc42/10-quality-requirements.md)         | 8 measurable quality scenarios (`QS-01` to `QS-08`) testing Q42 quality goals         | ✅ Complete |
 | **11** | [Risks and Technical Debt](arc42/11-risks-and-technical-debt.md) | Prioritized risk register, mitigation strategies, and technical debt backlog              | ✅ Complete |
 | **12** | [Glossary](arc42/12-glossary.md)                                 | Ubiquitous domain language, Vietnamese legal definitions, acronym expansions              | ✅ Complete |
+
+---
+
+## Complete System Architecture & Operational Diagrams
+
+All architectural and operational diagrams are centrally maintained in the [`diagrams/`](diagrams/README.md) directory with both version-controlled Mermaid source models (`.mmd`) and compiled visual assets (`.png`).
+
+### 1. System-Level & Role Use Case Diagrams
+
+#### System-Level UML Use Case Overview
+*Encompasses the primary system boundary, 4 fixed institutional personas (`ADM`, `MGR`, `ACC`, `PAR`), and all 8 business functional domains:*
+
+![System-Level UML Use Case Overview](diagrams/usecase-overview.png)
+
+#### Actor Use Case: Semi-Boarding Coordinator / Meal Manager (`MGR`)
+*Focuses on morning attendance tracking, 08:30 AM cutoff, demand aggregation, catering PO dispatch, 3-step receiving inspection, trolley distribution, and 13:00 PM reconciliation:*
+
+![Use Case Diagram — Semi-Boarding Coordinator](diagrams/usecase-manager.png)
+
+#### Actor Use Case: School Accountant (`ACC`)
+*Focuses on meal fee rate schedules, monthly batch calculations with excused absence credits, 3-state payment collections, VietQR reconciliation, and caterer payables:*
+
+![Use Case Diagram — School Accountant](diagrams/usecase-accountant.png)
+
+#### Actor Use Case: School Administrator / Principal (`ADM`)
+*Focuses on baseline academic structures, serving calendars, holiday schedules, 1-level weekly menu approvals, and fixed 4-role RBAC enforcement:*
+
+![Use Case Diagram — School Administrator](diagrams/usecase-admin.png)
+
+#### Actor Use Case: Student Parent / Guardian (`PAR`)
+*Focuses on mobile-first boarding registration, medical food allergy declarations, daily published menu & food inspection badges, and VietQR invoice payments:*
+
+![Use Case Diagram — Student Parent / Guardian](diagrams/usecase-parent.png)
+
+---
+
+### 2. UML Class Diagrams (3-Tier & Domain Entities)
+
+#### Domain 3: Operations, Demand Calculation & Catering Vendor Management
+*Models the presentation controllers, business logic engines (`AttendanceCutoffGuard`, `BufferEngine`, `FoodSafetyInspectionValidator`, `ReconciliationEngine`), and Prisma DBML persistence entities:*
+
+![UML Class Diagram — Operations & Catering Domain](diagrams/class-domain-operations-and-caterer.png)
+
+#### Domain 4: Meal Fee, Cost Management & VietQR Billing
+*Models fee rate schedules, monthly student billing batch calculations, dynamic VietQR generation, payment webhook listeners, and caterer payable ledgers:*
+
+![UML Class Diagram — Finance & Billing Domain](diagrams/class-domain-finance-and-billing.png)
+
+#### Domain 2 & 7: Nutrition, Menu Planning & Food Allergy Alert Engine
+*Models weekly menus, standard recipes, ingredient compositions, medical allergy declarations, and non-blocking visual conflict detection:*
+
+![UML Class Diagram — Nutrition & Menu Domain](diagrams/class-domain-nutrition-and-menu.png)
+
+---
+
+### 3. UML Sequence Diagrams (Operational Milestones)
+
+#### Milestone 1 & 2 (08:30 – 08:45 AM): Morning Attendance Lockdown, Buffer & Catering PO Dispatch
+*Step-by-step lifecycle from morning roll call through the 08:30 AM lock, 0–10% safety buffer calculation, and electronic purchase order dispatch to the catering vendor:*
+
+![Sequence Diagram 01: Morning Demand & Order Dispatch](diagrams/sequence-01-morning-demand-and-order.png)
+
+#### Milestone 3 & 4 (10:30 – 11:00 AM): 3-Step Food Receiving Inspection (≥65°C) & Classroom Distribution
+*Receiving inspection protocol at the delivery dock (Decision 1246/QĐ-BYT core temperature probe ≥ 65°C, seals, sensory check, 24h retention samples) and 11:00 AM classroom trolley distribution:*
+
+![Sequence Diagram 02: Receiving Inspection & Distribution](diagrams/sequence-02-receiving-inspection-and-distribution.png)
+
+#### Milestone 5 (13:00 PM): Post-Lunch 3-Way Reconciliation & Vendor Payables Accrual
+*Post-lunch variance reconciliation (Ordered vs. Delivered vs. Consumed), discrepancy categorization, and automated accrual into the School Accountant's vendor payable ledger:*
+
+![Sequence Diagram 03: Post-Lunch 3-Way Reconciliation](diagrams/sequence-03-post-lunch-reconciliation.png)
+
+#### Monthly Cycle: Student Fee Billing Batch, Dynamic VietQR & Payment Webhook Reconciliation
+*Monthly billing batch applying excused absence credits, generating dynamic VietQR codes with embedded invoice IDs, parent mobile banking scan, and automated payment gạch nợ:*
+
+![Sequence Diagram 04: Monthly Billing & VietQR Payment](diagrams/sequence-04-monthly-billing-and-vietqr.png)
 
 ---
 

@@ -1,0 +1,63 @@
+sequenceDiagram
+    autonumber
+    actor Driver as 🚚 Caterer Delivery Driver
+    actor Coordinator as 👤 Semi-Boarding Coordinator (MGR)
+    participant WebApp as 🌐 Web SPA (/coordinator/receiving)
+    participant OpsCtrl as ⚙️ OperationsController (/api/v1/operations)
+    participant RecvSvc as ⚙️ ReceivingService
+    participant Validator as 🧪 FoodSafetyInspectionValidator
+    participant DistSvc as ⚙️ DistributionService
+    participant CloudStorage as 📦 S3 / Media Object Store
+    participant PrismaDB as 💾 PostgreSQL (Prisma DBML)
+    participant ParentGateway as 📲 Parent Notification Gateway
+    actor Teacher as 👩‍🏫 Homeroom Teacher
+
+    Note over Driver,Coordinator: Milestone 3: 10:30:00 AM — Delivery Dock Arrival & 3-Step Safety Check (QĐ 1246/BYT)
+    Driver->>Coordinator: Delivers insulated containers at Gate B dock
+    Coordinator->>WebApp: Record Dock Check-in (Plate: 29C-8899, 25 Bins)
+    WebApp->>OpsCtrl: POST /api/v1/operations/receiving/checkin
+    OpsCtrl->>RecvSvc: checkinDelivery(...)
+    RecvSvc->>PrismaDB: INSERT INTO meal_deliveries (...) RETURNING id AS delivery_id
+    PrismaDB-->>RecvSvc: delivery_id = "del_01HQ"
+    RecvSvc-->>OpsCtrl: Delivery checked in
+    OpsCtrl-->>WebApp: 201 Created {delivery_id: "del_01HQ"}
+
+    Coordinator->>WebApp: Submit 3-Step Inspection (Probe: 68.5°C, Seal: Intact, Sensory: Pass, Photo upload)
+    WebApp->>CloudStorage: Upload Probe & 24h Sample retention photos
+    CloudStorage-->>WebApp: return photo_urls
+    WebApp->>OpsCtrl: POST /api/v1/operations/receiving/inspect {delivery_id: "del_01HQ", core_temp: 68.5, seal_intact: true, sensory_passed: true, sample_retained_24h: true}
+
+    OpsCtrl->>RecvSvc: recordInspection(...)
+    RecvSvc->>Validator: validateCoreTemperature(68.5)
+    Note over Validator: Core Temp 68.5°C >= 65.0°C threshold -> PASS
+    Validator-->>RecvSvc: true (Temperature Safe)
+    RecvSvc->>Validator: determineOverallResult(68.5, true, true)
+    Validator-->>RecvSvc: "ACCEPTED"
+
+    RecvSvc->>PrismaDB: INSERT INTO meal_inspections (delivery_id, core_temperature_c, seal_intact, sensory_passed, sample_retained_24h, overall_result) VALUES ('del_01HQ', 68.5, true, true, true, 'ACCEPTED')
+    PrismaDB-->>RecvSvc: Inspection record saved
+
+    RecvSvc->>ParentGateway: publishInspectionTransparencyBadge(photo_urls, 68.5, "ACCEPTED")
+    ParentGateway-->>WebApp: Broadcast live badge to Parent Portals
+
+    RecvSvc-->>OpsCtrl: Inspection ACCEPTED
+    OpsCtrl-->>WebApp: 200 OK {status: "ACCEPTED", clearance: "APPROVED_FOR_DISTRIBUTION"}
+    WebApp-->>Coordinator: Green Clearance: Food Safe. Begin Trolley Loading!
+
+    Note over Coordinator,Teacher: Milestone 4: 11:00:00 AM — Classroom Trolley Distribution
+    Coordinator->>WebApp: Load Classroom Distribution Plan
+    WebApp->>OpsCtrl: GET /api/v1/operations/distribution/plan?serving_date=2026-09-18
+    OpsCtrl->>DistSvc: getPlan("2026-09-18")
+    DistSvc->>PrismaDB: SELECT class_id, count(present) FROM meal_participations WHERE date='2026-09-18' GROUP BY class_id
+    PrismaDB-->>DistSvc: Class manifest (e.g., 1A: 30 meals + 1 peanut-free tray)
+    DistSvc-->>OpsCtrl: Distribution Plan List
+    OpsCtrl-->>WebApp: 200 OK (Class-by-Class packing list)
+
+    Coordinator->>WebApp: Confirm Trolley Dispatch to Class 1A
+    WebApp->>OpsCtrl: POST /api/v1/operations/distribution/confirm {class_id: "cls_1A", allocated: 31, date: "2026-09-18"}
+    OpsCtrl->>DistSvc: confirmDistribution(...)
+    DistSvc->>PrismaDB: INSERT INTO meal_distributions (class_id, allocated_portions, delivered_at) VALUES ('cls_1A', 31, NOW())
+    PrismaDB-->>DistSvc: Success
+    DistSvc-->>OpsCtrl: Confirmed
+    OpsCtrl-->>WebApp: 200 OK
+    WebApp-->>Teacher: Classroom Trolley Arrived at 11:00 AM with allergen chips

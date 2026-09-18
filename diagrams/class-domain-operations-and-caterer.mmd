@@ -1,0 +1,231 @@
+classDiagram
+    direction TB
+
+    %% =========================================================================
+    %% ENUMS
+    %% =========================================================================
+    class ParticipationStatus {
+        <<enumeration>>
+        PRESENT
+        ABSENT_EXCUSED
+        ABSENT_UNEXCUSED
+    }
+
+    class DemandStatus {
+        <<enumeration>>
+        DRAFT
+        CALCULATED
+        CONFIRMED
+        REVISED
+    }
+
+    class OrderStatus {
+        <<enumeration>>
+        PENDING_CONFIRMATION
+        CONFIRMED
+        IN_PREPARATION
+        IN_TRANSIT
+        DELIVERED
+        CANCELLED
+    }
+
+    class InspectionOverallResult {
+        <<enumeration>>
+        ACCEPTED
+        CONDITIONALLY_ACCEPTED
+        REJECTED
+    }
+
+    class DiscrepancyType {
+        <<enumeration>>
+        VENDOR_SHORTFALL
+        VENDOR_OVER_DELIVERY
+        QUALITY_REJECTION
+        STUDENT_SURGE
+        STUDENT_DROP
+    }
+
+    %% =========================================================================
+    %% CONTROLLERS (PRESENTATION TIER)
+    %% =========================================================================
+    class DemandController {
+        -DemandService demandService
+        +getTodayDemand() DemandResponseDto
+        +calculateDemand(CalculateDemandDto dto) DemandResponseDto
+        +dispatchCateringOrder(DispatchOrderDto dto) CateringOrderResponseDto
+    }
+
+    class OperationsController {
+        -ReceivingService receivingService
+        -DistributionService distributionService
+        -ReconciliationService reconciliationService
+        +checkinDelivery(CheckinDeliveryDto dto) DeliveryResponseDto
+        +recordInspection(InspectionDto dto) InspectionResponseDto
+        +getDistributionPlan(string date) DistributionPlanDto
+        +confirmDistribution(ConfirmDistributionDto dto) DistributionResponseDto
+        +calculateReconciliation(string date) ReconciliationSummaryDto
+        +resolveDiscrepancy(ResolveDiscrepancyDto dto) ReconciliationResponseDto
+    }
+
+    %% =========================================================================
+    %% SERVICES & BUSINESS ENGINES (BUSINESS LOGIC TIER)
+    %% =========================================================================
+    class AttendanceCutoffGuard {
+        -string CUTOFF_TIME
+        +validateCutoffTime(Date currentTime) boolean
+        +canModifyAttendance(Date servingDate) boolean
+    }
+
+    class DemandService {
+        -AttendanceRepository attendanceRepo
+        -DemandRepository demandRepo
+        -MenuRepository menuRepo
+        -BufferEngine bufferEngine
+        +aggregateAttendance(Date date) AttendanceSummary
+        +calculateTotalDemand(Date date, number bufferPercent) MealDemandEntity
+        +breakdownDishQuantities(string demandId, string menuId) DishQuantityList
+    }
+
+    class BufferEngine {
+        -number MIN_BUFFER
+        -number MAX_BUFFER
+        -number DEFAULT_BUFFER
+        +computeDemandCount(number confirmedAttendance, number bufferPercent) number
+    }
+
+    class CateringOrderDispatcher {
+        -CateringOrderRepository orderRepo
+        -string ORDER_DEADLINE
+        +createOrderPayload(MealDemandEntity demand) CateringOrderPayload
+        +dispatchElectronicOrder(CateringOrderPayload payload) CateringOrderEntity
+        +notifyCoordinator(string orderId) void
+    }
+
+    class ReceivingService {
+        -DeliveryRepository deliveryRepo
+        -FoodSafetyInspectionValidator inspectionValidator
+        +recordDockArrival(CheckinDeliveryDto deliveryData) MealDeliveryEntity
+        +evaluateInspection(InspectionDto inspectionData) MealInspectionEntity
+    }
+
+    class FoodSafetyInspectionValidator {
+        -number MIN_CORE_TEMP
+        +validateCoreTemperature(number temp) boolean
+        +verifyTamperSeals(boolean sealed) boolean
+        +evaluateSensoryCheck(boolean appearance, boolean aroma, boolean taste) boolean
+        +determineOverallResult(number temp, boolean sealed, boolean sensory) InspectionOverallResult
+    }
+
+    class DistributionService {
+        -DistributionRepository distributionRepo
+        -StudentRepository studentRepo
+        +generateClassroomTrolleyManifest(Date servingDate) TrolleyManifestList
+        +confirmClassroomDelivery(string classId, number trayCount) MealDistributionEntity
+    }
+
+    class ReconciliationEngine {
+        -ReconciliationRepository reconciliationRepo
+        -VendorPayableLedger payableLedger
+        +executeThreeWayReconciliation(Date servingDate) MealReconciliationEntity
+        +calculateVariance(number ordered, number delivered, number consumed) VarianceResult
+        +finalizePayableQuantity(string reconciliationId, string notes) VendorPayableEntity
+    }
+
+    %% =========================================================================
+    %% DOMAIN ENTITIES (DATA ACCESS / PERSISTENCE TIER - PRISMA DBML)
+    %% =========================================================================
+    class MealDemandEntity {
+        +string id
+        +Date serving_date
+        +DemandStatus status
+        +number attendance_count
+        +number buffer_percentage
+        +number buffer_count
+        +number final_demand_count
+        +string notes
+        +Date created_at
+    }
+
+    class CateringOrderEntity {
+        +string id
+        +string demand_id
+        +string order_code
+        +Date order_date
+        +string target_delivery_time
+        +number total_portions
+        +OrderStatus status
+        +Date dispatched_at
+    }
+
+    class MealDeliveryEntity {
+        +string id
+        +string catering_order_id
+        +Date delivery_date
+        +Date arrival_time
+        +string vehicle_plate
+        +string driver_name
+        +number containers_count
+    }
+
+    class MealInspectionEntity {
+        +string id
+        +string delivery_id
+        +number core_temperature_c
+        +boolean seal_intact
+        +boolean sensory_passed
+        +boolean sample_retained_24h
+        +InspectionOverallResult overall_result
+        +string inspected_by_user_id
+        +Date inspected_at
+    }
+
+    class MealDistributionEntity {
+        +string id
+        +string class_id
+        +Date serving_date
+        +number allocated_portions
+        +number special_diet_portions
+        +Date delivered_at
+        +string received_by
+    }
+
+    class MealReconciliationEntity {
+        +string id
+        +Date serving_date
+        +number ordered_quantity
+        +number delivered_quantity
+        +number accepted_quantity
+        +number consumed_quantity
+        +number leftover_quantity
+        +number delivery_variance
+        +number billable_quantity
+        +DiscrepancyType discrepancy_type
+        +string reconciled_by_user_id
+        +Date reconciled_at
+    }
+
+    %% =========================================================================
+    %% RELATIONSHIPS & DEPENDENCIES
+    %% =========================================================================
+    DemandController ..> DemandService : delegates
+    DemandController ..> CateringOrderDispatcher : triggers
+    OperationsController ..> ReceivingService : delegates
+    OperationsController ..> DistributionService : delegates
+    OperationsController ..> ReconciliationEngine : delegates
+
+    DemandService --> AttendanceCutoffGuard : validates cutoff
+    DemandService --> BufferEngine : calculates buffer
+    DemandService ..> MealDemandEntity : manages
+    CateringOrderDispatcher ..> CateringOrderEntity : dispatches
+
+    ReceivingService --> FoodSafetyInspectionValidator : validates safety
+    ReceivingService ..> MealDeliveryEntity : persists
+    ReceivingService ..> MealInspectionEntity : records
+
+    DistributionService ..> MealDistributionEntity : coordinates
+    ReconciliationEngine ..> MealReconciliationEntity : computes variance
+
+    MealDemandEntity "1" *-- "1" CateringOrderEntity : generates
+    CateringOrderEntity "1" <-- "1" MealDeliveryEntity : fulfills
+    MealDeliveryEntity "1" *-- "1" MealInspectionEntity : undergoes
+    MealDeliveryEntity "1" <.. "1" MealReconciliationEntity : verified in

@@ -10,56 +10,8 @@
 
 ## Use Case Diagram — Semi-Boarding Coordinator
 
-```mermaid
-flowchart LR
-    MGR(["👤 Semi-Boarding Coordinator\n(MGR)"])
+![Use Case Diagram — Semi-Boarding Coordinator](../../diagrams/usecase-manager.png)
 
-    subgraph SYSTEM["Semi-Boarding Operations Subsystem (Catering Model)"]
-        subgraph ATTENDANCE["Attendance & Headcount"]
-            UC1(["UC-MGR-01\nRecord Daily Attendance & Lock Roster"])
-            UC2(["UC-MGR-02\nMonitor Attendance Progress"])
-        end
-
-        subgraph MENU["Dishes & Menus"]
-            UC3(["UC-MGR-03\nDefine Dishes & Ingredients"])
-            UC4(["UC-MGR-04\nCreate Weekly Menu & Submit"])
-            UC5(["UC-MGR-05\nAssign Menu to Calendar"])
-            UC12(["UC-MGR-12\nReview Allergy Conflict Alerts"])
-        end
-
-        subgraph OPERATION["Catering Operations"]
-            UC6(["UC-MGR-06\nDetermine Demand & Buffer Qty"])
-            UC7(["UC-MGR-07\nDispatch Order to Vendor"])
-            UC8(["UC-MGR-08\nInspect Delivery & Confirm Receiving"])
-            UC9(["UC-MGR-09\nLog Classroom Distribution"])
-            UC10(["UC-MGR-10\nReconcile Quantities & Discrepancies"])
-        end
-
-        subgraph REPORT["Operational Reporting"]
-            UC11(["UC-MGR-11\nGenerate Daily Ops Report"])
-        end
-    end
-
-    MGR --- UC1
-    MGR --- UC2
-    MGR --- UC3
-    MGR --- UC4
-    MGR --- UC5
-    MGR --- UC6
-    MGR --- UC7
-    MGR --- UC8
-    MGR --- UC9
-    MGR --- UC10
-    MGR --- UC11
-    MGR --- UC12
-
-    UC6 -.->|include| UC1
-    UC7 -.->|include| UC6
-    UC8 -.->|include| UC7
-    UC10 -.->|extend| UC8
-    UC4 -.->|include| UC3
-    UC12 -.->|extend| UC4
-```
 
 ---
 

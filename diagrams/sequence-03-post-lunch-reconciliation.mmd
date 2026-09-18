@@ -1,0 +1,43 @@
+sequenceDiagram
+    autonumber
+    actor Coordinator as 👤 Semi-Boarding Coordinator (MGR)
+    actor Accountant as 👤 School Accountant (ACC)
+    participant WebApp as 🌐 Web SPA (/coordinator/reconciliation)
+    participant OpsCtrl as ⚙️ OperationsController (/api/v1/operations)
+    participant ReconEngine as 🧮 ReconciliationEngine
+    participant PrismaDB as 💾 PostgreSQL (Prisma DBML)
+    participant PayableSvc as 💼 VendorPayableService
+
+    Note over Coordinator,ReconEngine: Milestone 5: 13:00:00 PM — Post-Lunch 3-Way Quantity Reconciliation
+    Coordinator->>WebApp: Access 13:00 PM Daily Reconciliation Form
+    WebApp->>OpsCtrl: POST /api/v1/operations/reconciliation/calculate {serving_date: "2026-09-18"}
+    OpsCtrl->>ReconEngine: executeThreeWayReconciliation("2026-09-18")
+
+    ReconEngine->>PrismaDB: Fetch Ordered (630), Delivered (630), Classroom Returned (12 leftovers)
+    PrismaDB-->>ReconEngine: Raw counts: Ordered=630, Delivered=630, Consumed=618, Leftover=12
+
+    ReconEngine->>ReconEngine: calculateVariance(Ordered: 630, Delivered: 630, Consumed: 618)
+    Note over ReconEngine: Delivery Variance = 630 - 630 = 0 (Match)<br/>Leftover = 12 (Well within safety buffer of 30)<br/>Accepted Quantity = 630<br/>Billable/Payable Quantity = min(630, 630) = 630
+
+    ReconEngine-->>OpsCtrl: ReconciliationSummary (Accepted: 630, Variance: 0, Billable: 630)
+    OpsCtrl-->>WebApp: 200 OK {ordered: 630, delivered: 630, consumed: 618, leftover: 12, variance: 0, billable: 630}
+    WebApp-->>Coordinator: Render 3-Way Reconciliation Comparison Grid
+
+    Coordinator->>WebApp: Submit & Sign-off Reconciliation (Notes: "Delivery complete, buffer absorbed 18 portions")
+    WebApp->>OpsCtrl: POST /api/v1/operations/reconciliation/resolve {serving_date: "2026-09-18", accepted_quantity: 630, notes: "Normal operations"}
+    OpsCtrl->>ReconEngine: finalizePayableQuantity(...)
+
+    ReconEngine->>PrismaDB: INSERT INTO meal_reconciliations (serving_date, ordered_quantity, delivered_quantity, accepted_quantity, consumed_quantity, leftover_quantity, delivery_variance, billable_quantity, discrepancy_type) VALUES ('2026-09-18', 630, 630, 630, 618, 12, 0, 630, 'NONE') RETURNING id AS recon_id
+    PrismaDB-->>ReconEngine: recon_id = "rec_01HR"
+
+    ReconEngine->>PayableSvc: createPayableFromReconciliation(recon_id)
+    PayableSvc->>PrismaDB: INSERT INTO vendor_payables (catering_order_id, reconciliation_id, accepted_portions, negotiated_rate, total_payable_amount, payable_status) VALUES ('PO-CAT-20260918-01', 'rec_01HR', 630, 32000, 20160000, 'PENDING_INVOICE')
+    PrismaDB-->>PayableSvc: Payable ledger row created (20,160,000 VND)
+
+    PayableSvc-->>ReconEngine: Success
+    ReconEngine-->>OpsCtrl: Finalized
+    OpsCtrl-->>WebApp: 200 OK {status: "RESOLVED", payable_id: "pay_01HR"}
+    WebApp-->>Coordinator: Green Toast: "Reconciliation complete. Accrued 20,160,000 VND to Caterer Payable Ledger."
+
+    Accountant->>WebApp: Access /accountant/vendor-payables
+    WebApp-->>Accountant: Display 630 accepted meals, pending vendor invoice validation
