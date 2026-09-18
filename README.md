@@ -1,837 +1,352 @@
 # Primary School Semi-Boarding Meal Management System
 
-> A comprehensive web-based operations platform designed to manage the full meal lifecycle for primary school semi-boarding programs — from student attendance and dynamic demand forecasting through kitchen preparation, food safety compliance, and cost transparency.
+> **A production-grade, top-down engineered operations platform for primary school semi-boarding meal management.**
+> Governs student attendance, dynamic headcount demand, dietary & allergen safety, catering purchase orders, 3-step food safety compliance, and financial fee reconciliation under an External Catering Vendor Operating Model.
+
+[![Architecture: C4 Model](<https://img.shields.io/badge/Architecture-C4%20Model%20%28L1--L3%29-0B5FFF?style=flat-square>)](c4/README.md)
+[![arc42 Documentation](<https://img.shields.io/badge/arc42-ESSENTIAL%20Level-orange?style=flat-square>)](arc42/README.md)
+[![API Standard: OpenAPI 3.0.3](<https://img.shields.io/badge/API-OpenAPI%203.0.3-85EA2D?style=flat-square&logo=openapi-initiative&logoColor=black>)](docs/07-api-documentation/README.md)
+[![Database: PostgreSQL 15 3NF](<https://img.shields.io/badge/Database-PostgreSQL%2015%20%283NF%29-336791?style=flat-square&logo=postgresql&logoColor=white>)](docs/06-database/README.md)
+[![Backend: NestJS 10](<https://img.shields.io/badge/Backend-NestJS%2010%20%2B%20Prisma-E0234E?style=flat-square&logo=nestjs&logoColor=white>)](backend/README.md)
+[![Frontend: React 19 Vite](<https://img.shields.io/badge/Frontend-React%2019%20%2B%20TailwindCSS-61DAFB?style=flat-square&logo=react&logoColor=black>)](frontend/README.md)
+
+---
+
+## Table of Contents
+
+- [Problem Statement](#problem-statement)
+- [Core Operating Model &amp; Golden Timelines](#core-operating-model--golden-timelines)
+- [Top-Down Decomposition Methodology](#top-down-decomposition-methodology)
+  - [System Scope &amp; Decomposition Mind Map](#system-scope--decomposition-mind-map)
+- [C4 Software Architecture Suite](#c4-software-architecture-suite)
+  - [Level 1: System Context Diagram](#level-1--system-context-diagram)
+  - [Level 2: Container Diagram](#level-2--container-diagram)
+  - [Level 3: Component Architecture (All 8 Business Domains)](#level-3--component-architecture-all-8-business-domains)
+- [arc42 Architecture Documentation Suite](#arc42-architecture-documentation-suite)
+- [Relational Database Architecture (3NF Schema &amp; ERD)](#relational-database-architecture-3nf-schema--erd)
+- [RESTful API Specification &amp; OpenAPI 3.0.3](#restful-api-specification--openapi-303)
+  - [Swagger UI Visual Showcase](#swagger-ui-visual-showcase)
+- [Information Architecture &amp; Portals](#information-architecture--portals)
+- [User Interface Showcase (Operational Portals)](#user-interface-showcase-operational-portals)
+- [Repository Structure](#repository-structure)
+- [Quick Start Guide](#quick-start-guide)
+  - [Prerequisites](#prerequisites)
+  - [1. Backend Setup (NestJS + Prisma)](#1-backend-setup-nestjs--prisma)
+  - [2. Frontend Setup (React 19 + Vite)](#2-frontend-setup-react-19--vite)
+- [Traceability Matrix](#traceability-matrix)
 
 ---
 
 ## Problem Statement
 
-Primary schools operating semi-boarding programs face recurring operational friction across the meal supply and preparation value chain:
+Primary schools managing semi-boarding programs face critical operational hurdles across the food supply and attendance chain:
 
-- **Attendance Discrepancy:** Manual paper rosters lead to persistent meal over/under-production daily.
-- **Food Over/Under-Production:** Absence of dynamic scaling from confirmed student headcounts to raw ingredient purchase and preparation quantities.
-- **Emergency Disruption:** Late arrivals, sudden absences, and dietary changes occurring after the morning cutoff lack an auditable, real-time approval workflow.
-- **Traceability Gaps:** Raw ingredient batches, pantry inventory, and distributed meal trays are disconnected, making food safety investigations slow and unreliable.
-- **Cost Opacity:** Expense reconciliation and per-meal cost calculations are performed across disconnected spreadsheets, detached from actual kitchen yields.
+- **Attendance Discrepancies:** Paper rosters lead to daily meal over-ordering or under-ordering.
+- **Safety Buffer Inefficiencies:** Lacking dynamic scaling from classroom headcounts to vendor purchase orders causes unnecessary budget waste.
+- **Strict Cutoff Violations:** Absence of enforced cutoff times creates chaotic last-minute kitchen changes without audit trails.
+- **Food Safety Compliance Gaps:** Ministry of Health regulations (Decision 1246/QĐ-BYT) require strict core temperature ($\ge 65^\circ\text{C}$), sensory verification, and 24-hour retention samples at the delivery dock.
+- **Fee Opacity:** Reconciling monthly student attendance credits and catering supplier invoices across paper logs is error-prone and contentious.
 
 ---
 
-## Project Methodology
+## Core Operating Model & Golden Timelines
 
-This repository adheres to a **strict top-down decomposition methodology**, guaranteeing that every engineering artifact is directly traceable to its upstream operational requirement:
+```
+Operating Model: External Catering Vendor Operating Model
+Scope Bounding:  Dedicated Lunch-Only Scope (Mon–Fri)
+Security Model:  Fixed 4-Role RBAC (ADM, MGR, ACC, PAR) via Bearer JWT
+```
+
+The system coordinates school staff, parents, and external vendors around strict daily operational milestones:
+
+```
+[08:30 AM] Attendance Cutoff Lock (AttendanceCutoffGuard freezes classroom roster)
+     │
+     ▼
+[08:45 AM] Demand Aggregation (+0–10% Buffer) & Vendor PO Dispatch
+     │
+     ▼
+[10:30 AM] Delivery Dock Arrival & 3-Step Inspection (Core Temp ≥ 65°C, Decision 1246/QĐ-BYT)
+     │
+     ▼
+[11:00 AM] Classroom Meal Trolley Distribution & Allergen Cross-Check
+     │
+     ▼
+[13:00 PM] 3-Way Reconciliation (Ordered vs. Delivered vs. Consumed) & Accrued Payables
+     │
+     ▼
+[Monthly]  Automated Billing Batch (Absence Credits) & VietQR Payment Collection
+```
+
+> [!IMPORTANT]
+> **Strict Cutoff Enforcement:** At `08:30:00 AM`, the `AttendanceCutoffGuard` automatically rejects direct roster mutations with `409 Conflict (CUTOFF_EXCEEDED)`. Late exceptions must pass through an authorized amendment workflow with mandatory justification notes.
+
+---
+
+## Top-Down Decomposition Methodology
+
+This project adheres to a **strict top-down decomposition methodology**, ensuring that every engineering deliverable (C4 model, arc42 architecture, database entity, REST endpoint, and UI component) maps directly to upstream operational requirements:
 
 ```
 Top-Down Mind Map (System Scope & Strategic Intent)
        ↓
-Core vs. Supporting Domain Classification
+Core vs. Supporting Domain Classification (8 Business Domains)
        ↓
-Selected Core Operational Features
+Selected Core Operational Features (24 MVP Features)
        ↓
-Actor Roles & Use Cases
+Actor Roles & Use Cases (Fixed 4-Role RBAC: ADM, MGR, ACC, PAR)
        ↓
-Information Architecture & Screen Inventory
+Information Architecture & Screen Inventory (17 Active Screens)
        ↓
-Task Flows & Wireframes
+Operational Task Flows & Visual Mockups
        ↓
-Relational Database Architecture (DDL & ERD)
+Relational Database Architecture (PostgreSQL 15 3NF Schema & DBML)
        ↓
-Interactive Working Prototype
+RESTful API Specification (OpenAPI 3.0.3 Contract)
+       ↓
+C4 Architecture & arc42 Architecture Suites
+       ↓
+Production Implementation (NestJS 10 + React 19 / Vite Prototype)
 ```
 
----
+### System Scope & Decomposition Mind Map
 
-## Repository Structure
+The mind map illustrates the comprehensive structural breakdown from institutional strategic goals to functional domains, distinguishing between core operational modules and supporting capabilities:
 
-```
-primary-school-meal-management/
-│
-├── README.md                          ← Main project documentation (Project Map)
-│
-├── arc42/                             ← arc42 Software Architecture Documentation Suite
-│   ├── README.md                      ← arc42 master navigation index & section tracker
-│   ├── 01-introduction-and-goals.md   ← Section 1: System requirements & Q42 quality goals
-│   ├── 02-architecture-constraints.md ← Section 2: Technical, operational & legal constraints
-│   ├── 03-context-and-scope.md        ← Section 3: Business & technical context, external interfaces
-│   ├── 04-solution-strategy.md        ← Section 4: Modular monolith, DDD, technology rationale
-│   ├── 05-building-block-view.md      ← Section 5: Level-1 Containers & Level-2 Components
-│   ├── 06-runtime-view.md             ← Section 6: Dynamic sequence scenarios (Cutoff, Triage, HACCP)
-│   ├── 07-deployment-view.md          ← Section 7: Campus infrastructure, Docker & device profiles
-│   ├── 08-crosscutting-concepts.md    ← Section 8: Domain model, RBAC, cutoff guards, audit logs
-│   ├── 09-architecture-decisions.md   ← Section 9: ADRs (Monolith, Cutoff Guard, Vanilla UI, WSS)
-│   ├── 10-quality-requirements.md     ← Section 10: Measurable quality scenarios (QS-01 to QS-08)
-│   ├── 11-risks-and-technical-debt.md ← Section 11: Risk register & technical debt backlog
-│   └── 12-glossary.md                 ← Section 12: Domain dictionary & acronyms
-│
-├── c4/                                ← C4 Software Architecture Documentation
-│   ├── README.md                      ← C4 documentation map & index
-│   ├── c4-context.md                  ← Level 1: System Context Diagram
-│   ├── c4-containers.md               ← Level 2: Container Diagram
-│   ├── c4-components-*.md             ← Level 3: Component Diagrams (M1, M2, M3)
-│   └── c4-code-*.md                   ← Level 4: Code Diagrams (M1, M2, M3 UML Class Diagrams)
-│
-├── docs/                              ← Comprehensive top-down engineering documentation
-│   ├── README.md                      ← Documentation index and methodology guide
-│   ├── traceability.md                ← End-to-end traceability chain mapping
-│   │
-│   ├── 01-top-down/                   ← System decomposition & business domain analysis
-│   │   ├── README.md
-│   │   ├── PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.png ← Full system mind map
-│   │   ├── business-domains.md
-│   │   └── core-supporting-classification.md
-│   │
-│   ├── 02-core-features/              ← Deep dive into the 3 active MVP core modules
-│   │   ├── README.md
-│   │   ├── core-feature-breakdown.md
-│   │   └── invest-requirements.md     ← INVEST user stories, BDD/Gherkin acceptance criteria & sizing
-│   │
-│   ├── 03-roles-usecases/             ← Actors, permissions, and UML use case models
-│   │   ├── README.md
-│   │   ├── roles.md
-│   │   ├── role-feature-mapping.md
-│   │   ├── usecase-overview.md        ← UC-00 System Overview (Mermaid)
-│   │   ├── usecase-admin.md           ← UC-ADM School Administrator
-│   │   ├── usecase-manager.md         ← UC-MGR Meal/Nutrition Manager
-│   │   ├── usecase-kitchen.md         ← UC-KIT Kitchen Staff
-│   │   ├── usecase-teacher.md         ← UC-TCH Homeroom Teacher
-│   │   └── usecase-storekeeper.md     ← UC-STO Storekeeper
-│   │
-│   ├── 04-information-architecture/   ← Navigation models, task flows, and screen catalog
-│   │   ├── README.md
-│   │   ├── INFORMATION_ARCHITECTURE.md ← Canonical master IA specification
-│   │   ├── sitemap.md
-│   │   ├── screen-hierarchy.md
-│   │   ├── screen-inventory.md
-│   │   └── task-flows.md
-│   │
-│   ├── 05-ui-ux/                      ← Design system tokens, wireframes, and mockups
-│   │   ├── README.md
-│   │   ├── wireframes/
-│   │   ├── mockups/
-│   │   └── design-system.md
-│   │
-│   └── 06-database/                   ← Database design, schema, and data dictionary
-│       ├── README.md
-│       ├── PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.png ← Relational ERD
-│       ├── database-erd.md
-│       ├── schema.dbml
-│       └── data-dictionary.md
-│
-├── database/                          ← SQL scripts and database documentation
-│   ├── PRIMARY SCHOOL SEMI-BOARDING MEAL MANAGEMENT SYSTEM.sql
-│   └── DBDOCS.md
-│
-├── frontend/                          ← Interactive frontend prototype application
-│   ├── README.md                      ← Prototype technical architecture and user guide
-│   ├── index.html                     ← Unified interactive application (M1, M2, M3)
-│   ├── css/                           ← Modular Vanilla CSS design tokens & layouts
-│   └── js/                            ← Role-separated vanilla ES6 JavaScript modules
-│
-├── screenshots/                       ← High-resolution UI captures of the working prototype
-│   ├── s1.png                         ← Admin Dashboard: Tổng quan vận hành bán trú
-│   ├── s2.png                         ← Teacher Portal: Điểm danh bữa trưa & Khóa danh sách (SCR-TCH-01)
-│   ├── s3.png                         ← Manager Portal: Định lượng bữa trưa & Buffer an toàn (SCR-MGR-01)
-│   └── s4.png                         ← Kitchen Kiosk: Kế hoạch & Điều phối ca trực bếp (SCR-KIT-01)
-│
-└── prototype/                         ← Legacy prototype documentation
-    └── README.md
-```
+![Primary School Semi-Boarding Meal Management System Mind Map](<docs/01-top-down/PRIMARY SCHOOL SEMI-BOARDINGMEAL MANAGEMENT SYSTEM.png>)
+
+*For detailed business domain analysis and scope justification, refer to [docs/01-top-down/README.md](docs/01-top-down/README.md) and [docs/01-top-down/MVP.md](docs/01-top-down/MVP.md).*
 
 ---
 
-## Artifact Index
+## C4 Software Architecture Suite
 
-| Phase | Artifact | Description | Status |
-|:---:|---|---|:---:|
-| **—** | [Documentation Hub](docs/README.md) | Central navigation hub for all 6 top-down engineering phases | ✅ Complete |
-| **C4** | [C4 Model Architecture](c4/README.md) | Full 4-Level Architecture: Level 1 Context, Level 2 Containers, Level 3 Components (M1, M2, M3), Level 4 Code (M1, M2, M3) | ✅ Complete |
-| **arc42** | [arc42 Architecture Suite](arc42/README.md) | Comprehensive 12-section architecture documentation adhering to Dr. Starke & Dr. Hruschka's standard (ESSENTIAL level) | ✅ Complete |
-| **01** | [Top-Down Decomposition](docs/01-top-down/README.md) | Business domain classification & system mind map | ✅ Complete |
-| **02** | [Core Feature Breakdown](docs/02-core-features/README.md) | In-depth breakdown of the 3 active MVP core modules & [INVEST Requirements](docs/02-core-features/invest-requirements.md) (10 User Stories, BDD/Gherkin, 35 SP) | ✅ Complete |
-| **03** | [Roles & Use Cases](docs/03-roles-usecases/README.md) | Actor definition, permission matrix, and UML use cases | ✅ Complete |
-| **04** | [Information Architecture](docs/04-information-architecture/README.md) & [Master IA](docs/04-information-architecture/INFORMATION_ARCHITECTURE.md) | Canonical IA spec, sitemap, 17-screen inventory, and 5 task flows | ✅ Complete |
-| **05** | [UI/UX Wireframes & Mockups](docs/05-ui-ux/README.md) | Design system, UI component library, and wireframes | 🔄 In Progress |
-| **06** | [Database Architecture](docs/06-database/README.md) | Relational ERD, DBML schema, and data dictionary | ✅ Complete |
-| **—** | [Traceability Chain](docs/traceability.md) | End-to-end forward and backward requirements tracing | ✅ Complete |
-| **—** | [Interactive Prototype](frontend/README.md) | Prototype architecture guide and live web app ([Launch App](frontend/index.html)) | ✅ Reference |
-| **—** | [UI Visual Showcase](#user-interface--role-workflows-ui-showcase) | 4 core operational prototype screens (Admin, Teacher, Manager, Kitchen) | ✅ Reference |
-
----
-
-## Core Requirements Specification (INVEST Framework)
-
-All **10 Core Operational Features (P1 — MVP)** across the three active operational modules are formally specified in [**docs/02-core-features/invest-requirements.md**](docs/02-core-features/invest-requirements.md) adhering to the **INVEST** criteria (Independent, Negotiable, Valuable, Estimable, Small, Testable) with executable BDD/Gherkin acceptance scenarios:
-
-| Module | Feature ID | User Story Title | Story Points | Key Acceptance & Operational Value |
-|---|---|---|:---:|---|
-| **Module 1: Participation** | **F-PAR-01** | Record Daily Student Meal Attendance | **3 SP** | Primary source of truth; persistent allergy safety alerts |
-| | **F-PAR-02** | Track Attendance Status Amendments | **2 SP** | Immutable audit log for month-end parent fee reconciliation |
-| | **F-PAR-03** | Verify & Lock Classroom Participation Roster | **3 SP** | Enforces 08:30 AM cutoff discipline; freezes attendance for kitchen prep |
-| **Module 2: Demand & Qty** | **F-DMD-01** | Aggregate Confirmed Headcount & Safety Buffer | **5 SP** | Automated aggregation; manages buffer percentages ($+3\text{--}5\%$) |
-| | **F-DMD-02** | Calculate Expected Raw Dish Quantities | **3 SP** | Standard nutritional portion scaling; prevents food waste |
-| | **F-DMD-03** | Process Post-Cutoff Emergency Adjustments | **5 SP** | Controlled triage workflow for late changes without breaking data integrity |
-| **Module 3: Preparation** | **F-PRP-01** | Create Kitchen Shift Preparation Plan | **3 SP** | Line balancing across cooking stations to hit the 10:45 AM service target |
-| | **F-PRP-02** | Allocate & Reconcile Storage Ingredients | **3 SP** | Pantry intake verification; early detection of shortages/spoilage |
-| | **F-PRP-03** | Record Live Cooking Batches via Kiosk | **5 SP** | Real-time progress monitoring without impeding chef manual operations |
-| | **F-PRP-04** | Verify Prepared Yield & Discrepancies | **3 SP** | Final quality gate with mandatory variance justification if outside $\pm 3\%$ |
-| **TOTAL** | **10 Core MVP User Stories** | | **35 SP** | **Estimated for execution across 2–3 standard sprints** |
-
-> For complete BDD/Gherkin scenarios, domain models, and architectural stress tests, see [**docs/02-core-features/invest-requirements.md**](docs/02-core-features/invest-requirements.md).
-
----
-
-## Traceability
-
-Every artifact in this repository is strictly derived from the tier directly above it. See [docs/traceability.md](docs/traceability.md) for the complete end-to-end mapping:
-
-$$\text{Core Domain} \longrightarrow \text{Core Capability} \longrightarrow \text{Core Feature} \longrightarrow \text{Actor} \longrightarrow \text{Use Case} \longrightarrow \text{Task Flow} \longrightarrow \text{Screen} \longrightarrow \text{DB Entity}$$
-
----
-
-## C4 Software Architecture Model
-
-This project models its software architecture using the complete 4-level **C4 Model** (Context, Containers, Components, Code), providing high-fidelity visual diagrams and structural specifications:
+The system software architecture is modeled using the complete **C4 Model** (Context, Containers, Components) across all **8 Business Domains**, adhering to standard C4 PlantUML / Mermaid specifications:
 
 ### Level 1 — System Context Diagram
-Defines the boundary of the Semi-Boarding Meal Management System, human actors, and external system integrations (SIS, Pantry/Supplier, Parent Notification Gateway):
+
+Defines the boundary of the Semi-Boarding Meal Management System, the 4 fixed human actors, and the 4 external system integrations:
 
 ![System Context Diagram](c4/images/SystemContext.png)
 
-*For detailed actor specifications and external integration profiles, refer to [c4/c4-context.md](c4/c4-context.md).*
+![System Context Key](c4/images/SystemContext-key.png)
+
+*For complete actor specifications and external integration protocols (SIS, Banking/VietQR, Parent Gateway, Catering Vendor), see [c4/c4-context.md](c4/c4-context.md).*
 
 ---
 
 ### Level 2 — Container Diagram
-Illustrates the high-level technical building blocks: Unified SPA (3 role portals), Node.js/Express Backend API, WebSocket Real-time Broker, and PostgreSQL 15 Relational Database:
 
-![Container Diagram](c4/images/ContainerDiagram.png)
+Illustrates the high-level deployable units: Unified Web Single-Page Application (4 role portals), Node.js / NestJS Backend REST API, WebSocket Real-time Broker, PostgreSQL 15 Relational Database, and S3-Compatible Media Storage:
 
-*For runtime technical responsibilities and networking details, refer to [c4/c4-containers.md](c4/c4-containers.md).*
+![Container Diagram](c4/images/ContainerView.png)
 
----
+![Container Diagram Key](c4/images/ContainerView-key.png)
 
-### Level 3 — Component Diagrams
-
-#### 1. Module 1: Meal Participation Management Components
-Internal components governing classroom student roll call, dietary/allergen alerts, and morning cutoff lock enforcement:
-
-![Module 1 Component Diagram](c4/images/MealParticipationComponents.png)
-
-*For endpoint specifications and rule guard documentation, refer to [c4/c4-components-participation.md](c4/c4-components-participation.md).*
-
-#### 2. Module 2: Meal Demand & Quantity Management Components
-Internal components managing headcount aggregation, portion formula calculations, buffer policy, and emergency adjustments:
-
-![Module 2 Component Diagram](c4/images/DemandManagementComponents.png)
-
-*For formula details and policy configurations, refer to [c4/c4-components-demand.md](c4/c4-components-demand.md).*
-
-#### 3. Module 3: Meal Preparation & Kitchen Operations Components
-Internal components orchestrating kitchen shift plans, raw ingredient allocations, station batch timers, and finished yield reconciliation:
-
-![Module 3 Component Diagram](c4/images/MealPreparationComponents.png)
-
-*For kitchen station workflows and verification logic, refer to [c4/c4-components-preparation.md](c4/c4-components-preparation.md).*
+*For container runtime responsibilities, security boundaries, and networking protocols, see [c4/c4-containers.md](c4/c4-containers.md).*
 
 ---
 
-### Level 4 — Code Diagrams (UML Class Diagrams)
+### Level 3 — Component Architecture (All 8 Business Domains)
 
-#### 1. Module 1: Meal Participation Class Diagram
-- **Key Domain Entities:** `MealParticipation`, `MealParticipationChange`, `ParticipationStatus`, `ChangeType`.
-- **Core Services & Contracts:** `ParticipationService`, `CutoffPolicyGuard`, `AllergyAlertInterceptor`, `IParticipationRepository`.
-- **Detailed Specification:** [c4/c4-code-participation.md](c4/c4-code-participation.md)
+Each of the system's 8 business domains is architected with clear boundaries, separation of concerns, and defined controller-service-repository patterns:
 
-```mermaid
-classDiagram
-  direction TB
+#### Domain 1: Student Meal Management (Participation & Attendance)
 
-  class ParticipationStatus {
-    <<enumeration>>
-    PENDING
-    RECORDED
-    CONFIRMED
-    CANCELLED
-  }
+Governs eligibility determination, semester boarding enrollment, classroom morning roll call, and 08:30 AM cutoff freeze:
 
-  class ChangeType {
-    <<enumeration>>
-    STATUS_UPDATE
-    CORRECTION
-    RESCHEDULE
-  }
+![Domain 1 Component Diagram](c4/images/Module1Components.png)
 
-  class MealParticipation {
-    <<entity>>
-    +UUID id
-    +UUID mealScheduleId
-    +UUID studentId
-    +ParticipationStatus status
-    +UUID recordedByUserId
-    +Date recordedAt
-    +UUID confirmedByUserId
-    +Date confirmedAt
-    +Date createdAt
-    +Date updatedAt
-    +markRecorded(userId: UUID): void
-    +confirm(userId: UUID): void
-    +cancel(userId: UUID): void
-  }
+![Domain 1 Component Key](c4/images/Module1Components-key.png)
 
-  class MealParticipationChange {
-    <<entity>>
-    +UUID id
-    +UUID mealParticipationId
-    +ParticipationStatus previousStatus
-    +ParticipationStatus newStatus
-    +ChangeType changeType
-    +string changeReason
-    +UUID changedByUserId
-    +Date createdAt
-  }
-
-  class BulkRecordDto {
-    +UUID mealScheduleId
-    +UUID classId
-    +RecordItem[] records
-  }
-
-  class AmendParticipationDto {
-    +ParticipationStatus newStatus
-    +ChangeType changeType
-    +string reason
-  }
-
-  class ConfirmRosterDto {
-    +UUID mealScheduleId
-    +UUID classId
-  }
-
-  class IParticipationRepository {
-    <<interface>>
-    +findByScheduleAndClass(scheduleId: UUID, classId: UUID): Promise~MealParticipation[]~
-    +findById(id: UUID): Promise~MealParticipation~
-    +bulkSave(participations: MealParticipation[]): Promise~void~
-    +save(participation: MealParticipation): Promise~MealParticipation~
-    +createChangeLog(change: MealParticipationChange): Promise~void~
-    +countConfirmedBySchedule(scheduleId: UUID): Promise~number~
-  }
-
-  class PgParticipationRepository {
-    -Pool dbPool
-    +findByScheduleAndClass(scheduleId: UUID, classId: UUID): Promise~MealParticipation[]~
-    +findById(id: UUID): Promise~MealParticipation~
-    +bulkSave(participations: MealParticipation[]): Promise~void~
-    +save(participation: MealParticipation): Promise~MealParticipation~
-    +createChangeLog(change: MealParticipationChange): Promise~void~
-    +countConfirmedBySchedule(scheduleId: UUID): Promise~number~
-  }
-
-  class CutoffPolicyGuard {
-    <<service>>
-    -string CUTOFF_TIME_HHMM
-    +isBeforeCutoff(scheduleDate: Date): boolean
-    +assertBeforeCutoff(scheduleDate: Date): void
-  }
-
-  class AllergyAlertInterceptor {
-    <<service>>
-    +enrichWithAllergies(students: StudentProfile[]): EnrichedStudentRoster[]
-    +hasCriticalAllergen(studentId: UUID): Promise~boolean~
-  }
-
-  class ParticipationAuditLogger {
-    <<service>>
-    -IParticipationRepository repo
-    +logStatusChange(participationId: UUID, prev: ParticipationStatus, next: ParticipationStatus, reason: string, userId: UUID): Promise~void~
-  }
-
-  class ParticipationService {
-    <<service>>
-    -IParticipationRepository repo
-    -CutoffPolicyGuard cutoffGuard
-    -AllergyAlertInterceptor allergyInterceptor
-    -ParticipationAuditLogger auditLogger
-    +getClassRoster(scheduleId: UUID, classId: UUID): Promise~EnrichedStudentRoster~
-    +recordClassParticipation(dto: BulkRecordDto, userId: UUID): Promise~void~
-    +amendParticipation(id: UUID, dto: AmendParticipationDto, userId: UUID): Promise~MealParticipation~
-    +confirmClassRoster(dto: ConfirmRosterDto, userId: UUID): Promise~RosterConfirmationSummary~
-  }
-
-  class ParticipationController {
-    <<controller>>
-    -ParticipationService service
-    +getRoster(req: Request, res: Response): Promise~void~
-    +bulkRecord(req: Request, res: Response): Promise~void~
-    +amend(req: Request, res: Response): Promise~void~
-    +confirmRoster(req: Request, res: Response): Promise~void~
-  }
-
-  %% Realizations and Associations
-  PgParticipationRepository ..|> IParticipationRepository : implements
-  ParticipationController --> ParticipationService : delegates to
-  ParticipationService --> IParticipationRepository : uses
-  ParticipationService --> CutoffPolicyGuard : verifies time
-  ParticipationService --> AllergyAlertInterceptor : decorates roster
-  ParticipationService --> ParticipationAuditLogger : logs audit
-  ParticipationAuditLogger --> IParticipationRepository : persists log
-  IParticipationRepository ..> MealParticipation : persists / queries
-  IParticipationRepository ..> MealParticipationChange : persists
-  MealParticipation *-- ParticipationStatus : has status
-  MealParticipationChange *-- ChangeType : has type
-  MealParticipationChange *-- ParticipationStatus : tracks status
-  ParticipationController ..> BulkRecordDto : binds body
-  ParticipationController ..> AmendParticipationDto : binds body
-  ParticipationController ..> ConfirmRosterDto : binds body
-```
+*Detailed specification: [c4/c4-components-participation.md](c4/c4-components-participation.md)*
 
 ---
 
-#### 2. Module 2: Meal Demand & Quantity Class Diagram
-- **Key Domain Entities:** `MealDemand`, `MealDemandDishQuantity`, `MealDemandChange`, `DemandStatus`, `AdjustmentType`.
-- **Core Services & Contracts:** `DemandService`, `RosterAggregationEngine`, `PortionCalculationEngine`, `BufferPolicyManager`, `IDemandRepository`.
-- **Detailed Specification:** [c4/c4-code-demand.md](c4/c4-code-demand.md)
+#### Domain 2: Meal Planning & Menu Management
 
-```mermaid
-classDiagram
-  direction TB
+Manages the standardized nutritional dish catalog, weekly lunch menu composition, and 1-level administrative approval:
 
-  class DemandStatus {
-    <<enumeration>>
-    DRAFT
-    CALCULATED
-    CONFIRMED
-    REVISED
-  }
+![Domain 2 Component Diagram](c4/images/Domain2Components.png)
 
-  class AdjustmentType {
-    <<enumeration>>
-    QUANTITY_INCREASE
-    QUANTITY_DECREASE
-    DISH_ADJUSTMENT
-    CANCELLATION
-  }
+![Domain 2 Component Key](c4/images/Domain2Components-key.png)
 
-  class ReviewStatus {
-    <<enumeration>>
-    PENDING
-    APPROVED
-    REJECTED
-  }
-
-  class MealDemand {
-    <<entity>>
-    +UUID id
-    +UUID mealScheduleId
-    +string determinationMethod
-    +number totalHeadcount
-    +number bufferPercentage
-    +number finalDemandCount
-    +DemandStatus status
-    +UUID confirmedByUserId
-    +Date confirmedAt
-    +Date createdAt
-    +Date updatedAt
-    +applyAggregation(headcount: number, bufferPct: number): void
-    +confirm(userId: UUID): void
-    +markRevised(): void
-  }
-
-  class MealDemandDishQuantity {
-    <<entity>>
-    +UUID id
-    +UUID mealDemandId
-    +UUID dishId
-    +number standardPortionGrams
-    +number expectedQuantityKg
-    +string portionUnit
-    +string notes
-    +calculateQuantity(headcount: number, bufferPct: number): void
-  }
-
-  class MealDemandChange {
-    <<entity>>
-    +UUID id
-    +UUID mealDemandId
-    +AdjustmentType changeType
-    +number previousQuantity
-    +number newQuantity
-    +string reason
-    +UUID requestedByUserId
-    +UUID reviewedByUserId
-    +ReviewStatus reviewStatus
-    +Date reviewedAt
-    +Date createdAt
-    +approve(reviewerId: UUID): void
-    +reject(reviewerId: UUID): void
-  }
-
-  class CalculateDishesDto {
-    +UUID mealScheduleId
-    +number bufferPercentage
-  }
-
-  class EmergencyAdjustmentDto {
-    +UUID mealDemandId
-    +AdjustmentType changeType
-    +number quantityDelta
-    +string reason
-  }
-
-  class IDemandRepository {
-    <<interface>>
-    +findActiveDemand(scheduleId: UUID): Promise~MealDemand~
-    +saveDemand(demand: MealDemand): Promise~MealDemand~
-    +saveDishQuantities(quantities: MealDemandDishQuantity[]): Promise~void~
-    +findDishQuantities(demandId: UUID): Promise~MealDemandDishQuantity[]~
-    +createDemandChange(change: MealDemandChange): Promise~MealDemandChange~
-    +findConfirmedParticipationCount(scheduleId: UUID): Promise~number~
-  }
-
-  class PgDemandRepository {
-    -Pool dbPool
-    +findActiveDemand(scheduleId: UUID): Promise~MealDemand~
-    +saveDemand(demand: MealDemand): Promise~MealDemand~
-    +saveDishQuantities(quantities: MealDemandDishQuantity[]): Promise~void~
-    +findDishQuantities(demandId: UUID): Promise~MealDemandDishQuantity[]~
-    +createDemandChange(change: MealDemandChange): Promise~MealDemandChange~
-    +findConfirmedParticipationCount(scheduleId: UUID): Promise~number~
-  }
-
-  class RosterAggregationEngine {
-    <<service>>
-    -IDemandRepository repo
-    +aggregateScheduleRoster(scheduleId: UUID): Promise~AggregationResult~
-    +getSpecialDietCount(scheduleId: UUID): Promise~DietaryCountSummary~
-  }
-
-  class BufferPolicyManager {
-    <<service>>
-    -number DEFAULT_BUFFER_PERCENT
-    -number MAX_ALLOWABLE_BUFFER
-    +validateBuffer(bufferPct: number): boolean
-    +getEffectiveBuffer(customPct: number): number
-  }
-
-  class PortionCalculationEngine {
-    <<service>>
-    -BufferPolicyManager bufferPolicy
-    +computeDishTargets(headcount: number, bufferPct: number, menuDishes: DishMaster[]): MealDemandDishQuantity[]
-    +computeSingleDishWeight(headcount: number, portionGrams: number, bufferPct: number): number
-  }
-
-  class EmergencyAmendmentHandler {
-    <<service>>
-    -IDemandRepository repo
-    +submitRequest(dto: EmergencyAdjustmentDto, userId: UUID): Promise~MealDemandChange~
-    +reviewRequest(changeId: UUID, approve: boolean, reviewerId: UUID): Promise~void~
-  }
-
-  class DemandService {
-    <<service>>
-    -IDemandRepository repo
-    -RosterAggregationEngine aggregationEngine
-    -BufferPolicyManager bufferManager
-    -PortionCalculationEngine portionCalculator
-    -EmergencyAmendmentHandler emergencyHandler
-    +aggregateAndCalculate(dto: CalculateDishesDto, userId: UUID): Promise~DemandCalculationResult~
-    +confirmDemand(demandId: UUID, userId: UUID): Promise~MealDemand~
-    +handleEmergencyRequest(dto: EmergencyAdjustmentDto, userId: UUID): Promise~MealDemandChange~
-  }
-
-  class DemandController {
-    <<controller>>
-    -DemandService service
-    +getTodayDemand(req: Request, res: Response): Promise~void~
-    +calculateDishes(req: Request, res: Response): Promise~void~
-    +confirm(req: Request, res: Response): Promise~void~
-    +emergencyAdjust(req: Request, res: Response): Promise~void~
-  }
-
-  %% Relationships
-  PgDemandRepository ..|> IDemandRepository : implements
-  DemandController --> DemandService : delegates to
-  DemandService --> IDemandRepository : uses
-  DemandService --> RosterAggregationEngine : triggers
-  DemandService --> BufferPolicyManager : validates buffer
-  DemandService --> PortionCalculationEngine : calculates targets
-  DemandService --> EmergencyAmendmentHandler : routes adjustments
-  PortionCalculationEngine --> BufferPolicyManager : queries policy
-  RosterAggregationEngine --> IDemandRepository : queries counts
-  EmergencyAmendmentHandler --> IDemandRepository : saves changes
-  IDemandRepository ..> MealDemand : queries & saves
-  IDemandRepository ..> MealDemandDishQuantity : queries & saves
-  IDemandRepository ..> MealDemandChange : queries & saves
-  MealDemand *-- DemandStatus : has status
-  MealDemandChange *-- AdjustmentType : has type
-  MealDemandChange *-- ReviewStatus : has review state
-  DemandController ..> CalculateDishesDto : binds body
-  DemandController ..> EmergencyAdjustmentDto : binds body
-```
+*Detailed specification: [c4/c4-components-planning.md](c4/c4-components-planning.md)*
 
 ---
 
-#### 3. Module 3: Meal Preparation & Kitchen Class Diagram
-- **Key Domain Entities:** `MealPreparationPlan`, `MealPreparationPlanDish`, `IngredientAllocation`, `MealPreparation`, `PreparedQuantityConfirmation`.
-- **Core Services & Contracts:** `PreparationService`, `KitchenPlanCoordinator`, `IngredientAllocationManager`, `CookingBatchTracker`, `YieldReconciliationEngine`, `IPreparationRepository`.
-- **Detailed Specification:** [c4/c4-code-preparation.md](c4/c4-code-preparation.md)
+#### Domain 3A: Meal Operation — Demand & Purchase Order Dispatch
 
-```mermaid
-classDiagram
-  direction TB
+Executes classroom roll-call aggregation, dynamic buffer application ($0\%\text{--}10\%$), portion calculations, and electronic PO dispatch to the caterer before 08:45 AM:
 
-  class PlanStatus {
-    <<enumeration>>
-    PLANNED
-    IN_PROGRESS
-    COMPLETED
-    CANCELLED
-  }
+![Domain 3A Component Diagram](c4/images/Module2Components.png)
 
-  class AllocationStatus {
-    <<enumeration>>
-    ALLOCATED
-    ADJUSTED
-    RETURNED
-  }
+![Domain 3A Component Key](c4/images/Module2Components-key.png)
 
-  class ConfirmationStatus {
-    <<enumeration>>
-    MATCHED
-    DISCREPANCY
-  }
-
-  class MealPreparationPlan {
-    <<entity>>
-    +UUID id
-    +UUID mealDemandId
-    +string shiftName
-    +PlanStatus status
-    +Date scheduledStartTime
-    +Date scheduledEndTime
-    +Date createdAt
-    +startShift(): void
-    +completeShift(): void
-  }
-
-  class MealPreparationPlanDish {
-    <<entity>>
-    +UUID id
-    +UUID preparationPlanId
-    +UUID dishId
-    +number targetQuantityKg
-    +string assignedStation
-  }
-
-  class IngredientAllocation {
-    <<entity>>
-    +UUID id
-    +UUID preparationPlanId
-    +UUID ingredientId
-    +number allocatedQuantity
-    +string unit
-    +AllocationStatus status
-    +markAdjusted(delta: number): void
-    +markReturned(returnedQty: number): void
-  }
-
-  class MealPreparation {
-    <<entity>>
-    +UUID id
-    +UUID preparationPlanId
-    +string stationName
-    +number batchNumber
-    +Date cookingStartTime
-    +Date cookingEndTime
-    +number coreTemperatureCelsius
-    +UUID chefUserId
-    +completeBatch(coreTempC: number): void
-  }
-
-  class MealPreparationDishRecord {
-    <<entity>>
-    +UUID id
-    +UUID mealPreparationId
-    +UUID dishId
-    +number actualPreparedQuantityKg
-  }
-
-  class PreparedQuantityConfirmation {
-    <<entity>>
-    +UUID id
-    +UUID mealPreparationPlanId
-    +UUID dishId
-    +number plannedQuantityKg
-    +number confirmedQuantityKg
-    +ConfirmationStatus status
-    +string discrepancyReason
-    +UUID confirmedByUserId
-    +Date confirmedAt
-    +evaluateVariance(tolerancePct: number): ConfirmationStatus
-  }
-
-  class YieldSignoffDto {
-    +UUID planId
-    +UUID dishId
-    +number measuredWeightKg
-    +string discrepancyReason
-  }
-
-  class IPreparationRepository {
-    <<interface>>
-    +findActivePlanByDemand(demandId: UUID): Promise~MealPreparationPlan~
-    +savePlan(plan: MealPreparationPlan): Promise~MealPreparationPlan~
-    +savePlanDishes(dishes: MealPreparationPlanDish[]): Promise~void~
-    +saveAllocations(allocations: IngredientAllocation[]): Promise~void~
-    +createCookingBatch(batch: MealPreparation): Promise~MealPreparation~
-    +saveDishRecord(record: MealPreparationDishRecord): Promise~void~
-    +saveConfirmation(confirmation: PreparedQuantityConfirmation): Promise~PreparedQuantityConfirmation~
-  }
-
-  class PgPreparationRepository {
-    -Pool dbPool
-    +findActivePlanByDemand(demandId: UUID): Promise~MealPreparationPlan~
-    +savePlan(plan: MealPreparationPlan): Promise~MealPreparationPlan~
-    +savePlanDishes(dishes: MealPreparationPlanDish[]): Promise~void~
-    +saveAllocations(allocations: IngredientAllocation[]): Promise~void~
-    +createCookingBatch(batch: MealPreparation): Promise~MealPreparation~
-    +saveDishRecord(record: MealPreparationDishRecord): Promise~void~
-    +saveConfirmation(confirmation: PreparedQuantityConfirmation): Promise~PreparedQuantityConfirmation~
-  }
-
-  class KitchenPlanCoordinator {
-    <<service>>
-    -IPreparationRepository repo
-    +generateShiftPlan(demandId: UUID, targets: DishTargetSummary[]): Promise~MealPreparationPlan~
-    +assignStations(planDishes: MealPreparationPlanDish[]): void
-  }
-
-  class IngredientAllocationManager {
-    <<service>>
-    -IPreparationRepository repo
-    +calculateRequisition(targets: DishTargetSummary[]): IngredientAllocation[]
-    +dispatchPantryOrder(allocations: IngredientAllocation[]): Promise~boolean~
-  }
-
-  class CookingBatchTracker {
-    <<service>>
-    -IPreparationRepository repo
-    +startBatch(planId: UUID, station: string, chefId: UUID): Promise~MealPreparation~
-    +completeBatch(prepId: UUID, tempC: number, measuredKg: number): Promise~MealPreparation~
-  }
-
-  class YieldReconciliationEngine {
-    <<service>>
-    -number TOLERANCE_PERCENTAGE
-    +reconcileYield(targetKg: number, actualKg: number, reason: string, reviewerId: UUID): PreparedQuantityConfirmation
-    +isWithinTolerance(targetKg: number, actualKg: number): boolean
-  }
-
-  class PreparationService {
-    <<service>>
-    -IPreparationRepository repo
-    -KitchenPlanCoordinator coordinator
-    -IngredientAllocationManager allocationMgr
-    -CookingBatchTracker batchTracker
-    -YieldReconciliationEngine yieldEngine
-    +getTodayKitchenPlan(demandId: UUID): Promise~FullKitchenPlan~
-    +startCookingBatch(planId: UUID, station: string, chefId: UUID): Promise~MealPreparation~
-    +recordYieldSignoff(dto: YieldSignoffDto, userId: UUID): Promise~PreparedQuantityConfirmation~
-  }
-
-  class PreparationController {
-    <<controller>>
-    -PreparationService service
-    +getShiftPlan(req: Request, res: Response): Promise~void~
-    +startBatch(req: Request, res: Response): Promise~void~
-    +completeBatch(req: Request, res: Response): Promise~void~
-    +signoffYield(req: Request, res: Response): Promise~void~
-  }
-
-  %% Relationships
-  PgPreparationRepository ..|> IPreparationRepository : implements
-  PreparationController --> PreparationService : delegates to
-  PreparationService --> IPreparationRepository : uses
-  PreparationService --> KitchenPlanCoordinator : coordinates plans
-  PreparationService --> IngredientAllocationManager : allocates ingredients
-  PreparationService --> CookingBatchTracker : monitors batches
-  PreparationService --> YieldReconciliationEngine : evaluates yields
-  IPreparationRepository ..> MealPreparationPlan : persists
-  IPreparationRepository ..> IngredientAllocation : persists
-  IPreparationRepository ..> MealPreparation : persists
-  IPreparationRepository ..> PreparedQuantityConfirmation : persists
-  MealPreparationPlan *-- PlanStatus : has status
-  IngredientAllocation *-- AllocationStatus : has status
-  PreparedQuantityConfirmation *-- ConfirmationStatus : has status
-  PreparationController ..> YieldSignoffDto : binds body
-```
+*Detailed specification: [c4/c4-components-demand.md](c4/c4-components-demand.md)*
 
 ---
 
-## arc42 Software Architecture Documentation Suite
+#### Domain 3B: Meal Operation — Receiving, Distribution & Reconciliation
 
-This repository implements the standardized [arc42](https://arc42.org) architecture documentation template (by Dr. Gernot Starke and Dr. Peter Hruschka) at the **ESSENTIAL** detail level. The documentation suite is organized in a modular structure under [`arc42/`](arc42/), cross-referencing upstream business requirements and C4 architecture models:
+Governs 10:30 AM delivery dock receiving, 3-step food safety inspection (Decision 1246/QĐ-BYT, core temp $\ge 65^\circ\text{C}$), 11:00 AM classroom trolley distribution, and 13:00 PM 3-way quantity reconciliation:
 
-### Documentation Navigation & Section Map
+![Domain 3B Component Diagram](c4/images/Module3Components.png)
 
-| Section | Title | Primary Architectural Focus | Status |
-|:---:|:---|:---|:---:|
-| **01** | [Introduction and Goals](arc42/01-introduction-and-goals.md) | Business problem, active MVP features (M1, M2, M3), 4 measurable Q42 quality goals, and 7-role stakeholder sign-off matrix. | ✅ Complete |
-| **02** | [Architecture Constraints](arc42/02-architecture-constraints.md) | Technical constraints (Vanilla Web/Node/PostgreSQL), operational limits (08:00 cutoff), legal standards (Decision 1246/QĐ-BYT). | ✅ Complete |
-| **03** | [Context and Scope](arc42/03-context-and-scope.md) | Business and technical context, external interfaces (`IF-01` SIS, `IF-02` Inventory, `IF-03` Parent Gateway, `IF-04` Accounting). | ✅ Complete |
-| **04** | [Solution Strategy](arc42/04-solution-strategy.md) | Modular Monolith paradigm, DDD decomposition, technology choices, and architectural approaches mapped to Section 1.2 quality goals. | ✅ Complete |
-| **05** | [Building Block View](arc42/05-building-block-view.md) | Static structure: Level-1 Containers (SPA, API, WSS, PostgreSQL, Media) and Level-2 Components for M1, M2, and M3. | ✅ Complete |
-| **06** | [Runtime View](arc42/06-runtime-view.md) | 4 core dynamic sequence scenarios: Morning roll-call lock, emergency cutoff triage, portion scaling, and HACCP temperature/yield checks. | ✅ Complete |
-| **07** | [Deployment View](arc42/07-deployment-view.md) | Infrastructure topology: School campus LAN, client hardware profiles (Tablets, Desktop, Kitchen Kiosks), Docker containers, and TLS proxy. | ✅ Complete |
-| **08** | [Crosscutting Concepts](arc42/08-crosscutting-concepts.md) | Unified Domain Model, RBAC security scopes, temporal cutoff policy, HACCP temperature barrier, immutable audit logging, and error envelopes. | ✅ Complete |
-| **09** | [Architecture Decisions](arc42/09-architecture-decisions.md) | 4 formal Nygard ADRs: ADR-001 (Modular Monolith), ADR-002 (Cutoff Guard & Triage), ADR-003 (Vanilla Web Stack), ADR-004 (WebSocket Pub/Sub). | ✅ Complete |
-| **10** | [Quality Requirements](arc42/10-quality-requirements.md) | 8 concrete, measurable quality scenarios (`QS-01` through `QS-08`) testing `#reliable`, `#efficient`, `#safe`, and `#usable` thresholds. | ✅ Complete |
-| **11** | [Risks and Technical Debt](arc42/11-risks-and-technical-debt.md) | Prioritized risk register (Probability × Impact), mitigation strategies (`RISK-01` to `RISK-04`), and technical debt backlog (`DEBT-01` to `DEBT-03`). | ✅ Complete |
-| **12** | [Glossary](arc42/12-glossary.md) | Canonical ubiquitous domain dictionary (Semi-Boarding, Cutoff, Buffers, HACCP, Kiểm thực 3 bước, Rations) and acronym expansions. | ✅ Complete |
+![Domain 3B Component Key](c4/images/Module3Components-key.png)
 
-### Key Architectural Anchors
-
-- **Q42 Quality Model:** 4 hard quality goals anchor all architectural decisions: `#reliable` (08:00 AM cutoff lockdown with 100% auditable amendments), `#efficient` (50+ concurrent teacher check-ins at $p95 < 300\text{ms}$ and $< 1.0\text{s}$ rollup), `#safe` (100% persistent allergen alerts and mandatory $\ge 75^\circ\text{C}$ cooking temperature check), and `#usable` (< 90s roll-call, $\le 2\text{ taps}$ kiosk actions).
-- **Architecture Decisions (ADRs):** Decisions are formally recorded in Nygard ADR format in [arc42/09-architecture-decisions.md](arc42/09-architecture-decisions.md), covering the modular monolith, temporal guard interceptor, vanilla UI stack, and WebSocket event distribution.
-- **Bi-directional Traceability with C4:** arc42 building blocks (Section 5) and deployment nodes (Section 7) map directly 1-to-1 with the C4 diagrams in [`c4/`](c4/).
+*Detailed specification: [c4/c4-components-preparation.md](c4/c4-components-preparation.md)*
 
 ---
 
-## System Architecture & Data Models
+#### Domain 4: Meal Fee & Cost Management
 
-### 1. Top-Down System Decomposition Mind Map
+Configures meal fee schedules, generates monthly student billing batches with automatic absence credits, generates dynamic VietQR codes, and reconciles caterer payables:
 
-The mind map illustrates the comprehensive structural breakdown from institutional strategic goals to functional domains, distinguishing between core operational modules and supporting capabilities:
+![Domain 4 Component Diagram](c4/images/Module4Components.png)
 
-![Top-Down Decomposition Mind Map](docs/01-top-down/PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.png)
+![Domain 4 Component Key](c4/images/Module4Components-key.png)
 
-*For detailed business domain analysis and scope justification, refer to [docs/01-top-down/README.md](docs/01-top-down/README.md).*
-
----
-
-### 2. Relational Database Architecture (Schema & ERD)
-
-A robust 3NF relational schema that seamlessly interconnects the 3 active operational modules: from classroom student attendance (`meal_participations`), aggregated demand calculation (`meal_demands`, `meal_demand_dish_quantities`) to kitchen preparation execution (`meal_preparation_plans`) and physical yield verification (`meal_preparations`, `prepared_quantity_confirmations`):
-
-![Database Schema & ERD](docs/06-database/PRIMARY_SCHOOL_SEMI-BOARDING_MEAL_MANAGEMENT_SYSTEM.png)
-
-*For complete entity specifications, data dictionaries, and SQL scripts, refer to [docs/06-database/README.md](docs/06-database/README.md).*
+*Detailed specification: [c4/c4-components-fee-cost.md](c4/c4-components-fee-cost.md)*
 
 ---
 
-## Information Architecture (Phase 04)
+#### Domain 5: Reporting & Transparency
 
-The Information Architecture formally connects the 10 INVEST requirements ([docs/02-core-features/invest-requirements.md](docs/02-core-features/invest-requirements.md)) and actor roles ([docs/03-roles-usecases/](docs/03-roles-usecases/)) to the visual design system ([docs/05-ui-ux/](docs/05-ui-ux/)) and relational schema ([docs/06-database/](docs/06-database/)). The canonical master specification is defined in [**docs/04-information-architecture/INFORMATION_ARCHITECTURE.md**](docs/04-information-architecture/INFORMATION_ARCHITECTURE.md).
+Produces daily operational execution summaries, financial debt aging reports, and the public/parent daily transparency feed:
 
-### 1. Role-Based Navigation & Site Map Architecture
+![Domain 5 Component Diagram](c4/images/Module5Components.png)
 
-The system enforces a **strict maximum navigation depth of $\le 2$ levels** across four autonomous portals, eliminating deep nesting and cognitive overhead in active school and kitchen environments:
+![Domain 5 Component Key](c4/images/Module5Components-key.png)
+
+*Detailed specification: [c4/c4-components-reporting.md](c4/c4-components-reporting.md)*
+
+---
+
+#### Domain 6: User & Access Management
+
+Manages user authentication, cryptographically signed JWT issuance, and the fixed 4-role RBAC security perimeter:
+
+![Domain 6 Component Diagram](c4/images/Module6Components.png)
+
+![Domain 6 Component Key](c4/images/Module6Components-key.png)
+
+*Detailed specification: [c4/c4-components-users-rbac.md](c4/c4-components-users-rbac.md)*
+
+---
+
+#### Domain 7: Nutrition & Health Management
+
+Captures medical food allergy declarations and performs non-blocking cross-referencing against daily lunch menus:
+
+![Domain 7 Component Diagram](c4/images/Module7Components.png)
+
+![Domain 7 Component Key](c4/images/Module7Components-key.png)
+
+*Detailed specification: [c4/c4-components-nutrition.md](c4/c4-components-nutrition.md)*
+
+---
+
+#### Domain 8: Master Data & Academic Configuration
+
+Maintains school academic years, semesters, grade levels, classes, student master profiles, lunch serving days, and holiday calendars:
+
+![Domain 8 Component Diagram](c4/images/Module8Components.png)
+
+![Domain 8 Component Key](c4/images/Module8Components-key.png)
+
+*Detailed specification: [c4/c4-components-master-data.md](c4/c4-components-master-data.md)*
+
+---
+
+## arc42 Architecture Documentation Suite
+
+The complete architecture is documented according to the internationally recognized [arc42](https://arc42.org) standard (by Dr. Gernot Starke & Dr. Peter Hruschka) at the **ESSENTIAL** detail level under [`arc42/`](arc42/):
+
+|   Section   | Title                                                           | Architectural Scope                                                                       |   Status   |
+| :----------: | :-------------------------------------------------------------- | :---------------------------------------------------------------------------------------- | :---------: |
+| **01** | [Introduction and Goals](arc42/01-introduction-and-goals.md)     | Business problem, MVP features, 4 measurable Q42 quality goals, stakeholder matrix        | ✅ Complete |
+| **02** | [Architecture Constraints](arc42/02-architecture-constraints.md) | Technical constraints, operational cutoff rules, legal standards (Decision 1246/QĐ-BYT)  | ✅ Complete |
+| **03** | [Context and Scope](arc42/03-context-and-scope.md)               | Business and technical context, external interfaces (`IF-01` to `IF-04`)              | ✅ Complete |
+| **04** | [Solution Strategy](arc42/04-solution-strategy.md)               | Modular Monolith paradigm, DDD decomposition, technology trade-offs                       | ✅ Complete |
+| **05** | [Building Block View](arc42/05-building-block-view.md)           | Static structure: Level-1 Containers and Level-2 Components across all 8 domains          | ✅ Complete |
+| **06** | [Runtime View](arc42/06-runtime-view.md)                         | Dynamic scenarios: 08:30 cutoff lock, emergency triage, 3-step inspection, reconciliation | ✅ Complete |
+| **07** | [Deployment View](arc42/07-deployment-view.md)                   | Campus LAN topology, hardware profiles (Tablets, Kiosks), Docker & TLS proxy              | ✅ Complete |
+| **08** | [Crosscutting Concepts](arc42/08-crosscutting-concepts.md)       | Unified Domain Model, RBAC security, temporal guards, audit logging, error envelopes      | ✅ Complete |
+| **09** | [Architecture Decisions](arc42/09-architecture-decisions.md)     | Nygard ADRs: Modular Monolith, Temporal Guards, Vanilla/React UI, WebSocket Pub/Sub       | ✅ Complete |
+| **10** | [Quality Requirements](arc42/10-quality-requirements.md)         | 8 measurable quality scenarios (`QS-01` to `QS-08`) testing Q42 quality goals         | ✅ Complete |
+| **11** | [Risks and Technical Debt](arc42/11-risks-and-technical-debt.md) | Prioritized risk register, mitigation strategies, and technical debt backlog              | ✅ Complete |
+| **12** | [Glossary](arc42/12-glossary.md)                                 | Ubiquitous domain language, Vietnamese legal definitions, acronym expansions              | ✅ Complete |
+
+---
+
+## Relational Database Architecture (3NF Schema & ERD)
+
+The persistence tier is designed as a normalized **Third Normal Form (3NF)** relational database running on **PostgreSQL 15**. It cleanly interconnects all operational domains: student registrations, meal schedules, classroom attendance, dynamic demands, catering purchase orders, dock receiving inspections, classroom distribution, 3-way reconciliation, billing batches, and VietQR payments.
+
+![Database Design ERD](<docs/06-database/Database Design.png>)
+
+> [!NOTE]
+> - **Canonical DBML Schema:** [`docs/06-database/schema.dbml`](docs/06-database/schema.dbml)
+> - **Production DDL Script:** [`database/PRIMARY SCHOOL SEMI-BOARDING MEAL MANAGEMENT SYSTEM.sql`](<database/PRIMARY SCHOOL SEMI-BOARDING MEAL MANAGEMENT SYSTEM.sql>)
+> - **Schema & Architecture Guide:** [`docs/06-database/README.md`](docs/06-database/README.md)
+
+---
+
+## RESTful API Specification & OpenAPI 3.0.3
+
+The platform exposes a standardized, production-ready RESTful API conforming to the **OpenAPI 3.0.3** standard.
+
+- **Human-Readable API Manual:** [`docs/07-api-documentation/api-specification.md`](docs/07-api-documentation/api-specification.md)
+- **Machine-Readable Contract:** [`docs/07-api-documentation/openapi.yaml`](docs/07-api-documentation/openapi.yaml)
+- **Base URL:** `https://api.schoolmeals.edu.vn/api/v1`
+
+### Swagger UI Visual Showcase
+
+The interactive OpenAPI specification covers all 8 business domains with request/response schemas, error codes, and temporal guards:
+
+#### 1. Authentication, Profile & Master Data Configuration (Domains 6 & 8)
+
+*Covers JWT login, current user profile, system user directory, academic terms, grade/class structure, and serving calendar:*
+
+![API Specification - Part 1: Auth & Master Data](docs/07-api-documentation/images/Part1.png)
+
+---
+
+#### 2. Student Participation, Menus & Demand Aggregation (Domains 1, 2 & 3)
+
+*Covers student boarding eligibility, semester registration, classroom morning roll call, 08:30 AM cutoff lock, emergency amendments, dish master catalog, weekly menu composition, and morning demand aggregation:*
+
+![API Specification - Part 2: Participation, Menus & Demand](docs/07-api-documentation/images/Part2.png)
+
+---
+
+#### 3. Receiving Inspection, Distribution, 3-Way Reconciliation & Finance (Domains 3, 7 & 4)
+
+*Covers 10:30 AM delivery dock check-in, statutory 3-step food safety inspection (Decision 1246/QĐ-BYT), trolley distribution confirmation, 13:00 PM 3-way reconciliation, medical allergy profiles, fee rates, monthly billing batches, and VietQR payments:*
+
+![API Specification - Part 4: Operations, Nutrition & Finance](docs/07-api-documentation/images/Part4.png)
+
+---
+
+#### 4. Operational Reporting, Transparency & Standardized Response Envelopes (Domain 5)
+
+*Covers daily meal operation summary reports, financial debt aging analysis, parent daily transparency feed, and standard JSON schema envelopes:*
+
+![API Specification - Part 3: Reporting, Transparency & Schemas](docs/07-api-documentation/images/Part3.png)
+
+---
+
+## Information Architecture & Portals
+
+The information architecture enforces a **maximum navigation depth of $\le 2$ levels** across four dedicated portals:
 
 ```
 App Root (/)
 │
 ├── 📝 Teacher Portal (/teacher)
 │   ├── Classroom Attendance Roster (/teacher/roster)           [SCR-TCH-01, US-PAR-01, US-PAR-03]
-│   │   └── [Modal] Status Amendment & Reason Dialog            [SCR-TCH-02, US-PAR-02]
+│   │   ├── [Modal] Status Amendment & Reason Dialog            [SCR-TCH-02, US-PAR-02]
 │   │   └── [View] Roster Lock & Handover Confirmation          [SCR-TCH-03, US-PAR-03]
 │   └── [Sheet] Post-Cutoff Emergency Request Form              [SCR-TCH-04, US-DMD-03]
 │
@@ -855,93 +370,177 @@ App Root (/)
     └── User Roles & Access Control (/admin/users)              [SCR-ADM-04]
 ```
 
-### 2. Screen Inventory & Entity Mapping Summary (17 Active Screens)
-
-The full catalog is documented in [docs/04-information-architecture/screen-inventory.md](docs/04-information-architecture/screen-inventory.md):
-
-| Portal | Screen Range | Screen Count | Focus & DB Entities | Primary Viewport |
-|---|---|:---:|---|---|
-| **Teacher** | `SCR-TCH-01` .. `SCR-TCH-04` | 4 | Morning roll call, allergy alerts, cutoff freeze (`meal_participations`, `meal_participation_changes`) | Mobile (390px) |
-| **Manager** | `SCR-MGR-01` .. `SCR-MGR-05` | 5 | Demand aggregation, portion formulas, emergency queue, shift plans (`meal_demands`, `meal_demand_dish_quantities`, `meal_demand_changes`) | Desktop (> 768px) |
-| **Kitchen** | `SCR-KIT-01` .. `SCR-KIT-04` | 4 | Industrial shift board, ingredient checklist, batch timers, yield gate (`meal_preparation_plans`, `ingredient_allocations`, `meal_preparations`, `prepared_quantity_confirmations`) | Wall Touch Kiosk (> 1024px) |
-| **Admin** | `SCR-ADM-01` .. `SCR-ADM-04` | 4 | Academic calendars, students, dish recipes, user access (`students`, `classes`, `meal_schedules`, `dishes`, `users`) | Desktop (> 1024px) |
-
-### 3. Core Operational Task Flows
-
-The operational lifecycle is structured across 5 end-to-end task flows detailed in [docs/04-information-architecture/task-flows.md](docs/04-information-architecture/task-flows.md):
-- **TF-01: Daily Attendance & Cutoff Lock** (`07:30 – 08:30 AM`): Homeroom teacher logs present/absent states; system validates allergies and freezes roster into read-only mode at 08:30 AM.
-- **TF-02: Demand Aggregation & Recipe Buffer Calculation** (`08:30 – 08:45 AM`): Manager runs participation-based aggregation with $+5\%$ safety buffer and scales raw ingredient quantities.
-- **TF-03: Post-Lock Emergency Change Triage** (`08:45 – 10:30 AM`): Controlled teacher request $\rightarrow$ manager approval/rejection $\rightarrow$ instant broadcast to kitchen kiosk.
-- **TF-04: Kitchen Stock Intake & Batch Execution** (`08:45 – 10:30 AM`): Pantry receiving checklist $\rightarrow$ station cooking batch timers and scale weigh-in.
-- **TF-05: Cooking Yield Reconciliation & Discrepancy Gate** (`10:30 – 10:45 AM`): Final dish inspection checking cooked weight against targets with mandatory explanation if variance exceeds $\pm 3\%$.
-
-*For complete sitemaps, modal layer rules, and component reuse specifications, refer to [docs/04-information-architecture/](docs/04-information-architecture/README.md).*
+*For complete screen hierarchy, component inventory, and modal layers, refer to [docs/04-information-architecture/INFORMATION_ARCHITECTURE.md](docs/04-information-architecture/INFORMATION_ARCHITECTURE.md).*
 
 ---
 
-## User Interface & Role Workflows (UI Showcase)
+## User Interface Showcase (Operational Portals)
 
-The platform delivers purpose-built user experiences tailored to all key operational roles in the semi-boarding meal supply chain, with real-time state synchronization across all interfaces:
+The application delivers purpose-built interfaces tailored to each stakeholder's operational environment:
 
-### 1. School Administrator — Operations Overview & Executive Dashboard (Quản trị / Admin)
-*Executive & operational supervision: Centralized cockpit monitoring daily meal metrics, classroom attendance submission rates, kitchen preparation weight targets, and urgent system alerts.*
+### 1. School Administrator — Executive Cockpit (`ADM`)
 
-![Admin Dashboard: Tổng quan hôm nay](screenshots/s1.png)
-> **Admin Dashboard — Real-Time Operational Cockpit:**
-> - **Operational KPIs:** At-a-glance monitoring of confirmed meals (461 meals), classroom roll-call progress (18 / 20 classes locked), kitchen ingredient prep demand (483 kg), and active system alerts.
-> - **Grade-Level Attendance Distribution:** Visual bar chart tracking completion percentages across classes (1A to 5C) with highlighted lagging classes.
-> - **Actionable Shortcuts & Audit Trail:** Quick access to attendance rosters, portioning rules, kitchen shift boards, and real-time user activity logs.
+Monitors overall school meal operations, attendance completion rates across classrooms, and system health alerts:
+
+![Admin Dashboard: Tổng quan vận hành bán trú](screenshots/s1.png)
+
+> **Key Capabilities:**
+>
+> - **Operational KPIs:** Real-time tracking of confirmed student meals, locked classroom count, and total required raw preparation weight.
+> - **Grade-Level Completion:** Visual bar breakdown tracking roll-call progress across classes (1A to 5C).
+> - **Quick Shortcuts:** Direct navigation to rosters, portioning rules, and audit logs.
 
 ---
 
-### 2. Homeroom Teacher — Classroom Attendance Supervisor (GV / TCH)
-*Classroom operations: Manages daily student rosters, records meal participation, flags medical dietary restrictions/allergies, and locks headcounts before the morning cutoff deadline.*
+### 2. Homeroom Teacher — Classroom Attendance Portal (`SCR-TCH-01`)
+
+Allows fast morning student roll call on mobile/tablet devices with allergen alerts and countdown to the 08:30 AM cutoff:
 
 ![SCR-TCH-01: Điểm danh bữa trưa](screenshots/s2.png)
-> **SCR-TCH-01 — Class Roster Participation & Cutoff Countdown:**
-> - **One-Tap Attendance Toggle:** Fast inline toggling per student (*Ăn* / *Vắng*) with real-time class headcount tallies (Sĩ số, Ăn hôm nay, Vắng).
-> - **Allergy Safety Badges:** High-visibility warning chips for students with registered dietary restrictions (e.g., *Hải sản*, *Đậu phộng*, *Sữa*) to prevent cross-contamination.
-> - **Strict Cutoff Enforcement:** Live countdown timer to the daily lock deadline (`08:30:00`) paired with a one-click *"Xác nhận & Khóa danh sách"* action.
+
+> **Key Capabilities:**
+>
+> - **One-Tap Attendance:** Rapid toggling (*Ăn* / *Vắng*) with real-time class headcount totals.
+> - **Allergen Alert Chips:** High-visibility warnings (*Hải sản*, *Đậu phộng*, *Sữa*) to prevent contamination.
+> - **Cutoff Countdown:** Live timer counting down to `08:30:00 AM` lock deadline.
 
 ---
 
-### 3. Meal / Nutrition Manager — Demand & Buffer Operations Supervisor (QLB / MGR)
-*Operations office: Aggregates real-time attendance across all school grades, computes precise raw ingredient demand, configures safety buffer percentages (`Buffer %`), and reviews late emergency change requests.*
+### 3. Semi-Boarding Manager — Demand & Buffer Operations (`SCR-MGR-01`)
+
+Aggregates attendance data across classrooms, applies dynamic safety buffers, and scales dish quantities:
 
 ![SCR-MGR-01: Định lượng bữa trưa](screenshots/s3.png)
-> **SCR-MGR-01 — Demand Determination & Buffer Optimization:**
-> - **Live Data Aggregation:** Real-time synchronization of submission progress across all classrooms with status tags (*Đã xác nhận*, *Chờ xác nhận*).
-> - **Dynamic Safety Buffer:** Interactive buffer slider ($0\%\text{--}10\%$, default $+5\%$) dynamically recalculating final meal count ($404 \text{ học sinh} \times (1 + 5\%) = 425 \text{ suất}$).
-> - **Automated Ingredient Scaling:** Instantly calculates required raw preparation quantities (Cơm trắng, Thịt kho Tàu, Canh chua cá, Rau muống luộc, Chuối) before one-click approval (*"Duyệt & Khóa định lượng"*).
+
+> **Key Capabilities:**
+>
+> - **Headcount Aggregation:** Real-time synchronization of submission progress across all grades.
+> - **Interactive Safety Buffer:** Dynamic slider ($0\%\text{--}10\%$) recalculating final meal count.
+> - **Ingredient Scaling:** Automatic calculation of required quantities before purchase order confirmation.
 
 ---
 
-### 4. Kitchen Staff / Head Chef — Kitchen Operations Board (Bếp ăn / KIT)
-*Kitchen floor operations: High-clarity touch interface designed for kitchen tablets or wall-mounted displays. Guides chefs through cooking stations, batch progress, and shift completion.*
+### 4. Kitchen / Catering Staff — Operational Floor Kiosk (`SCR-KIT-01`)
+
+High-contrast touch interface designed for kitchen tablets or wall-mounted kiosks to guide preparation and receiving:
 
 ![SCR-KIT-01: Bếp ăn — Bữa trưa](screenshots/s4.png)
-> **SCR-KIT-01 — Kitchen Shift Operational Board:**
-> - **Station-Segregated Cooking:** Clear tracking by cooking station (Cơm trắng, Thịt kho Tàu, Canh chua cá bông lau, Rau muống luộc, Chuối tráng miệng) with assigned chef, batch counts, and target weights in kg/lít.
-> - **One-Touch Station Transitions:** Simple, mistake-proof state toggle buttons (*"Bắt đầu nấu"*, *"Hoàn thành"*) with visual status highlights (*Đang nấu*, *Chờ xử lý*, *Sẵn sàng*).
-> - **Shift Summary & Deadline:** Real-time countdown timer to service deadline (`10:45:00`), overall station completion progress ($1/5 \text{ station}$ completed), and shift supervisor details.
+
+> **Key Capabilities:**
+>
+> - **Station-Segregated Workflow:** Clear line items by preparation station with assigned staff and target weights.
+> - **Large Touch Targets:** Mistake-proof buttons (*"Bắt đầu nấu"*, *"Hoàn thành"*) suited for industrial kitchen environments.
+> - **Service Deadline Countdown:** Countdown timer tracking target dispatch time (`10:45:00 AM`).
 
 ---
 
-## Quick Start (Prototype)
+## Repository Structure
 
-Run the unified interactive React + Vite prototype application:
+```
+Top-Down-Approach/
+├── README.md                          ← Project master documentation (You are here)
+│
+├── arc42/                             ← arc42 Software Architecture Suite (Sections 01–12)
+│   ├── README.md                      ← arc42 master navigation index
+│   ├── 01-introduction-and-goals.md   ← System goals, Q42 quality metrics, stakeholders
+│   ├── 02-architecture-constraints.md ← Constraints (Cutoff, Decision 1246/QĐ-BYT)
+│   ├── 03-context-and-scope.md        ← Business & technical context, external interfaces
+│   ├── 04-solution-strategy.md        ← Modular Monolith, DDD, technology choices
+│   ├── 05-building-block-view.md      ← Level-1 Containers & Level-2 Components
+│   ├── 06-runtime-view.md             ← Dynamic sequence scenarios (Cutoff, HACCP)
+│   ├── 07-deployment-view.md          ← Campus LAN, Docker containers, device profiles
+│   ├── 08-crosscutting-concepts.md    ← Domain model, RBAC, temporal guards, audit
+│   ├── 09-architecture-decisions.md   ← Architecture Decision Records (ADRs)
+│   ├── 10-quality-requirements.md     ← Measurable quality scenarios (QS-01 to QS-08)
+│   ├── 11-risks-and-technical-debt.md ← Risk register & technical debt backlog
+│   └── 12-glossary.md                 ← Ubiquitous domain dictionary
+│
+├── c4/                                ← C4 Software Architecture Documentation Suite
+│   ├── README.md                      ← C4 documentation map and index
+│   ├── c4-context.md                  ← Level 1: System Context Diagram
+│   ├── c4-containers.md               ← Level 2: Container Diagram
+│   ├── c4-components-*.md             ← Level 3: Component Diagrams (Domains 1 to 8)
+│   └── images/                        ← C4 architectural diagrams and legend keys
+│
+├── docs/                              ← Comprehensive 6-Phase Engineering Documentation
+│   ├── README.md                      ← Documentation master index
+│   ├── traceability.md                ← End-to-end forward/backward traceability matrix
+│   ├── 01-top-down/                   ← Phase 01: System decomposition & mind map
+│   ├── 02-core-features/              ← Phase 02: 24 Core MVP features & INVEST stories
+│   ├── 03-roles-usecases/             ← Phase 03: Fixed 4-Role RBAC & UML use cases
+│   ├── 04-information-architecture/   ← Phase 04: IA master spec, sitemap, 17 screens
+│   ├── 05-ui-ux/                      ← Phase 05: Design system & wireframes
+│   ├── 06-database/                   ← Phase 06: PostgreSQL 3NF schema, ERD, DBML
+│   └── 07-api-documentation/          ← Phase 07: REST API spec, OpenAPI 3.0.3, Swagger
+│
+├── database/                          ← Production SQL Scripts
+│   ├── PRIMARY SCHOOL SEMI-BOARDING MEAL MANAGEMENT SYSTEM.sql ← PostgreSQL 3NF DDL
+│   └── DBDOCS.md                      ← Database dictionary & indexing strategy
+│
+├── backend/                           ← Production NestJS 10 Backend API
+│   ├── src/                           ← Modular 3-tier NestJS implementation
+│   ├── prisma/                        ← Prisma schema & migration scripts
+│   └── package.json                   ← Backend dependencies & test scripts
+│
+├── frontend/                          ← Interactive React 19 + Vite Prototype
+│   ├── src/                           ← React components & state management
+│   ├── index.html                     ← Application entry point
+│   └── package.json                   ← Frontend dependencies
+│
+└── screenshots/                       ← High-resolution UI captures of working prototype
+    ├── s1.png                         ← Admin Dashboard
+    ├── s2.png                         ← Teacher Attendance Portal
+    ├── s3.png                         ← Meal Manager Operations
+    └── s4.png                         ← Kitchen Kiosk Display
+```
+
+---
+
+## Quick Start Guide
+
+### Prerequisites
+
+- **Node.js**: `v20.x` or higher
+- **Package Manager**: `pnpm` (recommended) or `npm`
+- **Database**: PostgreSQL 15+ (optional for local mock mode)
+
+### 1. Backend Setup (NestJS + Prisma)
 
 ```bash
-cd frontend
+# Navigate to the backend directory
+cd backend
+
+# Install dependencies
 pnpm install
+
+# Configure environment variables
+cp .env.example .env
+
+# Generate Prisma client and run migrations
+pnpm prisma:generate
+pnpm prisma:migrate
+
+# Start development server
+pnpm start:dev
+```
+
+The API server will start at: **`http://localhost:3000/api/v1`**
+Access Swagger documentation at: **`http://localhost:3000/api/docs`**
+
+### 2. Frontend Setup (React 19 + Vite)
+
+```bash
+# Open a new terminal and navigate to the frontend directory
+cd frontend
+
+# Install dependencies
+pnpm install
+
+# Start Vite development server
 pnpm dev
 ```
 
-Open in your browser: **`http://localhost:3000/`** (or port displayed in terminal)
+Open your browser at: **`http://localhost:5173/`** (or the port indicated in your console).
 
-The prototype features full role switching via the left sidebar:
-1. **Admin Portal:** Executive operations overview, KPI cards & activity audit.
-2. **Teacher Portal:** Record class attendance, student allergies & lock roster (`SCR-TCH-01`).
-3. **Manager Portal:** Aggregate school demand, buffer tuning & scale dish quantities (`SCR-MGR-01`).
-4. **Kitchen Kiosk:** Review shift targets, station execution & batch completion (`SCR-KIT-01`).
-
+> [!TIP]
+> The frontend prototype supports one-click role switching via the top navigation bar to explore the **Admin**, **Teacher**, **Manager**, and **Kitchen** views without requiring complex database seeds.
